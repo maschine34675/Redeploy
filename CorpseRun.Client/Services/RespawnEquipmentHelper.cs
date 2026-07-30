@@ -78,13 +78,12 @@ internal static class RespawnEquipmentHelper
             Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to equip empty pockets: {result.Error}");
     }
 
+    // Secure container and special slots always transfer: the corpse tree is never
+    // serialized into the post-raid profile, so anything left there is gone for good.
     private static void TryTransferSpecialSlots(
         InventoryEquipment oldEquipment,
         InventoryEquipment newEquipment)
     {
-        if (!Settings.AllowSpecialSlots.Value)
-            return;
-
         var oldPockets = oldEquipment.GetSlot(EquipmentSlot.Pockets).ContainedItem as CompoundItem;
         var newPockets = newEquipment.GetSlot(EquipmentSlot.Pockets).ContainedItem as CompoundItem;
         if (oldPockets == null || newPockets == null)
@@ -103,16 +102,7 @@ internal static class RespawnEquipmentHelper
             if (newSlot == null)
                 continue;
 
-            var removeResult = oldSlot.RemoveItemWithoutRestrictions();
-            if (removeResult.Failed)
-            {
-                Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to remove special-slot item from corpse: {removeResult.Error}");
-                continue;
-            }
-
-            var addResult = newSlot.AddWithoutRestrictions(item);
-            if (addResult.Failed)
-                Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to transfer special-slot item: {addResult.Error}");
+            MoveSlotItem(oldSlot, newSlot, item, "special-slot item");
         }
     }
 
@@ -120,24 +110,33 @@ internal static class RespawnEquipmentHelper
         InventoryEquipment oldEquipment,
         InventoryEquipment newEquipment)
     {
-        if (!Settings.AllowSecureContainer.Value)
-            return;
-
         var oldSlot = oldEquipment.GetSlot(EquipmentSlot.SecuredContainer);
         var secure = oldSlot.ContainedItem;
         if (secure == null)
             return;
 
+        MoveSlotItem(oldSlot, newEquipment.GetSlot(EquipmentSlot.SecuredContainer), secure, "secure container");
+    }
+
+    private static void MoveSlotItem(Slot oldSlot, Slot newSlot, Item item, string label)
+    {
         var removeResult = oldSlot.RemoveItemWithoutRestrictions();
         if (removeResult.Failed)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to remove secure container from corpse equipment: {removeResult.Error}");
+            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to detach {label} from corpse: {removeResult.Error}");
             return;
         }
 
-        var addResult = newEquipment.GetSlot(EquipmentSlot.SecuredContainer).AddWithoutRestrictions(secure);
+        var addResult = newSlot.AddWithoutRestrictions(item);
         if (addResult.Failed)
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to transfer secure container: {addResult.Error}");
+        {
+            // Put it back on the corpse tree — a parentless item would vanish from both
+            // serialized equipment trees at raid end.
+            var rollback = oldSlot.AddWithoutRestrictions(item);
+            Plugin.ModLogger.LogWarning(
+                $"[CorpseRun] Failed to transfer {label}: {addResult.Error} — " +
+                (rollback.Failed ? $"ROLLBACK ALSO FAILED: {rollback.Error}" : "rolled back onto corpse."));
+        }
     }
 
     /// <summary>

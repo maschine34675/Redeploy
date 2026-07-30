@@ -7,8 +7,6 @@ public static class Settings
     public static ConfigEntry<bool> Enabled { get; private set; }
     public static ConfigEntry<int> MaxRespawnsPerRaid { get; private set; }
     public static ConfigEntry<float> RespawnHealthPercent { get; private set; }
-    public static ConfigEntry<bool> AllowSecureContainer { get; private set; }
-    public static ConfigEntry<bool> AllowSpecialSlots { get; private set; }
     public static ConfigEntry<float> RespawnCooldownSeconds { get; private set; }
     public static ConfigEntry<float> CorpseSpawnDistanceMeters { get; private set; }
     public static ConfigEntry<float> SpawnProtectionSeconds { get; private set; }
@@ -47,19 +45,7 @@ public static class Settings
             "Respawn",
             "RespawnHealthPercent",
             100f,
-            "Health percentage restored after respawn (0-100).");
-
-        AllowSecureContainer = config.Bind(
-            "Respawn",
-            "AllowSecureContainer",
-            true,
-            "Keep items in the secure container after respawn.");
-
-        AllowSpecialSlots = config.Bind(
-            "Respawn",
-            "AllowSpecialSlots",
-            true,
-            "Keep pocket special-slot items (dogtags, melee tools, etc.) after respawn.");
+            "Health percentage restored after respawn (1-100).");
 
         RespawnCooldownSeconds = config.Bind(
             "Respawn",
