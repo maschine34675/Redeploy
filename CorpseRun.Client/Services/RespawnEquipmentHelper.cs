@@ -52,7 +52,7 @@ internal static class RespawnEquipmentHelper
             TryTransferSecureContainer(oldEquipment, newEquipment);
 
             EquipmentField(profile.Inventory) = newEquipment;
-            SanitizeProfileInventoryReferences(profile, oldEquipment);
+            SanitizeProfileInventoryReferences(profile);
             Plugin.ModLogger.LogInfo("[CorpseRun] Profile equipment swapped; corpse retains raid loadout.");
         }
         catch (Exception ex)
@@ -141,9 +141,11 @@ internal static class RespawnEquipmentHelper
 
     /// <summary>
     /// Drops stale item references that still point at the old corpse equipment tree.
-    /// Insured items on the corpse are kept so raid-end insurance (method_13) can still find them.
+    /// Profile.InsuredItems is deliberately NOT touched: raid-end insurance (method_13)
+    /// intersects it with world items, stale entries are harmless everywhere, and any
+    /// filtering here would strip insurance for dropped items and earlier corpses.
     /// </summary>
-    private static void SanitizeProfileInventoryReferences(Profile profile, InventoryEquipment corpseEquipment)
+    private static void SanitizeProfileInventoryReferences(Profile profile)
     {
         if (profile?.Inventory?.Equipment == null)
             return;
@@ -152,12 +154,7 @@ internal static class RespawnEquipmentHelper
             profile.Inventory.GetPlayerItems(EPlayerItems.All).Select(item => item.Id.ToString()),
             StringComparer.Ordinal);
 
-        var corpseItemIds = new HashSet<string>(
-            corpseEquipment.GetAllItemsFromCollection().Select(item => item.Id.ToString()),
-            StringComparer.Ordinal);
-
         RebuildFastAccess(profile.Inventory, validIds);
-        PreserveInsuredItemsOnCorpse(profile, validIds, corpseItemIds);
         SanitizeFavoriteItems(profile.Inventory, validIds);
         SanitizeDiscardLimits(profile.Inventory, validIds);
         SanitizeCheckedMagazines(profile, validIds);
@@ -173,21 +170,6 @@ internal static class RespawnEquipmentHelper
         }
 
         FastAccessField(inventory) = new EFT.InventoryLogic.FastAccess(inventory.Equipment, boundIds);
-    }
-
-    private static void PreserveInsuredItemsOnCorpse(
-        Profile profile,
-        HashSet<string> validIds,
-        HashSet<string> corpseItemIds)
-    {
-        if (profile.InsuredItems == null || profile.InsuredItems.Length == 0)
-            return;
-
-        profile.InsuredItems = profile.InsuredItems
-            .Where(insured =>
-                insured != null
-                && (validIds.Contains(insured.ItemId) || corpseItemIds.Contains(insured.ItemId)))
-            .ToArray();
     }
 
     private static void SanitizeFavoriteItems(Inventory inventory, HashSet<string> validIds)
