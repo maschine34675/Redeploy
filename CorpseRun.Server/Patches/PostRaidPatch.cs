@@ -4,14 +4,13 @@ using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Match;
 using SPTarkov.Server.Core.Models.Eft.Profile;
-using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Services;
 using System.Reflection;
 
 namespace CorpseRun.Server.Patches;
 
 /// <summary>
-/// Ensures raids that end as Survived after a respawn are not processed as a death wipe.
+/// Repairs the Inventory.Equipment root id after SPT finishes post-raid PMC handling.
 /// </summary>
 public sealed class PostRaidPatch : AbstractPatch
 {
@@ -34,15 +33,8 @@ public sealed class PostRaidPatch : AbstractPatch
             null)!;
     }
 
-    [PatchPrefix]
-    public static void Prefix(EndLocalRaidRequestData request, ref bool isDead)
-    {
-        if (request?.Results == null)
-            return;
-
-        if (request.Results.Result == ExitStatus.SURVIVED && isDead)
-            isDead = false;
-    }
+    // No prefix: on SPT 4.0.x, isDead is derived from the same ExitStatus the old guard
+    // compared against SURVIVED — the two are disjoint, so the guard could never fire.
 
     [PatchPostfix]
     public static void Postfix(SptProfile fullServerProfile, EndLocalRaidRequestData request)

@@ -6,6 +6,9 @@ namespace CorpseRun.Server.Helpers;
 
 internal static class InventoryEquipmentFixHelper
 {
+    // "Default Inventory" — the template every equipment root uses.
+    private const string EquipmentTemplateId = "55d7217a4bdc2d86028b456d";
+
     private static readonly string[] EquipmentSlotIds =
     [
         "Pockets",
@@ -31,35 +34,51 @@ internal static class InventoryEquipmentFixHelper
         if (profile?.Inventory?.Items == null || profile.Inventory.Items.Count == 0)
             return;
 
-        var itemIds = profile.Inventory.Items
-            .Where(item => item?.Id != null)
-            .Select(item => item.Id.ToString())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var itemsById = new Dictionary<string, Item>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in profile.Inventory.Items)
+        {
+            if (item?.Id != null)
+                itemsById.TryAdd(item.Id.ToString(), item);
+        }
 
-        if (itemIds.Count == 0)
+        if (itemsById.Count == 0)
             return;
 
         if (preferredEquipmentId.HasValue
-            && itemIds.Contains(preferredEquipmentId.Value.ToString()))
+            && IsEquipmentRoot(itemsById, preferredEquipmentId.Value.ToString()))
         {
             profile.Inventory.Equipment = preferredEquipmentId.Value;
         }
         else if (profile.Inventory.Equipment.HasValue
-                 && itemIds.Contains(profile.Inventory.Equipment.Value.ToString()))
+                 && IsEquipmentRoot(itemsById, profile.Inventory.Equipment.Value.ToString()))
         {
             return;
         }
-        else if (TryResolveEquipmentRootId(profile.Inventory.Items, itemIds, out var resolved))
+        else if (TryResolveEquipmentRootId(profile.Inventory.Items, itemsById, out var resolved))
         {
             profile.Inventory.Equipment = resolved;
         }
 
-        SanitizeInventoryReferences(profile, itemIds);
+        SanitizeInventoryReferences(
+            profile,
+            itemsById.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// A valid equipment root must exist, be parentless, and use the equipment template —
+    /// a bare id-exists check could accept the stash or another profile root and corrupt
+    /// the profile worse than the bug this helper fixes.
+    /// </summary>
+    private static bool IsEquipmentRoot(Dictionary<string, Item> itemsById, string candidateId)
+    {
+        return itemsById.TryGetValue(candidateId, out var item)
+            && string.IsNullOrWhiteSpace(item.ParentId?.ToString())
+            && string.Equals(item.Template.ToString(), EquipmentTemplateId, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryResolveEquipmentRootId(
         List<Item> items,
-        HashSet<string> itemIds,
+        Dictionary<string, Item> itemsById,
         out MongoId equipmentRootId)
     {
         foreach (var slotId in EquipmentSlotIds)
@@ -72,16 +91,19 @@ internal static class InventoryEquipmentFixHelper
                 continue;
 
             var parentId = slottedItem.ParentId.ToString();
-            if (itemIds.Contains(parentId))
+            if (IsEquipmentRoot(itemsById, parentId))
             {
                 equipmentRootId = new MongoId(parentId);
                 return true;
             }
         }
 
+        // Fail closed: only a parentless item with the equipment template qualifies.
+        // Never fall back to an arbitrary parentless item (stash, quest roots, ...).
         var rootItem = items.FirstOrDefault(item =>
-            string.IsNullOrWhiteSpace(item.ParentId)
-            && item.Id != null);
+            item?.Id != null
+            && string.IsNullOrWhiteSpace(item.ParentId?.ToString())
+            && string.Equals(item.Template.ToString(), EquipmentTemplateId, StringComparison.OrdinalIgnoreCase));
 
         if (rootItem?.Id != null)
         {
