@@ -25,6 +25,10 @@ public static class RespawnService
         if (!Settings.Enabled.Value)
             return;
 
+        // A replacement player can never sync across Fika co-op clients — stay hands-off.
+        if (FikaCompatCheck.IsFikaLoaded)
+            return;
+
         // Without the server mod the profile corrupts after a respawn raid — let death proceed normally.
         if (!ServerModCheck.IsServerModAvailable)
             return;
@@ -408,6 +412,7 @@ public static class RespawnService
         // only arm the early-end check once the hands have actually been empty.
         var weaponCheckArmed = false;
         var nextStowAttempt = 0f;
+        var lastAnnouncedSecond = int.MaxValue;
         while (elapsed < duration)
         {
             if (player == null || player.HealthController == null || !player.HealthController.IsAlive)
@@ -419,11 +424,13 @@ public static class RespawnService
                 {
                     weaponCheckArmed = true;
                 }
-                else if (elapsed >= nextStowAttempt)
+                else if (elapsed >= nextStowAttempt && !player.InventoryController.IsChangingWeapon)
                 {
+                    // Never call SetEmptyHands mid hands-animation — that corrupts the
+                    // HandsController (documented hard-won lesson in PlayerLives).
                     Plugin.ModLogger.LogInfo("[CorpseRun] Stowing auto-drawn weapon during spawn protection.");
                     player.SetEmptyHands(null);
-                    nextStowAttempt = elapsed + 0.5f;
+                    nextStowAttempt = elapsed + 1.5f;
                 }
             }
             else if (IsWieldingWeapon(player))
@@ -432,6 +439,13 @@ public static class RespawnService
                 Plugin.ModLogger.LogInfo("[CorpseRun] Spawn protection ended early: weapon equipped.");
                 endedByWeapon = true;
                 break;
+            }
+
+            var remainingSeconds = Mathf.CeilToInt(duration - elapsed);
+            if (remainingSeconds <= 5 && remainingSeconds >= 1 && remainingSeconds < lastAnnouncedSecond)
+            {
+                lastAnnouncedSecond = remainingSeconds;
+                ShowToast($"Spawn protection: {remainingSeconds}s", ENotificationIconType.Default, Color.yellow);
             }
 
             elapsed += Time.deltaTime;
