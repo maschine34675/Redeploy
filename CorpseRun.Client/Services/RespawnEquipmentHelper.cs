@@ -49,7 +49,7 @@ internal static class RespawnEquipmentHelper
 
             TryEquipEmptyPockets(oldEquipment, newEquipment, factory);
             TryTransferSpecialSlots(oldEquipment, newEquipment);
-            TryTransferSecureContainer(oldEquipment, newEquipment);
+            TryTransferRetainedSlots(oldEquipment, newEquipment);
 
             EquipmentField(profile.Inventory) = newEquipment;
             SanitizeProfileInventoryReferences(profile);
@@ -106,16 +106,28 @@ internal static class RespawnEquipmentHelper
         }
     }
 
-    private static void TryTransferSecureContainer(
+    // Slots that vanilla keeps on death and that are unlootable on corpses
+    // (UnlootableComponent) — leaving them on our corpse would lose them for good.
+    private static readonly EquipmentSlot[] RetainedSlots =
+    {
+        EquipmentSlot.SecuredContainer,
+        EquipmentSlot.Scabbard,
+        EquipmentSlot.ArmBand,
+    };
+
+    private static void TryTransferRetainedSlots(
         InventoryEquipment oldEquipment,
         InventoryEquipment newEquipment)
     {
-        var oldSlot = oldEquipment.GetSlot(EquipmentSlot.SecuredContainer);
-        var secure = oldSlot.ContainedItem;
-        if (secure == null)
-            return;
+        foreach (var slotType in RetainedSlots)
+        {
+            var oldSlot = oldEquipment.GetSlot(slotType);
+            var item = oldSlot?.ContainedItem;
+            if (item == null)
+                continue;
 
-        MoveSlotItem(oldSlot, newEquipment.GetSlot(EquipmentSlot.SecuredContainer), secure, "secure container");
+            MoveSlotItem(oldSlot, newEquipment.GetSlot(slotType), item, slotType.ToString());
+        }
     }
 
     private static void MoveSlotItem(Slot oldSlot, Slot newSlot, Item item, string label)

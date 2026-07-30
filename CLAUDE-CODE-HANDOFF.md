@@ -15,7 +15,7 @@
 |-------|--------------|
 | Equipment bei Respawn | Altes Equipment bleibt auf der **Leiche**; Profil bekommt neues leeres `InventoryEquipment`. Nicht löschen. |
 | Versicherung | `Profile.InsuredItems` **nie anfassen** (verwaiste Einträge überall harmlos; Server überschreibt Client-Liste eh). Frühere Filterung strippte Versicherung für gedroppte Items + ältere Leichen. |
-| Special Slots + Secure Container | **Immer** auf neues Equipment übertragen (keine Option mehr): Leichen-Baum wird nie ins Post-Raid-Profil serialisiert → dort verbliebene Items wären unwiederbringlich weg (in-game bestätigt). Add-Fehler → Rollback auf Leiche. |
+| Special Slots + behaltene Slots | **Immer** auf neues Equipment übertragen (keine Option mehr): Special Slots + `RetainedSlots` = SecuredContainer, Scabbard (Nahkampf), ArmBand — alles, was vanilla beim Tod behalten wird und auf Leichen unlootbar ist (`UnlootableComponent`). Leichen-Baum wird nie ins Post-Raid-Profil serialisiert → dort verbliebene Items wären unwiederbringlich weg (in-game bestätigt). Add-Fehler → Rollback auf Leiche. |
 | Kill-Stats | `EftStats.Victims` vor Respawn snapshotten; nach neuem Statistics-Session (Respawn) wiederherstellen. |
 | Raid-Ende blockieren | Patches auf `BaseLocalGame` (method_19/11/Stop) solange `PendingRespawnChoice`. |
 | Profil-Persistenz | **Client + Server** nötig: Client sanitized beim Swap; Server korrigiert `Inventory.Equipment` nach `SetInventory`. |
