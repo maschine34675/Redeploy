@@ -14,8 +14,8 @@
 | Thema | Entscheidung |
 |-------|--------------|
 | Equipment bei Respawn | Altes Equipment bleibt auf der **Leiche**; Profil bekommt neues leeres `InventoryEquipment`. Nicht löschen. |
-| Versicherung | `InsuredItems` für Leichen-Items behalten → SPT meldet Verlust; Rückgabe möglich wenn nicht extrahiert. |
-| Special Slots | Optional (`AllowSpecialSlots`): Dogtag/Melee etc. von Leichen-Pockets auf neues Equipment übertragen. |
+| Versicherung | `Profile.InsuredItems` **nie anfassen** (verwaiste Einträge überall harmlos; Server überschreibt Client-Liste eh). Frühere Filterung strippte Versicherung für gedroppte Items + ältere Leichen. |
+| Special Slots + Secure Container | **Immer** auf neues Equipment übertragen (keine Option mehr): Leichen-Baum wird nie ins Post-Raid-Profil serialisiert → dort verbliebene Items wären unwiederbringlich weg (in-game bestätigt). Add-Fehler → Rollback auf Leiche. |
 | Kill-Stats | `EftStats.Victims` vor Respawn snapshotten; nach neuem Statistics-Session (Respawn) wiederherstellen. |
 | Raid-Ende blockieren | Patches auf `BaseLocalGame` (method_19/11/Stop) solange `PendingRespawnChoice`. |
 | Profil-Persistenz | **Client + Server** nötig: Client sanitized beim Swap; Server korrigiert `Inventory.Equipment` nach `SetInventory`. |
@@ -80,6 +80,16 @@ dotnet build CorpseRun.Server\CorpseRun.Server.csproj -c Release
 7. Kills vor Respawn → auf Raid-End-Screen sichtbar
 
 **Logs:** BepInEx-Log; Server-Konsole. Mod prefix: `[CorpseRun]`.
+
+## Codex-Review 2026-07-29 — Verifikations-Ergebnis (2026-07-30)
+
+Externes Review `CODE-REVIEW-2026-07-29.md`; jede Behauptung adversarial gegen Decompile + SPT-Server-Quellen verifiziert.
+
+**Umgesetzt (je eigener Commit):** P1.2/P1.6 Secure/Special immer + Rollback; P1.3 InsuredItems-Filter entfernt; P1.4 Stop-Stand-down (externes Raid-Ende — MIA/Leave — lief in `Stop` durch, aber `BlackScreenPatch` schluckte dessen Continuation mit `OnGameSessionEnd`/`LocalRaidEnded` → Softlock + Raid ungespeichert; StopPatch tritt jetzt bei durchgelassenen Stops zurück) + 30s-Timeout für Player-Erstellung (Teil von P1.5); P2.8 Server-Root nur mit Equipment-TPL `55d7217a4bdc2d86028b456d` + parentlos, fail-closed; P2.10 doppelte `OnLeave`-Registrierung entfernt (func_1-Factory subscribed schon); P2.11 OwnerCleanup ruft Basis-`vmethod_1` jetzt echt non-virtual (Function-Pointer-Delegate — `MethodInfo.Invoke` dispatcht virtuell und startete doch `CloseBattleUi` auf StaticManager); P2.12 `RespawnHealthPercent` wirkt (RestoreFullHealth entfernt, Clamp-Floor 1%); P3.15 toten PostRaid-Prefix entfernt.
+
+**Widerlegt:** Quest-Items (`Inventory.QuestRaidItems`) bleiben beim Respawn vollständig erhalten — Baum hängt am geteilten `profile.Inventory`, neuer `PlayerInventoryController` rebindet Ownership unconditional (Player.cs ~11123), Leiche bekommt nur den Equipment-Baum; Server-Roundtrip wie vanilla. Kein Fix nötig.
+
+**Bewusst nicht umgesetzt:** P1.1 Scav-Block (laut User-Test funktionieren Scav-Respawns problemlos; falls doch Transfer-Probleme auftauchen, hier wieder ansetzen); P1.7 Stats/XP-Merge über Respawns (bewusste Balancing-Entscheidung des Users — Fortschritt vor letztem Respawn verfällt; ggf. später als Option); P1.5 voller transaktionaler Umbau mit Rollback (nur Timeout umgesetzt); Auto-Deploy-Abschaltung (gewollter Dev-Workflow); P2.13 KillcamReplay-Lebenszyklus (offen — Respawn während laufender Killcam; bei Bedarf Replay bei BeginRespawn beenden); P2.14 FiR-Verhalten (dokumentiert: `SetSpawnedInSession(false)` beim Respawn = FiR-Verlust wie bei normalem Tod).
 
 ## Bekannte Fehler / Fallen
 
