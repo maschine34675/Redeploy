@@ -93,16 +93,31 @@ internal static class BlockDeathRaidEndPatch
         [PatchPrefix]
         private static bool Prefix(BaseLocalGame<EftGamePlayerOwner> __instance, ExitStatus exitStatus)
         {
-            if (exitStatus != ExitStatus.Killed)
-                return true;
-
             if (__instance is not LocalGame localGame)
                 return true;
 
-            if (RespawnSessionState.PendingRespawnChoice && ShouldIntercept(localGame))
+            if (exitStatus == ExitStatus.Killed
+                && RespawnSessionState.PendingRespawnChoice
+                && ShouldIntercept(localGame))
                 return false;
 
+            // An external raid end (MIA timer, menu leave, transit, another mod) is
+            // proceeding. Stand down so BlackScreenPatch lets Stop's continuation
+            // (OnGameSessionEnd + raid serialization) through — otherwise the game
+            // soft-locks in Stopping and the raid is never saved.
+            StandDownForExternalStop();
             return true;
+        }
+
+        private static void StandDownForExternalStop()
+        {
+            if (!RespawnSessionState.PendingRespawnChoice && !RespawnSessionState.IsRespawnInProgress)
+                return;
+
+            Plugin.ModLogger.LogWarning("[CorpseRun] External raid end while respawn pending — standing down.");
+            RespawnSessionState.HasGivenUp = true;
+            RespawnSessionState.PendingRespawnChoice = false;
+            UI.RespawnPromptPanel.Instance?.Hide();
         }
     }
 }

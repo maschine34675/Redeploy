@@ -216,8 +216,17 @@ public static class RespawnService
             yield break;
         }
 
+        var creationDeadline = Time.realtimeSinceStartup + 30f;
         while (!createTask.IsCompleted)
+        {
+            if (Time.realtimeSinceStartup > creationDeadline)
+            {
+                onFailure(new TimeoutException("Replacement player creation timed out after 30s."));
+                yield break;
+            }
+
             yield return null;
+        }
 
         try
         {
