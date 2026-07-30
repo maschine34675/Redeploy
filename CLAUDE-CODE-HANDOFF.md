@@ -104,6 +104,10 @@ Externes Review `CODE-REVIEW-2026-07-29.md`; jede Behauptung adversarial gegen D
 
 Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`, `DiscardLimits`, `CheckedMagazines`/`CheckedChambers`. **`InsuredItems` für Leichen-Items nicht entfernen.**
 
+### Fika-Inkompatibilität (by design)
+
+- CorpseRun deaktiviert sich komplett, wenn `com.fika.core` geladen ist (`FikaCompatCheck`, Chainloader-Check, Toast beim Raid-Start): Der Player-Swap kann nie über Fika-Clients synchronisiert werden (kein Packet-Flow für den Ersatz-Player, headless ohne MainPlayer). Muster aus PlayerLives 1.2.5 (`FikaReviveDetector`). PlayerLives-Update-Analyse 2026-07-30: Countdown-Toasts + Stow-Härtung übernommen (`IsChangingWeapon`-Guard — SetEmptyHands mid-Animation korrumpiert den HandsController); bewusst nicht übernommen: Stamina-Refill im Schutzfenster (Balancing), „Any"-Respawn-Item (billigstes zuerst — bei Bedarf nachrüstbar), Inventar-Zwangsschließung beim Tod.
+
 ### Client ohne Server-Mod → Profil-Korruption
 
 - **Schutz:** Server registriert `/corpserun/ping` (`CorpseRunRouter`, StaticRouter); Client prüft einmalig lazy (`ServerModCheck.IsServerModAvailable`, gecacht). Fehlt der Server-Mod: `OnPlayerDied` lässt den Tod normal durchlaufen (kein Respawn-Angebot), `RaidStartedPatch` zeigt rote Notification beim Raid-Start.
