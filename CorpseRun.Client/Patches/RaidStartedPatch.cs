@@ -28,6 +28,16 @@ internal sealed class RaidStartedPatch : ModulePatch
 
         FreecamCompatHelper.EnablePatchesIfPresent();
 
+        if (FikaCompatCheck.IsFikaLoaded)
+        {
+            NotificationManagerClass.DisplayMessageNotification(
+                "CorpseRun disabled: not compatible with Fika co-op.",
+                ENotificationDurationType.Long,
+                ENotificationIconType.Alert,
+                Color.red);
+            return;
+        }
+
         if (!ServerModCheck.IsServerModAvailable)
         {
             NotificationManagerClass.DisplayMessageNotification(
