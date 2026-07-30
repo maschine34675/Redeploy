@@ -310,7 +310,9 @@ public static class RespawnService
         if (profile?.Health?.BodyParts == null)
             return;
 
-        var percent = Mathf.Clamp(Settings.RespawnHealthPercent.Value, 0f, 100f) / 100f;
+        // Floor of 1%: without the old RestoreFullHealth call a 0% seed would spawn the
+        // player with 0-HP vitals that die to the first tick of damage.
+        var percent = Mathf.Clamp(Settings.RespawnHealthPercent.Value, 1f, 100f) / 100f;
 
         foreach (var part in profile.Health.BodyParts.Values)
         {
@@ -324,8 +326,10 @@ public static class RespawnService
     {
         // LocalGame.Spawn() calls this at raid start; without it the controller's
         // effect ticking stays disabled and med/food use never completes.
+        // No RestoreFullHealth here: the controller is seeded from profile.Health,
+        // which ResetProfileHealth already set to RespawnHealthPercent — a full
+        // restore would override the configured percentage.
         player.PlayerHealthController?.Start();
-        player.ActiveHealthController?.RestoreFullHealth();
     }
 
     private static bool HasRequiredRespawnItem(LocalPlayer player)
