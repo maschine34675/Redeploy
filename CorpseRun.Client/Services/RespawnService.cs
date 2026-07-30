@@ -238,9 +238,10 @@ public static class RespawnService
             if (Singleton<GameWorld>.Instantiated)
                 Singleton<GameWorld>.Instance.MainPlayer = newPlayer;
 
+            // CreatePlayerOwner runs the game's func_1 factory, which already subscribes
+            // OnLeave -> vmethod_4; wiring it again here would double the leave handling.
             var newOwner = LocalGameAccessor.CreatePlayerOwner(game, newPlayer);
             LocalGameAccessor.SetPlayerOwner(game, newOwner);
-            LocalGameAccessor.WireOwnerLeave(game, newOwner);
             LocalGameAccessor.WirePlayerGameEvents(game, newPlayer);
 
             GamePlayerOwnerHelper.SetMyPlayer(newPlayer);

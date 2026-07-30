@@ -16,9 +16,6 @@ internal static class LocalGameAccessor
     private static readonly MethodInfo DeathScreenMethod =
         AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "method_11");
 
-    private static readonly MethodInfo OnLeaveMethod =
-        AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "vmethod_4");
-
     private static readonly MethodInfo StatisticsShotMethod =
         AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "method_5");
 
@@ -99,10 +96,4 @@ internal static class LocalGameAccessor
 
     public static void InvokeDeathScreen(LocalGame game)
         => DeathScreenMethod.Invoke(game, null);
-
-    public static void WireOwnerLeave(LocalGame game, EftGamePlayerOwner owner)
-    {
-        var leaveHandler = OnLeaveMethod.CreateDelegate(typeof(Action), game);
-        owner.OnLeave += (Action)leaveHandler;
-    }
 }
