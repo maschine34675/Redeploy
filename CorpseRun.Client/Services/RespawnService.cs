@@ -403,14 +403,32 @@ public static class RespawnService
 
         var endedByWeapon = false;
         var elapsed = 0f;
+        // The game auto-draws the first available weapon on spawn — for a naked respawn
+        // that's the transferred melee weapon, which is not a player action. Stow it and
+        // only arm the early-end check once the hands have actually been empty.
+        var weaponCheckArmed = false;
+        var nextStowAttempt = 0f;
         while (elapsed < duration)
         {
             if (player == null || player.HealthController == null || !player.HealthController.IsAlive)
                 yield break;
 
-            // Grabbing a weapon from the corpse would otherwise let the player fight while invulnerable.
-            if (IsWieldingWeapon(player))
+            if (!weaponCheckArmed)
             {
+                if (!IsWieldingWeapon(player))
+                {
+                    weaponCheckArmed = true;
+                }
+                else if (elapsed >= nextStowAttempt)
+                {
+                    Plugin.ModLogger.LogInfo("[CorpseRun] Stowing auto-drawn weapon during spawn protection.");
+                    player.SetEmptyHands(null);
+                    nextStowAttempt = elapsed + 0.5f;
+                }
+            }
+            else if (IsWieldingWeapon(player))
+            {
+                // Grabbing a weapon from the corpse would otherwise let the player fight while invulnerable.
                 Plugin.ModLogger.LogInfo("[CorpseRun] Spawn protection ended early: weapon equipped.");
                 endedByWeapon = true;
                 break;
