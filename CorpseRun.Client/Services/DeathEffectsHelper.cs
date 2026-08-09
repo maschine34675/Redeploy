@@ -1,6 +1,9 @@
 using Comfort.Common;
 using EFT;
+using EFT.Ballistics;
 using EFT.CameraControl;
+using EFT.HealthSystem;
+using EFT.InventoryLogic;
 using HarmonyLib;
 using System;
 using System.Reflection;
@@ -14,34 +17,34 @@ namespace CorpseRun.Services;
 internal static class DeathEffectsHelper
 {
     private static readonly FieldInfo EffectsPlayerField =
-        AccessTools.Field(typeof(EffectsController), "player_0");
+        AccessTools.Field(typeof(EffectsController), "player");
 
     private static readonly MethodInfo EffectsBindMethod =
-        AccessTools.Method(typeof(EffectsController), "method_0");
+        AccessTools.Method(typeof(EffectsController), "PlayerCameraControllerCreated");
 
     private static readonly MethodInfo EffectStartedMethod =
-        AccessTools.Method(typeof(EffectsController), "method_11");
+        AccessTools.Method(typeof(EffectsController), "OnEffectStarted");
 
     private static readonly MethodInfo EffectRemovedMethod =
-        AccessTools.Method(typeof(EffectsController), "method_12");
+        AccessTools.Method(typeof(EffectsController), "OnEffectRemoved");
 
     private static readonly MethodInfo DamageReceivedMethod =
-        AccessTools.Method(typeof(EffectsController), "method_7");
+        AccessTools.Method(typeof(EffectsController), "OnPlayerDamaged");
 
     private static readonly MethodInfo ApplyDamageMethod =
-        AccessTools.Method(typeof(EffectsController), "method_6");
+        AccessTools.Method(typeof(EffectsController), "OnHealthApplyDamage");
 
     private static readonly MethodInfo DiedMethod =
-        AccessTools.Method(typeof(EffectsController), "method_9");
+        AccessTools.Method(typeof(EffectsController), "OnHealthDied");
 
     private static readonly MethodInfo BurnEyesMethod =
-        AccessTools.Method(typeof(EffectsController), "method_5");
+        AccessTools.Method(typeof(EffectsController), "OnHealthBurnEyes");
 
     private static readonly MethodInfo StimulatorBuffMethod =
-        AccessTools.Method(typeof(EffectsController), "method_13");
+        AccessTools.Method(typeof(EffectsController), "OnStimulatorBuff");
 
     private static readonly MethodInfo GlassesChangedMethod =
-        AccessTools.Method(typeof(EffectsController), "method_4");
+        AccessTools.Method(typeof(EffectsController), "OnGlassesChanged");
 
     // Unity lifecycle method name, cannot be obfuscated. Clears the internal
     // per-effect ActiveEffects lists (stun/contusion double-vision, radial blur,
@@ -52,10 +55,10 @@ internal static class DeathEffectsHelper
 
     public static void ClearDeathScreenEffects()
     {
-        if (!CameraClass.Exist)
+        if (!CameraManager.Exist)
             return;
 
-        var camera = CameraClass.Instance.Camera;
+        var camera = CameraManager.Instance.Camera;
         if (camera == null)
             return;
 
@@ -76,10 +79,10 @@ internal static class DeathEffectsHelper
 
     public static void RebindEffectsController(LocalPlayer newPlayer)
     {
-        if (newPlayer == null || !CameraClass.Exist)
+        if (newPlayer == null || !CameraManager.Exist)
             return;
 
-        var effects = CameraClass.Instance.EffectsController;
+        var effects = CameraManager.Instance.EffectsController;
         if (effects == null)
             return;
 
@@ -101,14 +104,14 @@ internal static class DeathEffectsHelper
         if (player?.HealthController == null)
             return;
 
-        player.HealthController.EffectStartedEvent -= CreateDelegate<Action<IEffect>>(effects, EffectStartedMethod);
-        player.HealthController.EffectRemovedEvent -= CreateDelegate<Action<IEffect>>(effects, EffectRemovedMethod);
-        player.OnDamageReceived -= CreateDelegate<Player.GDelegate65>(effects, DamageReceivedMethod);
-        player.HealthController.ApplyDamageEvent -= CreateDelegate<Action<EBodyPart, float, DamageInfoStruct>>(effects, ApplyDamageMethod);
+        player.HealthController.EffectStartedEvent -= CreateDelegate<Action<IHealthEffect>>(effects, EffectStartedMethod);
+        player.HealthController.EffectRemovedEvent -= CreateDelegate<Action<IHealthEffect>>(effects, EffectRemovedMethod);
+        player.OnDamageReceived -= CreateDelegate<Player.DamageDelegate>(effects, DamageReceivedMethod);
+        player.HealthController.ApplyDamageEvent -= CreateDelegate<Action<EBodyPart, float, DamageInfo>>(effects, ApplyDamageMethod);
         player.HealthController.DiedEvent -= CreateDelegate<Action<EDamageType>>(effects, DiedMethod);
         player.HealthController.BurnEyesEvent -= CreateDelegate<Action<Vector3, float, float>>(effects, BurnEyesMethod);
-        player.HealthController.StimulatorBuffEvent -= CreateDelegate<Action<IPlayerBuff>>(effects, StimulatorBuffMethod);
-        player.OnGlassesChanged -= CreateDelegate<Action<VisorsItemClass, bool>>(effects, GlassesChangedMethod);
+        player.HealthController.StimulatorBuffEvent -= CreateDelegate<Action<IStimulatorBuff>>(effects, StimulatorBuffMethod);
+        player.OnGlassesChanged -= CreateDelegate<Action<Visors, bool>>(effects, GlassesChangedMethod);
 
         EffectsPlayerField.SetValue(effects, null);
     }

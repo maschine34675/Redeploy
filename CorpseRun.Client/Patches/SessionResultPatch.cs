@@ -27,11 +27,11 @@ internal static class SessionResultPatch
                 new[]
                 {
                     typeof(Profile),
-                    typeof(LastPlayerStateClass),
+                    typeof(PlayerVisualRepresentation),
                     typeof(ESideType),
                     typeof(ExitStatus),
                     typeof(TimeSpan),
-                    typeof(ISession),
+                    typeof(IEftSession),
                     typeof(bool)
                 });
         }
@@ -56,7 +56,7 @@ internal static class SessionResultPatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "method_15");
+            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "GameEnd");
         }
 
         [PatchPostfix]

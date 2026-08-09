@@ -22,6 +22,7 @@ public sealed class CorpseRunRouter : StaticRouter
     [
         new RouteAction<EmptyRequestData>(
             "/corpserun/ping",
-            (url, info, sessionId, output) => new ValueTask<string>("\"pong\""))
+            // 4.1: jede Route-Action bekommt zusaetzlich ein CancellationToken
+            (url, info, sessionId, output, _) => new ValueTask<string>("\"pong\""))
     ];
 }

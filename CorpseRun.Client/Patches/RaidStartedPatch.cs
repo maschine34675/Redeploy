@@ -30,7 +30,7 @@ internal sealed class RaidStartedPatch : ModulePatch
 
         if (FikaCompatCheck.IsFikaLoaded)
         {
-            NotificationManagerClass.DisplayMessageNotification(
+            NotificationManager.DisplayMessageNotification(
                 "CorpseRun disabled: not compatible with Fika co-op.",
                 ENotificationDurationType.Long,
                 ENotificationIconType.Alert,
@@ -40,7 +40,7 @@ internal sealed class RaidStartedPatch : ModulePatch
 
         if (!ServerModCheck.IsServerModAvailable)
         {
-            NotificationManagerClass.DisplayMessageNotification(
+            NotificationManager.DisplayMessageNotification(
                 "CorpseRun disabled: server mod missing! (user/mods/CorpseRun)",
                 ENotificationDurationType.Long,
                 ENotificationIconType.Alert,

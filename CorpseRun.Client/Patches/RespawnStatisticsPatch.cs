@@ -1,4 +1,5 @@
 using CorpseRun.Services;
+using EFT;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System.Reflection;
@@ -19,16 +20,16 @@ internal static class RespawnStatisticsPatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(LocationStatisticsCollectorAbstractClass), nameof(LocationStatisticsCollectorAbstractClass.BeginStatisticsSession));
+            return AccessTools.Method(typeof(BaseStatisticsManager), nameof(BaseStatisticsManager.BeginStatisticsSession));
         }
 
         [PatchPostfix]
-        private static void Postfix(LocationStatisticsCollectorAbstractClass __instance)
+        private static void Postfix(BaseStatisticsManager __instance)
         {
             if (!RespawnSessionState.IsRespawnInProgress)
                 return;
 
-            RespawnStatisticsHelper.RestoreRaidVictims(__instance.Profile_0);
+            RespawnStatisticsHelper.RestoreRaidVictims(__instance.Profile);
         }
     }
 }

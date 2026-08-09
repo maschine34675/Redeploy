@@ -16,20 +16,20 @@ internal static class SpawnPointHelper
 
         try
         {
-            var location = game.Location_0;
+            var location = game.Location;
             if (location == null)
                 return;
 
-            var spawnPointManager = SpawnPointManagerClass.CreateFromScene(
-                new DateTime?(EFTDateTimeClass.LocalDateTimeFromUnixTime(location.UnixDateTime)),
+            var spawnPointManager = SpawnPointsCollection.CreateFromScene(
+                new DateTime?(DateTimeExtensions.LocalDateTimeFromUnixTime(location.UnixDateTime)),
                 location.SpawnPointParams);
 
-            var spawnSettings = SpawnSettingsStruct.CreateDefault();
+            var spawnSettings = SpawnSystemSettings.CreateDefault();
 
-            RespawnSessionState.CachedSpawnSystem = SpawnSystemCreatorClass.CreateSpawnSystem(
+            RespawnSessionState.CachedSpawnSystem = SpawnSystemFactory.CreateSpawnSystem(
                 spawnSettings,
                 () => 1f,
-                game.GameWorld_0,
+                game.GameWorld,
                 LocalGameAccessor.GetBotsController(game),
                 spawnPointManager);
         }
@@ -55,12 +55,12 @@ internal static class SpawnPointHelper
         {
             var spawnPoint = spawnSystem.SelectSpawnPoint(
                 ESpawnCategory.Player,
-                game.Profile_0.Info.Side,
+                game.Profile.Info.Side,
                 null,
                 null,
                 null,
                 null,
-                game.Profile_0.Id);
+                game.Profile.Id);
 
             if (spawnPoint != null)
                 return (spawnPoint.Position, spawnPoint.Rotation);

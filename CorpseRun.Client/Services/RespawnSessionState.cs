@@ -1,5 +1,6 @@
 using CorpseRun.Config;
 using EFT;
+using EFT.Game.Spawning;
 using UnityEngine;
 
 namespace CorpseRun.Services;

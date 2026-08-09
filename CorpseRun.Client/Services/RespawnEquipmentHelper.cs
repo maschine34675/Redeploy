@@ -41,9 +41,9 @@ internal static class RespawnEquipmentHelper
             if (oldEquipment == null)
                 return;
 
-            var factory = Singleton<ItemFactoryClass>.Instance;
+            var factory = Singleton<ItemFactory>.Instance;
             var newEquipment = (InventoryEquipment)factory.CreateItem(
-                factory.MongoID_0,
+                factory.NextId,
                 oldEquipment.TemplateId,
                 null);
 
@@ -65,13 +65,13 @@ internal static class RespawnEquipmentHelper
     private static void TryEquipEmptyPockets(
         InventoryEquipment oldEquipment,
         InventoryEquipment newEquipment,
-        ItemFactoryClass factory)
+        ItemFactory factory)
     {
         var oldPockets = oldEquipment.GetSlot(EquipmentSlot.Pockets).ContainedItem;
         if (oldPockets == null)
             return;
 
-        var newPockets = factory.CreateItem(factory.MongoID_0, oldPockets.TemplateId, null);
+        var newPockets = factory.CreateItem(factory.NextId, oldPockets.TemplateId, null);
         var result = newEquipment.GetSlot(EquipmentSlot.Pockets).AddWithoutRestrictions(newPockets);
 
         if (result.Failed)

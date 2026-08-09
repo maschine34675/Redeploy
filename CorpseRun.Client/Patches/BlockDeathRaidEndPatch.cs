@@ -33,7 +33,7 @@ internal static class BlockDeathRaidEndPatch
         if (!Settings.HasRespawnsRemaining(RespawnSessionState.RespawnsUsed))
             return false;
 
-        if (game?.Location_0?.Id == "hideout")
+        if (game?.Location?.Id == "hideout")
             return false;
 
         return true;
@@ -43,7 +43,7 @@ internal static class BlockDeathRaidEndPatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "method_19");
+            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "CG_Spawn");
         }
 
         [PatchPrefix]
@@ -64,7 +64,7 @@ internal static class BlockDeathRaidEndPatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "method_11");
+            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "InitiateGameStopping");
         }
 
         [PatchPrefix]

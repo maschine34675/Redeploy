@@ -1,4 +1,5 @@
 using Comfort.Common;
+using CommonAssets.Scripts.Game;
 using CorpseRun.Config;
 using CorpseRun.UI;
 using EFT;
@@ -33,10 +34,10 @@ public static class RespawnService
         if (!ServerModCheck.IsServerModAvailable)
             return;
 
-        if (game == null || game.Location_0?.Id == "hideout")
+        if (game == null || game.Location?.Id == "hideout")
             return;
 
-        var deadPlayer = game.LocalPlayer_0;
+        var deadPlayer = game.LocalPlayer;
         if (deadPlayer == null || !deadPlayer.IsYourPlayer)
             return;
 
@@ -168,7 +169,7 @@ public static class RespawnService
 
         try
         {
-            deadPlayer = game.LocalPlayer_0;
+            deadPlayer = game.LocalPlayer;
             oldOwner = LocalGameAccessor.GetPlayerOwner(game);
 
             LocalGameAccessor.UnsubscribeDeathHandler(game, deadPlayer);
@@ -180,14 +181,14 @@ public static class RespawnService
 
             ConsumeRespawnItem(deadPlayer);
 
-            ResetProfileHealth(game.Profile_0);
-            RespawnStatisticsHelper.SnapshotRaidVictims(game.Profile_0);
-            RespawnEquipmentHelper.PrepareNakedRespawnProfile(game.Profile_0, deadPlayer);
+            ResetProfileHealth(game.Profile);
+            RespawnStatisticsHelper.SnapshotRaidVictims(game.Profile);
+            RespawnEquipmentHelper.PrepareNakedRespawnProfile(game.Profile, deadPlayer);
 
             var (position, rotation) = SpawnPointHelper.ResolveSpawnTransform(game);
             var playerId = LocalGameAccessor.GetNextPlayerId(game);
 
-            var armsMode = BackendConfigAbstractClass.Config.UseHandsFastAnimator
+            var armsMode = AppEnvironment.Config.UseHandsFastAnimator
                 ? Player.EUpdateMode.Manual
                 : Player.EUpdateMode.Auto;
 
@@ -195,22 +196,22 @@ public static class RespawnService
             var localMode = raidSettings != null ? raidSettings.mode : ELocalMode.TRAINING;
 
             createTask = game.vmethod_3(
-                game.GameWorld_0,
+                game.GameWorld,
                 playerId,
                 position,
                 rotation,
                 "Player",
                 string.Empty,
                 EPointOfView.FirstPerson,
-                game.Profile_0,
+                game.Profile,
                 false,
                 game.UpdateQueue,
                 armsMode,
                 Player.EUpdateMode.Auto,
-                BackendConfigAbstractClass.Config.CharacterController.ClientPlayerMode,
+                AppEnvironment.Config.CharacterController.ClientPlayerMode,
                 () => 1f,
                 () => 1f,
-                new GClass2268(),
+                new LocalStatisticManager(),
                 LocalGameAccessor.GetSession(game),
                 localMode);
         }
@@ -238,8 +239,8 @@ public static class RespawnService
                 throw createTask.Exception?.InnerException ?? createTask.Exception;
 
             var newPlayer = createTask.Result;
-            newPlayer.Location = game.Location_0.Id;
-            game.LocalPlayer_0 = newPlayer;
+            newPlayer.Location = game.Location.Id;
+            game.LocalPlayer = newPlayer;
 
             LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
             LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
@@ -260,7 +261,7 @@ public static class RespawnService
             GamePlayerOwnerHelper.SetMyPlayer(newPlayer);
             FreecamCompatHelper.RebindOwner(newOwner);
             DynamicMapsCompatHelper.RebindPlayerMarker(newPlayer);
-            ExfiltrationControllerClass.Instance.InitSecretExfils(newPlayer);
+            ExfiltrationController.Instance.InitSecretExfils(newPlayer);
 
             CameraRebindHelper.RebindToPlayer(newPlayer);
             DeathEffectsHelper.RebindEffectsController(newPlayer);
@@ -293,7 +294,7 @@ public static class RespawnService
         if (owner == null)
             yield break;
 
-        if (!CurrentScreenSingletonClass.Instance.CheckCurrentScreen(EEftScreenType.BattleUI))
+        if (!EftScreenManager.Instance.CheckCurrentScreen(EEftScreenType.BattleUI))
             owner.ShowBattleUIScreen();
     }
 
@@ -386,7 +387,7 @@ public static class RespawnService
             return;
         }
 
-        var result = InteractionsHandlerClass.RemoveWithoutRestrictions(requiredItem, deadPlayer.InventoryController);
+        var result = ItemManipulator.RemoveWithoutRestrictions(requiredItem, deadPlayer.InventoryController);
         if (result.Failed)
             Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to consume respawn item: {result.Error}");
         else
@@ -467,7 +468,7 @@ public static class RespawnService
     {
         try
         {
-            NotificationManagerClass.DisplayMessageNotification(
+            NotificationManager.DisplayMessageNotification(
                 message,
                 ENotificationDurationType.Default,
                 icon,
@@ -482,6 +483,6 @@ public static class RespawnService
     private static bool IsWieldingWeapon(LocalPlayer player)
     {
         var item = player.HandsController?.Item;
-        return item is Weapon || item is KnifeItemClass || item is ThrowWeapItemClass;
+        return item is Weapon || item is Knife || item is ThrowWeap;
     }
 }

@@ -1,13 +1,17 @@
 # CorpseRun — Claude Code Handoff
 
+> **Stand `spt-4.1`-Branch:** SPT 4.1 / EFT 40743, v2.0.0. Membernamen im Code sind
+> die deobfuskierten 4.1-Namen; einzelne historische Abschnitte unten nennen noch
+> 4.0-Dekompilat-Namen (Class633/635/643, method_0/2/7, Bool_2, GClass3746 u. ä.).
+
 ## Projektkontext
 
 - **Ziel:** Nach Tod im Raid optional respawnen (nackt), eigene Leiche looten, Raid fortsetzen; bei Aufgeben normaler Raid-Abschluss.
-- **Stack:** BepInEx-Client + SPT-Server-Mod (.NET 9). Namensschema (siehe Memory `spt-mod-naming-convention`): GUID `com.maschine.CorpseRun` (Client + Server identisch), PluginName `maschine-CorpseRun`, Assemblies `maschine-CorpseRun.Client.dll` / `maschine-CorpseRun.Server.dll`, Quellordner `CorpseRun.Client/` + `CorpseRun.Server/`, user/mods-Ordner nur `CorpseRun`.
+- **Stack:** BepInEx-Client + SPT-Server-Mod (.NET 10). Namensschema (siehe Memory `spt-mod-naming-convention`): GUID `com.maschine.CorpseRun` (Client + Server identisch), PluginName `maschine-CorpseRun`, Assemblies `maschine-CorpseRun.Client.dll` / `maschine-CorpseRun.Server.dll`, Quellordner `CorpseRun.Client/` + `CorpseRun.Server/`, user/mods-Ordner nur `CorpseRun`.
 - **Vorlage:** Struktur/Patterns wie `KillAndDamageInfo` (Harmony `ModulePatch`/`AbstractPatch`, `Shared.props`).
-- **Repo:** `C:\SPT\Development\CorpseRun\`
-- **Spiel-Install:** `C:\SPT\` (Exe, Managed, BepInEx)
-- **User-Daten:** `C:\SPT\SPT\` (Profile, `user\mods`) — kann per `Shared.props.user` abweichen
+- **Repo (4.1-Arbeitskopie):** `D:\SPT41\Development\CorpseRun\` (Branch `spt-4.1`; 4.0-Stand liegt unter `C:\SPT\Development\CorpseRun\` auf `main`)
+- **Spiel-Install:** `D:\SPT41\` (Server-Maschine; auf dem PC `C:\SPT41\`, via Syncthing gespiegelt)
+- **User-Daten:** `D:\SPT41\SPT_Runtime\` (Profile, `user\mods`) — 4.1 hat den Ordner `SPT` in `SPT_Runtime` umbenannt; abweichend per `Shared.props.user`
 
 ## Wichtige Entscheidungen
 
@@ -17,12 +21,12 @@
 | Versicherung | `Profile.InsuredItems` **nie anfassen** (verwaiste Einträge überall harmlos; Server überschreibt Client-Liste eh). Frühere Filterung strippte Versicherung für gedroppte Items + ältere Leichen. |
 | Special Slots + behaltene Slots | **Immer** auf neues Equipment übertragen (keine Option mehr): Special Slots + `RetainedSlots` = SecuredContainer, Scabbard (Nahkampf), ArmBand — alles, was vanilla beim Tod behalten wird und auf Leichen unlootbar ist (`UnlootableComponent`). Leichen-Baum wird nie ins Post-Raid-Profil serialisiert → dort verbliebene Items wären unwiederbringlich weg (in-game bestätigt). Add-Fehler → Rollback auf Leiche. |
 | Kill-Stats | `EftStats.Victims` vor Respawn snapshotten; nach neuem Statistics-Session (Respawn) wiederherstellen. |
-| Raid-Ende blockieren | Patches auf `BaseLocalGame` (method_19/11/Stop) solange `PendingRespawnChoice`. |
+| Raid-Ende blockieren | Patches auf `BaseLocalGame` (`CG_Spawn`/`InitiateGameStopping`/`Stop`; 4.0: method_19/11) solange `PendingRespawnChoice`. |
 | Profil-Persistenz | **Client + Server** nötig: Client sanitized beim Swap; Server korrigiert `Inventory.Equipment` nach `SetInventory`. |
 | UI | IMGUI `RespawnPromptPanel`; Cursor muss pro Frame erzwungen werden (InputManager sperrt sonst). |
 | Spawn-Ort-Wahl | Im Post-Tod-Prompt (Buttons „nahe Leiche" / „am Spawnpunkt"), nicht mehr im F12-Config. `RespawnSessionState.SelectedSpawnMode` trägt die Wahl an `SpawnPointHelper`. |
-| Spawn-Schutz | `SpawnProtectionSeconds` (default 10 s): nach Respawn `SetDamageCoeff(0)`, danach alten Wert wiederherstellen (`ApplyDamage` skippt bei `DamageCoeff <= 0`). Endet **sofort**, sobald eine Waffe in der Hand ist (`HandsController.Item is Weapon/KnifeItemClass/ThrowWeapItemClass`) — sonst Exploit: Leiche looten + unverwundbar kämpfen. **Falle Auto-Draw:** Das Spiel zieht beim Spawn automatisch die erste verfügbare Waffe (`TrySetLastEquippedWeapon`→`SetFirstAvailableItem`) — nackt = übertragenes Messer → würde den Schutz sofort beenden. Deshalb: Coroutine steckt Auto-Draw weg (`SetEmptyHands`, Retry alle 0.5 s) und schaltet den Abbruch-Check erst scharf, nachdem die Hände einmal leer waren. Toasts (`NotificationManagerClass`) bei Start (grün) und Ende (gelb, unterscheidet Ablauf/Waffe). Idee aus PlayerLives (SPT 3.x). |
-| Respawn-Item | `RequiredRespawnItem` (default None; Dropdown: Defibrillator, Grizzly, Salewa, IFAK, AFAK, CMS, Surv12, CarFirstAidKit, Adrenaline, Propital). Check beim Tod (`RespawnSessionState.RespawnItemAvailable` → Prompt zeigt Warnung, Buttons weg), Verbrauch in `PerformRespawn` vor Equipment-Swap via `InteractionsHandlerClass.RemoveWithoutRestrictions`. Idee aus RevivalMod (SPT 3.x). |
+| Spawn-Schutz | `SpawnProtectionSeconds` (default 10 s): nach Respawn `SetDamageCoeff(0)`, danach alten Wert wiederherstellen (`ApplyDamage` skippt bei `DamageCoeff <= 0`). Endet **sofort**, sobald eine Waffe in der Hand ist (`HandsController.Item is Weapon/Knife/ThrowWeap`) — sonst Exploit: Leiche looten + unverwundbar kämpfen. **Falle Auto-Draw:** Das Spiel zieht beim Spawn automatisch die erste verfügbare Waffe (`TrySetLastEquippedWeapon`→`SetFirstAvailableItem`) — nackt = übertragenes Messer → würde den Schutz sofort beenden. Deshalb: Coroutine steckt Auto-Draw weg (`SetEmptyHands`, Retry alle 0.5 s) und schaltet den Abbruch-Check erst scharf, nachdem die Hände einmal leer waren. Toasts (`NotificationManager`) bei Start (grün) und Ende (gelb, unterscheidet Ablauf/Waffe). Idee aus PlayerLives (SPT 3.x). |
+| Respawn-Item | `RequiredRespawnItem` (default None; Dropdown: Defibrillator, Grizzly, Salewa, IFAK, AFAK, CMS, Surv12, CarFirstAidKit, Adrenaline, Propital). Check beim Tod (`RespawnSessionState.RespawnItemAvailable` → Prompt zeigt Warnung, Buttons weg), Verbrauch in `PerformRespawn` vor Equipment-Swap via `ItemManipulator.RemoveWithoutRestrictions`. Idee aus RevivalMod (SPT 3.x). |
 | Leichen-Optik | Eigene Leiche nutzt FP-Body → `UpdatePlayerRenders(ThirdPerson)` nach Corpse-Erstellung. |
 
 ## Relevante Dateien / Module
@@ -55,17 +59,19 @@
 
 ### Decompiled Referenz
 
-- `C:\SPT\Development\decompiled\Assembly-CSharp\` — z. B. `Corpse.cs`, `PlayerBody.UpdatePlayerRenders`, `GClass3746` (Cursor)
+- 4.1: `D:\SPT41\Development\_decompiled\<Namespace>\` — z. B. `EFT\BaseLocalGame.cs`, `EFT\PlayerBody.cs`, `EffectsController.cs`
+- 4.1-Serverquellen: `D:\SPT41\Development\_reference\server-csharp-main\Libraries\SPTarkov.Server.Core\`
+- 4.0 (eingefroren): `C:\SPT\Development\decompiled\Assembly-CSharp\`
 
 ## Build / Test
 
 ```powershell
-cd C:\SPT\Development\CorpseRun
+cd D:\SPT41\Development\CorpseRun
 
-# Client → C:\SPT\BepInEx\plugins\maschine-CorpseRun.Client.dll
+# Client → D:\SPT41\BepInEx\plugins\maschine-CorpseRun.Client.dll
 dotnet build CorpseRun.Client\CorpseRun.Client.csproj -c Release
 
-# Server → C:\SPT\SPT\user\mods\CorpseRun\maschine-CorpseRun.Server.dll
+# Server → D:\SPT41\SPT_Runtime\user\mods\CorpseRun\maschine-CorpseRun.Server.dll
 dotnet build CorpseRun.Server\CorpseRun.Server.csproj -c Release
 ```
 
@@ -134,13 +140,13 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 ### Visor-Overlay bleibt nach Respawn / Fremd-Mods finden PlayerCameraController nicht (Freecam-NRE)
 
 - **Ursache:** Die `PlayerCameraController`-Komponente sitzt auf dem Player-gameObject. Alter Ansatz (nur `controller.Player` tauschen) ließ sie auf der **Leiche**: Visor/NVG-Observer blieben an den toten Player gebunden (Overlay fror ein) und Mods mit `player.GetComponent<PlayerCameraController>()` (z. B. Terkoiz.Freecam) bekamen auf dem neuen Player `null` → NRE.
-- **Fix:** `CameraRebindHelper.RebindToPlayer` zerstört den alten Controller und erzeugt ihn per `PlayerCameraController.Create(newPlayer)` neu (Raid-Start-Pfad; `method_0` bindet alle Observer frisch). Danach `method_1/4/5`-Initial-Sync (kein Changed-Event beim nackten Player) + `FreecamCompatHelper` (s. u.).
+- **Fix:** `CameraRebindHelper.RebindToPlayer` zerstört den alten Controller und erzeugt ihn per `PlayerCameraController.Create(newPlayer)` neu (Raid-Start-Pfad; `method_0` bindet alle Observer frisch). Danach `method_1/4/5`-Initial-Sync (Namen in 4.1 unverändert; kein Changed-Event beim nackten Player) + `FreecamCompatHelper` (s. u.).
 - **FALLE — `OnDestroy`-Teardown (durch adversariale Verifikation gefunden):** `PlayerCameraController.OnDestroy` macht: Observer-Unbinds, `VisorSwitcher.Deinit()` (nullt Callback des **geteilten** HysteresisFilters), `AudioListenerConsistencyManager.Reset()` (parkt Listener bei (0,-1000,0)), `Singleton.Release(Singleton.Instance)` (released die **aktuelle** Instanz!) und feuert das statische Destroyed-Event (EffectsController nullt `player_0`). Deshalb:
   1. **`DestroyImmediate`, nie `Destroy`** — deferred liefe das Teardown am Frame-Ende gegen den NEUEN Controller (Singleton weg → FoV-Zoom tot, Effects-Rebind no-op, 2. Respawn: zwei aktive Controller kämpfen um die Kamera).
-  2. **`RepairSharedCameraState`** danach: `VisorSwitcher.Init(CameraClass.method_17-Delegate)` (sonst NRE beim nächsten Visier-Toggle) + `AudioListenerConsistencyManager.Follow(camera.transform)` (sonst 3D-Audio dauerhaft tot). Beides initialisiert das Spiel nur einmal pro Raid (`CameraClass.method_2/method_7`).
+  2. **`RepairSharedCameraState`** danach: `VisorSwitcher.Init(CameraManager.CG_method_17-Delegate)` (sonst NRE beim nächsten Visier-Toggle) + `AudioListenerConsistencyManager.Follow(camera.transform)` (sonst 3D-Audio dauerhaft tot). Beides initialisiert das Spiel nur einmal pro Raid (4.0: `CameraClass.method_2/method_7`).
   3. EffectsController-`player_0=null` (via Destroyed-Event) wird vom direkt folgenden `RebindEffectsController` im selben Frame repariert — Reihenfolge nicht ändern!
 - **Freecam-Kompat:** `FreecamCompatHelper.RebindOwner` (nach Owner-Erstellung): setzt per Reflection Freecams gecachtes `_gamePlayerOwner`-Feld auf den neuen Owner (alter wurde zerstört → MissingReferenceException beim Toggle) und force-exitet den Freecam-Modus (`Freecam.IsActive=false`, `_controlsToggled=false`), falls man in Freecam gestorben ist. No-op ohne Freecam.
-- **Freecam „Kamera klebt im Kopf" nach Respawn:** Log-Diagnose ergab: Operation-Switch (`GClass3690`) und POV (`FreeCamera`) funktionieren nach dem Controller-Recreate einwandfrei — die Kamera IST frei. Verbleibende Ursache: Freecams Movement-Script (`Freecam`, beim Raid-Start per `AddComponent` auf das Kamera-GO gelegt und im Feld `_freeCamScript` gecacht) läuft nicht mehr (zerstört oder auf stale Kamera-Objekt). Tückisch: `IsActive` ist ein plain bool-Feld → Setzen wirft nie, `IsFreecamActive` bleibt true (ForceSetPosition geblockt) — Kamera frei, aber niemand bewegt sie. → `FreecamCompatHelper.EnsureFreecamScriptAlive()` im Enter-Postfix: prüft Unity-fake-null + GameObject-Match mit `CameraClass.Instance.Camera`; bei Bedarf Script auf der Live-Kamera neu erstellen, `_freeCamScript`/`_mainCamera`-Felder umbiegen, `IsActive=true`. Zusätzlich Postfixe auf `SetPlayerToFreecamMode`/`SetPlayerToFirstPersonMode` (lazy beim Raid-Start aktiviert, Plugin-Ladereihenfolge!) mit Operation-Force (inzwischen als unnötig belegt, bleibt als Absicherung) + Diagnose-Log.
+- **Freecam „Kamera klebt im Kopf" nach Respawn:** Log-Diagnose ergab: Operation-Switch (`LockCameraState`, 4.0: `GClass3690`) und POV (`FreeCamera`) funktionieren nach dem Controller-Recreate einwandfrei — die Kamera IST frei. Verbleibende Ursache: Freecams Movement-Script (`Freecam`, beim Raid-Start per `AddComponent` auf das Kamera-GO gelegt und im Feld `_freeCamScript` gecacht) läuft nicht mehr (zerstört oder auf stale Kamera-Objekt). Tückisch: `IsActive` ist ein plain bool-Feld → Setzen wirft nie, `IsFreecamActive` bleibt true (ForceSetPosition geblockt) — Kamera frei, aber niemand bewegt sie. → `FreecamCompatHelper.EnsureFreecamScriptAlive()` im Enter-Postfix: prüft Unity-fake-null + GameObject-Match mit `CameraClass.Instance.Camera`; bei Bedarf Script auf der Live-Kamera neu erstellen, `_freeCamScript`/`_mainCamera`-Felder umbiegen, `IsActive=true`. Zusätzlich Postfixe auf `SetPlayerToFreecamMode`/`SetPlayerToFirstPersonMode` (lazy beim Raid-Start aktiviert, Plugin-Ladereihenfolge!) mit Operation-Force (inzwischen als unnötig belegt, bleibt als Absicherung) + Diagnose-Log.
 - **Dateien:** `CorpseRun.Client/Services/CameraRebindHelper.cs`, `CorpseRun.Client/Services/FreecamCompatHelper.cs`
 
 ### DynamicMaps: eigener Standort nach Respawn nicht mehr angezeigt
@@ -157,7 +163,7 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 
 ### Meds/Essen nach Respawn nicht nutzbar (Animation läuft, Vorgang hängt)
 
-- **Ursache:** `GClass3010` (Player-ActiveHealthController) tickt Effekte nur wenn `Bool_2 == true` (`ManualEffectUpdate`-Guard). Das Flag setzt erst `GClass3010.Start()` — beim normalen Raid-Start von `LocalGame.Spawn()` aufgerufen. Der Respawn-Flow erstellte den neuen Player ohne `Start()` → MedEffect (schließt den Use-Vorgang über `EffectRemovedEvent` → `ObservedMedsControllerClass.method_8` ab) tickt nie → Vorgang hängt bis zum manuellen Abbruch. Betrifft alle Health-Effekte (auch Existence/Energie-Drain, Blutungen).
+- **Ursache:** `PlayerHealthController` (4.0: `GClass3010`) tickt Effekte nur wenn `Bool_2 == true` (`ManualEffectUpdate`-Guard, 4.0-Name). Das Flag setzt erst `PlayerHealthController.Start()` — beim normalen Raid-Start von `LocalGame.Spawn()` aufgerufen. Der Respawn-Flow erstellte den neuen Player ohne `Start()` → MedEffect (schließt den Use-Vorgang über `EffectRemovedEvent` → `ObservedMedsControllerClass.method_8` ab) tickt nie → Vorgang hängt bis zum manuellen Abbruch. Betrifft alle Health-Effekte (auch Existence/Energie-Drain, Blutungen).
 - **Fix:** `RespawnService.ApplyRespawnHealth` ruft `player.PlayerHealthController?.Start()` vor `RestoreFullHealth()` auf. Setzt auch `UpdateTime` auf jetzt (frischer Zeitstempel für neue Effekte).
 - **Datei:** `CorpseRun.Client/Services/RespawnService.cs`
 
@@ -194,4 +200,4 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 7. **Cursor einmal setzen genügt** — muss pro Frame gehalten werden.
 8. **Profil-Korruption ist immer unrettbar** — oft nur falsche `equipment`-ID in JSON.
 9. **Csproj heißt `CorpseRun.csproj`** — korrekt: `CorpseRun.Client.csproj`.
-10. **Commits/Pushes ohne explizite User-Anfrage** — laut Projekt-Regeln vermeiden.
+10. **Abgeschlossene Änderungen liegen lassen** — nach fertigen, gebauten Änderungen wird automatisch committed (aktuelle Projekt-Konvention; ersetzt die frühere Regel „keine Commits ohne Anfrage").

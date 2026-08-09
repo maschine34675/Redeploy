@@ -35,7 +35,7 @@ internal static class RespawnOwnerCleanupPatch
                 return true;
 
             // Do not invoke CleanupOnDestroy virtually — that re-enters this prefix and overflows the stack.
-            if (OwnerDisposableField.GetValue(__instance) is CompositeDisposableClass disposable)
+            if (OwnerDisposableField.GetValue(__instance) is CompositeDisposable disposable)
                 disposable.Dispose();
 
             return false;

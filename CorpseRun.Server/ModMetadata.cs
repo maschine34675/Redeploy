@@ -1,18 +1,19 @@
 using SPTarkov.Server.Core.Models.Spt.Mod;
+using Range = SemanticVersioning.Range;
 
 namespace CorpseRun.Server;
 
-public record ModMetadata : AbstractModMetadata
+public record ModMetadata : IModMetadata
 {
-    public override string ModGuid { get; init; } = "com.maschine.CorpseRun";
-    public override string Name { get; init; } = "CorpseRun";
-    public override string Author { get; init; } = "maschine";
-    public override List<string>? Contributors { get; init; }
-    public override SemanticVersioning.Version Version { get; init; } = new("1.0.0");
-    public override SemanticVersioning.Range SptVersion { get; init; } = new("~4.0.5");
-    public override List<string>? Incompatibilities { get; init; }
-    public override Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }
-    public override string? Url { get; init; } = "https://github.com/maschine34675/CorpseRun";
-    public override string License { get; init; } = "MIT";
-    public override bool? IsBundleMod { get; init; } = false;
+    public string ModGuid { get; init; } = "com.maschine.CorpseRun";
+    public string Name { get; init; } = "CorpseRun";
+    public string Author { get; init; } = "maschine";
+    public List<string>? Contributors { get; init; }
+    public SemanticVersioning.Version Version { get; init; } = new("2.0.0");
+    public Range SptVersion { get; init; } = new("~4.1.0");
+    public bool HasPrepatcher { get; init; } = false;
+    public List<string>? Incompatibilities { get; init; }
+    public Dictionary<string, Range>? ModDependencies { get; init; }
+    public string? Url { get; init; } = "https://github.com/maschine34675/CorpseRun";
+    public string License { get; init; } = "MIT";
 }

@@ -19,10 +19,10 @@ internal static class CameraRebindHelper
     private static readonly MethodInfo ThermalSyncMethod =
         AccessTools.Method(typeof(PlayerCameraController), "method_5");
 
-    // CameraClass.method_17 (VisorEffect.SetIntensity) is the callback the game feeds
+    // CameraManager.CG_method_17 (VisorEffect.SetIntensity) is the callback the game feeds
     // into VisorSwitcher.Init once per raid during camera setup.
     private static readonly MethodInfo VisorIntensityMethod =
-        AccessTools.Method(typeof(CameraClass), "method_17");
+        AccessTools.Method(typeof(CameraManager), "CG_method_17");
 
     /// <summary>
     /// Destroys the controller living on the dead player's gameObject and recreates it on the
@@ -72,7 +72,7 @@ internal static class CameraRebindHelper
     /// </summary>
     private static void RepairSharedCameraState()
     {
-        var cameraClass = CameraClass.Instance;
+        var cameraClass = CameraManager.Instance;
 
         if (cameraClass.VisorSwitcher != null && VisorIntensityMethod != null)
         {
@@ -103,7 +103,7 @@ internal static class CameraRebindHelper
 
     private static void EnsureCameraActive(LocalPlayer player)
     {
-        var cameraClass = CameraClass.Instance;
+        var cameraClass = CameraManager.Instance;
         var camera = cameraClass.Camera;
         if (camera == null)
             return;

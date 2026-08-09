@@ -3,7 +3,7 @@
   <Import Project="..\Shared.props" />
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CorpseRun</RootNamespace>
     <AssemblyName>maschine-CorpseRun.Server</AssemblyName>
     <Company>https://github.com/maschine34675/CorpseRun</Company>
@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <OutputPath>..\build\server\$(Configuration)\$(AssemblyName)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
@@ -22,10 +22,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SPTarkov.Common" Version="4.0.5" ExcludeAssets="runtime" />
-    <PackageReference Include="SPTarkov.DI" Version="4.0.5" ExcludeAssets="runtime" />
-    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.5" ExcludeAssets="runtime" />
-    <PackageReference Include="SPTarkov.Reflection" Version="4.0.5" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.Common" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.DI" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.1.0" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <Target Name="DeployToSpt" AfterTargets="Build" Condition="Exists('$(SPTUserMods)')">

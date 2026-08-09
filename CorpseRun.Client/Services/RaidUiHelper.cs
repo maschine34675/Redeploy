@@ -25,7 +25,7 @@ internal static class RaidUiHelper
 
     private static readonly FieldInfo BlackScreenCoroutineField =
 
-        AccessTools.Field(typeof(PreloaderUI), "coroutine_0");
+        AccessTools.Field(typeof(PreloaderUI), "_showBlackImageCoroutine");
 
 
 
@@ -37,7 +37,7 @@ internal static class RaidUiHelper
 
     private static readonly FieldInfo TimerStringBuilderField =
 
-        AccessTools.Field(typeof(ExtractionTimersPanel), "stringBuilder_0");
+        AccessTools.Field(typeof(ExtractionTimersPanel), "_stringBuilder");
 
 
 
@@ -141,7 +141,7 @@ internal static class RaidUiHelper
 
             timer.Reveal();
 
-            timer.ProfileId = game.Profile_0.Id;
+            timer.ProfileId = game.Profile.Id;
 
             timer.ForceUpdateExfiltrationPointsVisitedStatus();
 
@@ -155,7 +155,7 @@ internal static class RaidUiHelper
 
                 mainTimer.Show(
 
-                    EFTDateTimeClass.UtcNow.AddSeconds(game.GameTimer.SessionSeconds()),
+                    DateTimeExtensions.UtcNow.AddSeconds(game.GameTimer.SessionSeconds()),
 
                     builder,
 

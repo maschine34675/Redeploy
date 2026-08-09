@@ -27,7 +27,7 @@ internal static class FreecamCompatHelper
     private static FieldInfo _mainCameraField;
 
     private static readonly FieldInfo CameraOperationField =
-        AccessTools.Field(typeof(PlayerCameraController), "gclass3688_0");
+        AccessTools.Field(typeof(PlayerCameraController), "_currentCameraState");
 
     private static bool _patchesEnabled;
 
@@ -62,7 +62,7 @@ internal static class FreecamCompatHelper
         [PatchPostfix]
         private static void Postfix()
         {
-            ForceOperation<GClass3690>("freecam");
+            ForceOperation<LockCameraState>("freecam");
             EnsureFreecamScriptAlive();
         }
     }
@@ -78,10 +78,10 @@ internal static class FreecamCompatHelper
     {
         try
         {
-            if (_freecamScriptField == null || _freecamScriptType == null || !CameraClass.Exist)
+            if (_freecamScriptField == null || _freecamScriptType == null || !CameraManager.Exist)
                 return;
 
-            var camera = CameraClass.Instance.Camera;
+            var camera = CameraManager.Instance.Camera;
             if (camera == null)
                 return;
 
@@ -125,11 +125,11 @@ internal static class FreecamCompatHelper
         [PatchPostfix]
         private static void Postfix()
         {
-            ForceOperation<FirstPersonCameraOperationClass>("first person");
+            ForceOperation<FirstPersonCameraState>("first person");
         }
     }
 
-    private static void ForceOperation<TOperation>(string label) where TOperation : GClass3688
+    private static void ForceOperation<TOperation>(string label) where TOperation : CameraState
     {
         try
         {

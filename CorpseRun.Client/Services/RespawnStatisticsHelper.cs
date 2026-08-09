@@ -1,11 +1,12 @@
 using EFT;
+using EFT.BinarySerialization;
 using System.Collections.Generic;
 
 namespace CorpseRun.Services;
 
 internal static class RespawnStatisticsHelper
 {
-    private static List<GClass2201> _victimsSnapshot;
+    private static List<VictimStats> _victimsSnapshot;
 
     public static void SnapshotRaidVictims(Profile profile)
     {
@@ -15,11 +16,11 @@ internal static class RespawnStatisticsHelper
             return;
         }
 
-        _victimsSnapshot = new List<GClass2201>(profile.EftStats.Victims.Count);
+        _victimsSnapshot = new List<VictimStats>(profile.EftStats.Victims.Count);
         foreach (var victim in profile.EftStats.Victims)
         {
             if (victim != null)
-                _victimsSnapshot.Add(GClass3694.ClonePolymorph<GClass2201>(victim));
+                _victimsSnapshot.Add(BinaryCloneExtensions.ClonePolymorph<VictimStats>(victim));
         }
     }
 

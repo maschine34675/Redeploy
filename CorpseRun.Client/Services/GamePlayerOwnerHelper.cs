@@ -7,7 +7,7 @@ namespace CorpseRun.Services;
 internal static class GamePlayerOwnerHelper
 {
     private static readonly FieldInfo MyPlayerField =
-        AccessTools.Field(typeof(GamePlayerOwner), "player_1");
+        AccessTools.Field(typeof(GamePlayerOwner), "_myPlayer");
 
     public static void SetMyPlayer(Player player)
     {

@@ -12,7 +12,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.maschine.CorpseRun";
     public const string PluginName = "maschine-CorpseRun";
-    public const string PluginVersion = "1.0.0";
+    public const string PluginVersion = "2.0.0";
 
     public static ManualLogSource ModLogger { get; private set; }
 
