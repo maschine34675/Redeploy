@@ -15,7 +15,6 @@ public class RespawnPromptPanel : MonoBehaviour
     private GUIStyle _warningStyle;
     private GUIStyle _buttonStyle;
     private GUIStyle _windowStyle;
-    private Texture2D _dimTex;
     private bool _stylesReady;
 
     private void Awake()
@@ -63,10 +62,8 @@ public class RespawnPromptPanel : MonoBehaviour
 
         GUI.depth = 100000;
 
-        var fullScreen = new Rect(0f, 0f, Screen.width, Screen.height);
-        GUI.color = new Color(1f, 1f, 1f, 0.72f);
-        GUI.DrawTexture(fullScreen, _dimTex);
-        GUI.color = Color.white;
+        // No full-screen dim: the background stays visible on purpose so a
+        // KillcamReplay death replay can play behind the prompt.
 
         var width = Mathf.Min(520f, Screen.width * 0.9f);
         var height = Settings.RequiredRespawnItem.Value != "None" ? 320f : 290f;
@@ -141,10 +138,6 @@ public class RespawnPromptPanel : MonoBehaviour
     {
         if (_stylesReady)
             return;
-
-        _dimTex = new Texture2D(1, 1);
-        _dimTex.SetPixel(0, 0, Color.black);
-        _dimTex.Apply();
 
         _windowStyle = new GUIStyle(GUI.skin.window)
         {
