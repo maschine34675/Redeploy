@@ -114,7 +114,7 @@ internal static class BlockDeathRaidEndPatch
             if (!RespawnSessionState.PendingRespawnChoice && !RespawnSessionState.IsRespawnInProgress)
                 return;
 
-            Plugin.ModLogger.LogWarning("[CorpseRun] External raid end while respawn pending — standing down.");
+            Plugin.ModLogger.LogWarning("External raid end while respawn pending — standing down.");
             RespawnSessionState.HasGivenUp = true;
             RespawnSessionState.PendingRespawnChoice = false;
             UI.RespawnPromptPanel.Instance?.Hide();

@@ -87,7 +87,7 @@ internal static class RaidUiHelper
 
         {
 
-            Plugin.ModLogger.LogWarning($"[CorpseRun] ClearBlackScreen failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"ClearBlackScreen failed: {ex.Message}");
 
         }
 
@@ -175,7 +175,7 @@ internal static class RaidUiHelper
 
         {
 
-            Plugin.ModLogger.LogWarning($"[CorpseRun] RestoreExtractionTimer failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"RestoreExtractionTimer failed: {ex.Message}");
 
         }
 

@@ -35,7 +35,7 @@ internal static class SpawnPointHelper
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogError($"[CorpseRun] Failed to cache spawn system: {ex}");
+            Plugin.ModLogger.LogError($"Failed to cache spawn system: {ex}");
         }
     }
 

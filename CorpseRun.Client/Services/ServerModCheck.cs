@@ -31,7 +31,7 @@ public static class ServerModCheck
                 if (_available != true)
                 {
                     Plugin.ModLogger.LogError(
-                        "[CorpseRun] Server mod not detected (/corpserun/ping failed). " +
+                        "Server mod not detected (/corpserun/ping failed). " +
                         "Respawn is DISABLED to protect the profile. " +
                         "Install maschine-CorpseRun.Server.dll into SPT/user/mods/CorpseRun/.");
                 }

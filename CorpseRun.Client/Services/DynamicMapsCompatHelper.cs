@@ -51,11 +51,11 @@ internal static class DynamicMapsCompatHelper
                 return;
 
             _markerPlayerProperty.SetValue(marker, newPlayer, null);
-            Plugin.ModLogger.LogInfo("[CorpseRun] DynamicMaps compat: rebound own-position marker to new player.");
+            Plugin.ModLogger.LogInfo("DynamicMaps compat: rebound own-position marker to new player.");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] DynamicMaps compat rebind failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"DynamicMaps compat rebind failed: {ex.Message}");
         }
     }
 

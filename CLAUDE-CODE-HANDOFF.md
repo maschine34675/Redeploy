@@ -85,7 +85,7 @@ dotnet build CorpseRun.Server\CorpseRun.Server.csproj -c Release
 6. Versichertes Gear auf Leiche → Versicherer-Meldung nach Raid
 7. Kills vor Respawn → auf Raid-End-Screen sichtbar
 
-**Logs:** BepInEx-Log; Server-Konsole. Mod prefix: `[CorpseRun]`.
+**Logs:** BepInEx-Log (Client-Zeilen erscheinen automatisch als `[Info :maschine-CorpseRun.Client]`, kein manuelles Präfix — siehe Memory `spt-log-prefix-convention`); Server-Konsole (Server loggt aktuell nichts; falls doch: manuelles `[CorpseRun]`-Präfix nötig).
 
 ## Codex-Review 2026-07-29 — Verifikations-Ergebnis (2026-07-30)
 

@@ -32,7 +32,7 @@ public class RespawnPromptPanel : MonoBehaviour
     {
         _visible = true;
         _windowRect = default;
-        Plugin.ModLogger.LogInfo("[CorpseRun] Respawn prompt shown.");
+        Plugin.ModLogger.LogInfo("Respawn prompt shown.");
     }
 
     public void Hide()

@@ -33,7 +33,7 @@ internal static class RespawnEquipmentHelper
 
             if (CorpseField(deadPlayer) == null)
             {
-                Plugin.ModLogger.LogWarning("[CorpseRun] No corpse found; skipping naked equipment swap.");
+                Plugin.ModLogger.LogWarning("No corpse found; skipping naked equipment swap.");
                 return;
             }
 
@@ -53,11 +53,11 @@ internal static class RespawnEquipmentHelper
 
             EquipmentField(profile.Inventory) = newEquipment;
             SanitizeProfileInventoryReferences(profile);
-            Plugin.ModLogger.LogInfo("[CorpseRun] Profile equipment swapped; corpse retains raid loadout.");
+            Plugin.ModLogger.LogInfo("Profile equipment swapped; corpse retains raid loadout.");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogError($"[CorpseRun] Naked equipment swap failed: {ex}");
+            Plugin.ModLogger.LogError($"Naked equipment swap failed: {ex}");
             throw;
         }
     }
@@ -75,7 +75,7 @@ internal static class RespawnEquipmentHelper
         var result = newEquipment.GetSlot(EquipmentSlot.Pockets).AddWithoutRestrictions(newPockets);
 
         if (result.Failed)
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to equip empty pockets: {result.Error}");
+            Plugin.ModLogger.LogWarning($"Failed to equip empty pockets: {result.Error}");
     }
 
     // Secure container and special slots always transfer: the corpse tree is never
@@ -135,7 +135,7 @@ internal static class RespawnEquipmentHelper
         var removeResult = oldSlot.RemoveItemWithoutRestrictions();
         if (removeResult.Failed)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to detach {label} from corpse: {removeResult.Error}");
+            Plugin.ModLogger.LogWarning($"Failed to detach {label} from corpse: {removeResult.Error}");
             return;
         }
 
@@ -146,7 +146,7 @@ internal static class RespawnEquipmentHelper
             // serialized equipment trees at raid end.
             var rollback = oldSlot.AddWithoutRestrictions(item);
             Plugin.ModLogger.LogWarning(
-                $"[CorpseRun] Failed to transfer {label}: {addResult.Error} — " +
+                $"Failed to transfer {label}: {addResult.Error} — " +
                 (rollback.Failed ? $"ROLLBACK ALSO FAILED: {rollback.Error}" : "rolled back onto corpse."));
         }
     }

@@ -22,7 +22,7 @@ internal static class FikaCompatCheck
                 if (_fikaLoaded == true)
                 {
                     Plugin.ModLogger.LogWarning(
-                        "[CorpseRun] Fika detected — CorpseRun is disabled (respawn is incompatible with co-op).");
+                        "Fika detected — CorpseRun is disabled (respawn is incompatible with co-op).");
                 }
             }
 

@@ -54,7 +54,7 @@ public static class RespawnService
         RestoreRaidUiAfterDeath(game, deadPlayer);
         game.StartCoroutine(FixOwnCorpseRenders(deadPlayer));
 
-        Plugin.ModLogger.LogInfo($"[CorpseRun] Death intercepted. Respawns used: {RespawnSessionState.RespawnsUsed}/{Settings.MaxRespawnsPerRaid.Value}");
+        Plugin.ModLogger.LogInfo($"Death intercepted. Respawns used: {RespawnSessionState.RespawnsUsed}/{Settings.MaxRespawnsPerRaid.Value}");
 
         RespawnPromptPanel.Instance?.Show();
     }
@@ -75,11 +75,11 @@ public static class RespawnService
         try
         {
             deadPlayer.PlayerBody?.UpdatePlayerRenders(EPointOfView.ThirdPerson, deadPlayer.Side);
-            Plugin.ModLogger.LogInfo("[CorpseRun] Corpse renders switched to third person.");
+            Plugin.ModLogger.LogInfo("Corpse renders switched to third person.");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to fix corpse renders: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Failed to fix corpse renders: {ex.Message}");
         }
     }
 
@@ -107,7 +107,7 @@ public static class RespawnService
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] UI restore after death failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"UI restore after death failed: {ex.Message}");
         }
     }
 
@@ -121,7 +121,7 @@ public static class RespawnService
         RespawnSessionState.PendingRespawnChoice = false;
         RespawnPromptPanel.Instance?.Hide();
 
-        Plugin.ModLogger.LogInfo("[CorpseRun] Player gave up — ending raid as Killed.");
+        Plugin.ModLogger.LogInfo("Player gave up — ending raid as Killed.");
         LocalGameAccessor.InvokeDeathScreen(game);
     }
 
@@ -149,13 +149,13 @@ public static class RespawnService
 
         if (failure != null)
         {
-            Plugin.ModLogger.LogError($"[CorpseRun] Respawn failed: {failure}");
+            Plugin.ModLogger.LogError($"Respawn failed: {failure}");
             GiveUpRaid();
         }
         else
         {
             RespawnSessionState.RegisterRespawnUsed();
-            Plugin.ModLogger.LogInfo("[CorpseRun] Respawn complete.");
+            Plugin.ModLogger.LogInfo("Respawn complete.");
         }
 
         RespawnSessionState.IsRespawnInProgress = false;
@@ -383,15 +383,15 @@ public static class RespawnService
 
         if (requiredItem == null)
         {
-            Plugin.ModLogger.LogWarning("[CorpseRun] Required respawn item not found at consume time; respawning anyway.");
+            Plugin.ModLogger.LogWarning("Required respawn item not found at consume time; respawning anyway.");
             return;
         }
 
         var result = ItemManipulator.RemoveWithoutRestrictions(requiredItem, deadPlayer.InventoryController);
         if (result.Failed)
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to consume respawn item: {result.Error}");
+            Plugin.ModLogger.LogWarning($"Failed to consume respawn item: {result.Error}");
         else
-            Plugin.ModLogger.LogInfo($"[CorpseRun] Consumed respawn item {Settings.RequiredRespawnItem.Value}.");
+            Plugin.ModLogger.LogInfo($"Consumed respawn item {Settings.RequiredRespawnItem.Value}.");
     }
 
     private static IEnumerator ApplySpawnProtection(LocalPlayer player)
@@ -403,7 +403,7 @@ public static class RespawnService
         var healthController = player.ActiveHealthController;
         var originalCoeff = healthController.DamageCoeff;
         healthController.SetDamageCoeff(0f);
-        Plugin.ModLogger.LogInfo($"[CorpseRun] Spawn protection active for {duration:0.#}s.");
+        Plugin.ModLogger.LogInfo($"Spawn protection active for {duration:0.#}s.");
         ShowToast($"Spawn protection active: {duration:0}s", ENotificationIconType.Default, Color.green);
 
         var endedByWeapon = false;
@@ -429,7 +429,7 @@ public static class RespawnService
                 {
                     // Never call SetEmptyHands mid hands-animation — that corrupts the
                     // HandsController (documented hard-won lesson in PlayerLives).
-                    Plugin.ModLogger.LogInfo("[CorpseRun] Stowing auto-drawn weapon during spawn protection.");
+                    Plugin.ModLogger.LogInfo("Stowing auto-drawn weapon during spawn protection.");
                     player.SetEmptyHands(null);
                     nextStowAttempt = elapsed + 1.5f;
                 }
@@ -437,7 +437,7 @@ public static class RespawnService
             else if (IsWieldingWeapon(player))
             {
                 // Grabbing a weapon from the corpse would otherwise let the player fight while invulnerable.
-                Plugin.ModLogger.LogInfo("[CorpseRun] Spawn protection ended early: weapon equipped.");
+                Plugin.ModLogger.LogInfo("Spawn protection ended early: weapon equipped.");
                 endedByWeapon = true;
                 break;
             }
@@ -456,7 +456,7 @@ public static class RespawnService
         if (player != null && player.HealthController != null && player.HealthController.IsAlive)
         {
             player.ActiveHealthController.SetDamageCoeff(originalCoeff);
-            Plugin.ModLogger.LogInfo("[CorpseRun] Spawn protection ended.");
+            Plugin.ModLogger.LogInfo("Spawn protection ended.");
             ShowToast(
                 endedByWeapon ? "Spawn protection ended: weapon equipped!" : "Spawn protection expired!",
                 ENotificationIconType.Alert,
@@ -476,7 +476,7 @@ public static class RespawnService
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Failed to show notification: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Failed to show notification: {ex.Message}");
         }
     }
 

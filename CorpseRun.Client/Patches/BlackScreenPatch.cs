@@ -32,7 +32,7 @@ internal static class BlackScreenPatch
             if (!ShouldBlock())
                 return true;
 
-            Plugin.ModLogger.LogInfo("[CorpseRun] Blocked raid-end black screen while respawn is pending.");
+            Plugin.ModLogger.LogInfo("Blocked raid-end black screen while respawn is pending.");
             return false;
         }
     }

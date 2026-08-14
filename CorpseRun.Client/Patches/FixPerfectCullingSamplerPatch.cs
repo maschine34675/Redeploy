@@ -19,7 +19,7 @@ internal sealed class FixPerfectCullingSamplerPatch : ModulePatch
         _samplerType = AccessTools.TypeByName("Koenigz.PerfectCulling.EFT.PerfectCullingCrossSceneSampler");
         if (_samplerType == null)
         {
-            Plugin.ModLogger.LogWarning("[CorpseRun] PerfectCullingCrossSceneSampler type not found — sampler patch skipped");
+            Plugin.ModLogger.LogWarning("PerfectCullingCrossSceneSampler type not found — sampler patch skipped");
             return;
         }
 
@@ -42,7 +42,7 @@ internal sealed class FixPerfectCullingSamplerPatch : ModulePatch
         {
             if (obj != __instance)
             {
-                Plugin.ModLogger.LogWarning($"[CorpseRun] Destroying stale PerfectCulling sampler '{obj.name}'.");
+                Plugin.ModLogger.LogWarning($"Destroying stale PerfectCulling sampler '{obj.name}'.");
                 Object.DestroyImmediate(obj);
             }
         }

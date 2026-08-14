@@ -51,7 +51,7 @@ internal static class FreecamCompatHelper
 
         new ForceFreeCameraOperationPatch().Enable();
         new ForceFirstPersonOperationPatch().Enable();
-        Plugin.ModLogger.LogInfo("[CorpseRun] Freecam detected — camera operation patches enabled.");
+        Plugin.ModLogger.LogInfo("Freecam detected — camera operation patches enabled.");
     }
 
     private sealed class ForceFreeCameraOperationPatch : ModulePatch
@@ -96,7 +96,7 @@ internal static class FreecamCompatHelper
             if (!scriptDead && !wrongCamera)
             {
                 Plugin.ModLogger.LogInfo(
-                    $"[CorpseRun] Freecam script ok: enabled={script.isActiveAndEnabled}, cam={camera.gameObject.GetInstanceID()}");
+                    $"Freecam script ok: enabled={script.isActiveAndEnabled}, cam={camera.gameObject.GetInstanceID()}");
                 return;
             }
 
@@ -109,11 +109,11 @@ internal static class FreecamCompatHelper
             _mainCameraField?.SetValue(instance, camera.gameObject);
 
             Plugin.ModLogger.LogWarning(
-                $"[CorpseRun] Freecam script was {(scriptDead ? "destroyed" : "on a stale camera object")} — recreated on live camera.");
+                $"Freecam script was {(scriptDead ? "destroyed" : "on a stale camera object")} — recreated on live camera.");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Freecam script revive failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Freecam script revive failed: {ex.Message}");
         }
     }
 
@@ -135,7 +135,7 @@ internal static class FreecamCompatHelper
         {
             if (!Singleton<PlayerCameraController>.Instantiated)
             {
-                Plugin.ModLogger.LogWarning($"[CorpseRun] Freecam {label}: no PlayerCameraController singleton!");
+                Plugin.ModLogger.LogWarning($"Freecam {label}: no PlayerCameraController singleton!");
                 return;
             }
 
@@ -143,11 +143,11 @@ internal static class FreecamCompatHelper
             var before = CameraOperationField?.GetValue(controller)?.GetType().Name ?? "null";
             controller.InitiateOperation<TOperation>();
             Plugin.ModLogger.LogInfo(
-                $"[CorpseRun] Freecam {label}: op {before} -> {typeof(TOperation).Name}, playerPOV={controller.Player?.PointOfView}");
+                $"Freecam {label}: op {before} -> {typeof(TOperation).Name}, playerPOV={controller.Player?.PointOfView}");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Freecam operation force failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Freecam operation force failed: {ex.Message}");
         }
     }
 
@@ -172,11 +172,11 @@ internal static class FreecamCompatHelper
 
             _controlsToggledField?.SetValue(instance, false);
             _ownerField.SetValue(instance, newOwner);
-            Plugin.ModLogger.LogInfo("[CorpseRun] Freecam compat: rebound cached GamePlayerOwner and reset freecam state.");
+            Plugin.ModLogger.LogInfo("Freecam compat: rebound cached GamePlayerOwner and reset freecam state.");
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"[CorpseRun] Freecam compat rebind failed: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Freecam compat rebind failed: {ex.Message}");
         }
     }
 
