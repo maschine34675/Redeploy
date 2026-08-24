@@ -1,6 +1,5 @@
 using CorpseRun.Config;
 using CorpseRun.Services;
-using EFT.GlobalEvents;
 using UnityEngine;
 
 namespace CorpseRun.UI;
@@ -32,22 +31,8 @@ public class RespawnPromptPanel : MonoBehaviour
             Instance = null;
     }
 
-    /// <summary>
-    /// Asks the game to show or hide the cursor, rather than setting it here.
-    /// The game decides once per frame what the cursor state should be and
-    /// writes it only when the live state disagrees - so setting
-    /// <c>Cursor.visible</c> is exactly what makes it disagree, and the two
-    /// alternate at frame rate. That was the flicker. Its own flag is OR-ed
-    /// into that decision, so once it is set there is nothing to disagree
-    /// about, and the single write the game then performs restores
-    /// visibility, lock mode and the cursor bitmap together.
-    /// </summary>
-    private static void SetGameCursor(bool show)
-    {
-        GlobalEventsController.Instance
-            .CreateCommonEvent<ToggleShowInGameCursorEvent>()
-            .Invoke(show);
-    }
+    /// <summary>Votes for the cursor in the game's input tree; see CursorRequestNode.</summary>
+    private static void SetGameCursor(bool show) => CursorRequestNode.Want(show);
 
     public void Show()
     {
@@ -72,12 +57,8 @@ public class RespawnPromptPanel : MonoBehaviour
         if (!_visible || !RespawnSessionState.PendingRespawnChoice)
             return;
 
-        // Not a write: reading creates no disagreement for the game to correct.
-        // The flag is global and uncounted, so another mod - or the game's own
-        // world, which uses it too - can clear it while this prompt is up. Ask
-        // again only when the cursor is actually gone.
-        if (!Cursor.visible)
-            SetGameCursor(true);
+        // Nothing to do per frame any more: the vote in the input tree is read
+        // by the game every dispatch, and nobody can take it away.
     }
 
     private void OnGUI()
