@@ -113,13 +113,16 @@ public static class RespawnService
 
     public static void GiveUpRaid()
     {
+        // Before the early return: the prompt is on screen either way, and it
+        // now owns the cursor until it is told to let go.
+        RespawnPromptPanel.Instance?.Hide();
+
         var game = RespawnSessionState.CurrentLocalGame;
         if (game == null)
             return;
 
         RespawnSessionState.HasGivenUp = true;
         RespawnSessionState.PendingRespawnChoice = false;
-        RespawnPromptPanel.Instance?.Hide();
 
         Plugin.ModLogger.LogInfo("Player gave up — ending raid as Killed.");
         LocalGameAccessor.InvokeDeathScreen(game);
@@ -127,12 +130,15 @@ public static class RespawnService
 
     public static void BeginRespawn(RespawnLocationMode spawnMode)
     {
+        // Same reasoning as GiveUpRaid: the player pressed a button on the
+        // prompt, so it is going away whether or not the respawn can start.
+        RespawnPromptPanel.Instance?.Hide();
+
         var game = RespawnSessionState.CurrentLocalGame;
         if (game == null || RespawnSessionState.IsRespawnInProgress)
             return;
 
         RespawnSessionState.SelectedSpawnMode = spawnMode;
-        RespawnPromptPanel.Instance?.Hide();
         game.StartCoroutine(RespawnCoroutine(game));
     }
 

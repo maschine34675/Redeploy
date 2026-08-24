@@ -1,5 +1,6 @@
 using CorpseRun.Config;
 using CorpseRun.Services;
+using EFT.GlobalEvents;
 using UnityEngine;
 
 namespace CorpseRun.UI;
@@ -24,20 +25,46 @@ public class RespawnPromptPanel : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Unconditional: the flag below is the game's, and leaving it set for a
+        // panel that no longer exists would strand a cursor on screen.
+        SetGameCursor(false);
         if (Instance == this)
             Instance = null;
+    }
+
+    /// <summary>
+    /// Asks the game to show or hide the cursor, rather than setting it here.
+    /// The game decides once per frame what the cursor state should be and
+    /// writes it only when the live state disagrees - so setting
+    /// <c>Cursor.visible</c> is exactly what makes it disagree, and the two
+    /// alternate at frame rate. That was the flicker. Its own flag is OR-ed
+    /// into that decision, so once it is set there is nothing to disagree
+    /// about, and the single write the game then performs restores
+    /// visibility, lock mode and the cursor bitmap together.
+    /// </summary>
+    private static void SetGameCursor(bool show)
+    {
+        GlobalEventsController.Instance
+            .CreateCommonEvent<ToggleShowInGameCursorEvent>()
+            .Invoke(show);
     }
 
     public void Show()
     {
         _visible = true;
         _windowRect = default;
+        SetGameCursor(true);
         Plugin.ModLogger.LogInfo("Respawn prompt shown.");
     }
 
     public void Hide()
     {
         _visible = false;
+        // Unconditional, so a second Hide costs nothing: the game's flag is a
+        // plain bool with no counter. Every path that closes this prompt has
+        // to come through here, because the cursor no longer returns by itself
+        // once the mod stops asking for it.
+        SetGameCursor(false);
     }
 
     private void Update()
@@ -45,12 +72,12 @@ public class RespawnPromptPanel : MonoBehaviour
         if (!_visible || !RespawnSessionState.PendingRespawnChoice)
             return;
 
-        // The game's input manager keeps re-locking the cursor, so enforce it every frame while the prompt is open.
-        if (Cursor.lockState != CursorLockMode.None || !Cursor.visible)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        // Not a write: reading creates no disagreement for the game to correct.
+        // The flag is global and uncounted, so another mod - or the game's own
+        // world, which uses it too - can clear it while this prompt is up. Ask
+        // again only when the cursor is actually gone.
+        if (!Cursor.visible)
+            SetGameCursor(true);
     }
 
     private void OnGUI()

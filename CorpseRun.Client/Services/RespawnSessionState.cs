@@ -22,12 +22,19 @@ public static class RespawnSessionState
 
     public static void OnRaidStarted()
     {
+        // The choke point both raid patches funnel through, which is why the
+        // cursor is released here rather than in each of them: a raid that
+        // ends with the prompt still open used to leave it drawing nothing and
+        // the game took its cursor back by itself. It no longer does, so the
+        // prompt has to be told, on every path.
+        UI.RespawnPromptPanel.Instance?.Hide();
         Reset();
         IsInRaid = true;
     }
 
     public static void OnRaidEnded()
     {
+        UI.RespawnPromptPanel.Instance?.Hide();
         Reset();
     }
 
