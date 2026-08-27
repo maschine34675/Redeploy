@@ -163,7 +163,18 @@ public static class DeathInterception
                 CoreLog.LogWarning($"OnDeathIntercepted subscriber failed: {ex}");
             }
 
-            claimant.OnPlayerDied(localGame);
+            try
+            {
+                claimant.OnPlayerDied(localGame);
+            }
+            catch (Exception ex)
+            {
+                // Fail open: a throwing driver must not swallow the death — let the
+                // vanilla death handler run so the death screen still appears.
+                CoreLog.LogError($"Death-interception driver '{claimant.Name}' failed in OnPlayerDied — vanilla death proceeds: {ex}");
+                return true;
+            }
+
             return false;
         }
     }

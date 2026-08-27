@@ -31,13 +31,21 @@ public static class RaidLifecycle
 
     internal static void RaiseRaidEnded()
     {
-        try
+        // Per-subscriber isolation: one throwing consumer must not starve the others.
+        var handlers = OnRaidEnded;
+        if (handlers == null)
+            return;
+
+        foreach (Action handler in handlers.GetInvocationList())
         {
-            OnRaidEnded?.Invoke();
-        }
-        catch (Exception ex)
-        {
-            CoreLog.LogWarning($"OnRaidEnded subscriber failed: {ex}");
+            try
+            {
+                handler();
+            }
+            catch (Exception ex)
+            {
+                CoreLog.LogWarning($"OnRaidEnded subscriber failed: {ex}");
+            }
         }
     }
 
@@ -51,13 +59,20 @@ public static class RaidLifecycle
         [PatchPostfix]
         private static void Postfix(GameWorld __instance)
         {
-            try
+            var handlers = OnRaidStarted;
+            if (handlers == null)
+                return;
+
+            foreach (Action<GameWorld> handler in handlers.GetInvocationList())
             {
-                OnRaidStarted?.Invoke(__instance);
-            }
-            catch (Exception ex)
-            {
-                CoreLog.LogWarning($"OnRaidStarted subscriber failed: {ex}");
+                try
+                {
+                    handler(__instance);
+                }
+                catch (Exception ex)
+                {
+                    CoreLog.LogWarning($"OnRaidStarted subscriber failed: {ex}");
+                }
             }
         }
     }

@@ -175,6 +175,18 @@ public static class RespawnEngine
             yield return null;
         }
 
+        // An external raid end may have raced the creation wait. Stop() has started the
+        // raid-end fade whose completion callback is the ONLY invoker of GameEnd — the
+        // rewire's ClearBlackScreen would stop that coroutine and soft-lock the raid in
+        // Stopping forever. Abort instead; the raid teardown owns the session now.
+        if (RaidIsTearingDown(game))
+        {
+            yield return null;
+            RespawnEngineState.IsPipelineRunning = false;
+            onFailure(new OperationCanceledException("Raid ended during respawn — pipeline aborted."));
+            yield break;
+        }
+
         try
         {
             if (createTask.IsFaulted)
@@ -212,7 +224,7 @@ public static class RespawnEngine
             DeathEffectsHelper.ClearDeathScreenEffects();
             RaidUiHelper.RestoreInputAfterDeath();
             game.StartCoroutine(EnsureBattleUiReady(game, newOwner));
-            game.StartCoroutine(FinalizeRespawnView(newPlayer));
+            game.StartCoroutine(FinalizeRespawnView(game, newPlayer));
 
             ApplyRespawnHealth(newPlayer);
 
@@ -240,11 +252,20 @@ public static class RespawnEngine
         RespawnEngineState.IsPipelineRunning = false;
     }
 
+    private static bool RaidIsTearingDown(LocalGame game)
+        => game == null
+           || game.Status == GameStatus.Stopping
+           || game.Status == GameStatus.SoftStopping
+           || game.Status == GameStatus.Stopped;
+
     private static IEnumerator EnsureBattleUiReady(LocalGame game, EftGamePlayerOwner owner)
     {
         yield return null;
         yield return null;
         yield return null;
+
+        if (RaidIsTearingDown(game))
+            yield break;
 
         RaidUiHelper.RestoreInputAfterDeath();
         RaidUiHelper.RestoreExtractionTimer(game);
@@ -257,10 +278,13 @@ public static class RespawnEngine
             owner.ShowBattleUIScreen();
     }
 
-    private static IEnumerator FinalizeRespawnView(LocalPlayer player)
+    private static IEnumerator FinalizeRespawnView(LocalGame game, LocalPlayer player)
     {
         yield return null;
         yield return null;
+
+        if (RaidIsTearingDown(game))
+            yield break;
 
         RaidUiHelper.ClearBlackScreen();
         DeathEffectsHelper.ClearDeathScreenEffects();
