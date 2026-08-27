@@ -1,4 +1,6 @@
-# CorpseRun
+# Redeploy
+
+> Formerly **CorpseRun** — renamed in 0.9.x. The old GUID `com.maschine.CorpseRun`, the `user/mods/CorpseRun` server folder and `maschine-CorpseRun.*.dll` files are obsolete; remove them when updating. The respawn engine now lives in the shared library `maschine-Redeploy.Core.dll` (deployed next to the client plugin), which other mods (e.g. ArenaMode) build on.
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
@@ -22,17 +24,17 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
   - **KillcamReplay** — the death replay stays visible behind the respawn prompt.
-- **Confirmed incompatibility: Fika.** A replacement character cannot be synchronised to other co-op clients, so CorpseRun disables itself when Fika is installed and says so at raid start.
+- **Confirmed incompatibility: Fika.** A replacement character cannot be synchronised to other co-op clients, so Redeploy disables itself when Fika is installed and says so at raid start.
 
 ## Installation
 
 1. Extract the release ZIP into your SPT installation directory.
 2. Verify that both files exist:
-   - `BepInEx/plugins/maschine-CorpseRun.Client.dll`
-   - `SPT_Runtime/user/mods/CorpseRun/maschine-CorpseRun.Server.dll`
-3. Start the SPT server once and confirm that `CorpseRun` appears among the loaded mods.
+   - `BepInEx/plugins/maschine-Redeploy.Client.dll`
+   - `SPT_Runtime/user/mods/Redeploy/maschine-Redeploy.Server.dll`
+3. Start the SPT server once and confirm that `Redeploy` appears among the loaded mods.
 
-Both components belong to the same installation. Installing only the client DLL would corrupt your profile at the end of a raid, so in that case CorpseRun refuses to do anything and shows a warning when a raid starts.
+Both components belong to the same installation. Installing only the client DLL would corrupt your profile at the end of a raid, so in that case Redeploy refuses to do anything and shows a warning when a raid starts.
 
 ## Updating
 
@@ -40,8 +42,8 @@ Overwrite both files with the new versions. Your configuration file is kept.
 
 If you ran an early internal build, delete these leftovers first — otherwise an obsolete copy of the mod loads alongside the current one:
 
-- `BepInEx/plugins/maschine-CorpseRun.dll` (the old name, without `.Client`)
-- `SPT/user/mods/CorpseRun/` (the SPT 4.0 server path; SPT 4.1 uses `SPT_Runtime/`)
+- `BepInEx/plugins/maschine-Redeploy.dll` (the old name, without `.Client`)
+- `SPT/user/mods/Redeploy/` (the SPT 4.0 server path; SPT 4.1 uses `SPT_Runtime/`)
 
 ## Usage
 
@@ -57,7 +59,7 @@ By default you get one respawn per raid. Once none are left, dying ends the raid
 
 ## Configuration
 
-Configure the mod in-game with the F12 BepInEx configuration manager, or edit `BepInEx/config/com.maschine.CorpseRun.cfg`.
+Configure the mod in-game with the F12 BepInEx configuration manager, or edit `BepInEx/config/com.maschine.Redeploy.cfg`.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -81,13 +83,13 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or edit `B
 
 ## Support
 
-Report problems at <https://github.com/maschine34675/CorpseRun/issues>.
+Report problems at <https://github.com/maschine34675/Redeploy/issues>.
 
-Please include the exact CorpseRun and SPT versions, what you expected and what happened instead, short reproduction steps, and for the affected raid both `BepInEx/LogOutput.log` and the server console output. Also list the other mods you have installed, especially any that affect the camera, the player character or the end-of-raid screen.
+Please include the exact Redeploy and SPT versions, what you expected and what happened instead, short reproduction steps, and for the affected raid both `BepInEx/LogOutput.log` and the server console output. Also list the other mods you have installed, especially any that affect the camera, the player character or the end-of-raid screen.
 
 ## License and credits
 
 Released under the MIT License; see `LICENSE`.
 
 - The spawn protection and the optional respawn cost were inspired by **PlayerLives** and **RevivalMod** (KaiKiNoodles, gitTerebi), which approach the same problem with a downed state instead of a respawn. No code was taken from either mod.
-- CorpseRun contains compatibility code for **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **KillcamReplay**. None of these are bundled; they remain the property of their authors.
+- Redeploy contains compatibility code for **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **KillcamReplay**. None of these are bundled; they remain the property of their authors.

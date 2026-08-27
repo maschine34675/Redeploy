@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Redeploy</RootNamespace>
+    <AssemblyName>maschine-Redeploy.Server</AssemblyName>
+    <Company>https://github.com/maschine34675/Redeploy</Company>
+    <Authors>maschine</Authors>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Version>0.9.0</Version>
+    <OutputPath>..\build\server\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SPTUserMods>$(SPTUserPath)\user\mods\</SPTUserMods>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SPTarkov.Common" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.DI" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.1.0" ExcludeAssets="runtime" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.1.0" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <Target Name="DeployToSpt" AfterTargets="Build" Condition="Exists('$(SPTUserMods)')">
+    <MakeDir Directories="$(SPTUserMods)Redeploy\" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(SPTUserMods)Redeploy\" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
