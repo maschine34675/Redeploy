@@ -16,11 +16,13 @@ public static class RedeployCore
 
     public static void Init(ManualLogSource log)
     {
-        if (Log == null && log != null)
-        {
-            Log = log;
-            Log.LogInfo($"Redeploy.Core {Version} initialized");
-        }
+        if (Log != null)
+            return;
+
+        // Own named source instead of adopting the caller's: several plugins consume
+        // Core and whichever loads first would otherwise mislabel every Core log line.
+        Log = BepInEx.Logging.Logger.CreateLogSource("Redeploy.Core");
+        Log.LogInfo($"Redeploy.Core {Version} initialized");
     }
 }
 
