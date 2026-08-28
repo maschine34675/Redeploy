@@ -358,14 +358,15 @@ public static class RespawnEngine
                 // back. A recycled ex-bot body therefore reaches the respawned
                 // player with the Shooting bit cleared — PWA.Shoot() drops every
                 // recoil impulse (hip and ADS, all weapons) for the rest of the
-                // raid. Restore the live-player default: the Walking/DrawDown bits
-                // are actively re-managed by their toggles, the remaining bits have
-                // no runtime writer at all. HandShake is deliberately left CLEAR —
-                // its vanilla steady state is off (StartHandShake raises it
-                // transiently and its coroutine is the only thing that lowers it).
+                // raid. Restore the live-player default — and ONLY that: Walking
+                // and HandShake are transient bits the game raises for the moment
+                // they apply (Walking while running, HandShake for a draw shake)
+                // and lowers again afterwards. Forcing Walking on made the weapon
+                // bob as if walking while standing still, until the first
+                // move-state change happened to clear it. DrawDown is re-managed
+                // by its own toggle, so setting it is harmless.
                 weaponAnimation.Mask =
                     EFT.Animations.EProceduralAnimationMask.Breathing
-                    | EFT.Animations.EProceduralAnimationMask.Walking
                     | EFT.Animations.EProceduralAnimationMask.MotionReaction
                     | EFT.Animations.EProceduralAnimationMask.ForceReaction
                     | EFT.Animations.EProceduralAnimationMask.Shooting
