@@ -344,7 +344,29 @@ public static class RespawnEngine
 
             var weaponAnimation = player.ProceduralWeaponAnimation;
             if (weaponAnimation != null)
+            {
+                // Same pooled-body family as the walk preset, worse symptom:
+                // BotOwner.Create strips the procedural mask to DrawDown-only on
+                // every bot body, and no pool/spawn path ever writes a full mask
+                // back. A recycled ex-bot body therefore reaches the respawned
+                // player with the Shooting bit cleared — PWA.Shoot() drops every
+                // recoil impulse (hip and ADS, all weapons) for the rest of the
+                // raid. Restore the live-player default: the Walking/DrawDown bits
+                // are actively re-managed by their toggles, the remaining bits have
+                // no runtime writer at all. HandShake is deliberately left CLEAR —
+                // its vanilla steady state is off (StartHandShake raises it
+                // transiently and its coroutine is the only thing that lowers it).
+                weaponAnimation.Mask =
+                    EFT.Animations.EProceduralAnimationMask.Breathing
+                    | EFT.Animations.EProceduralAnimationMask.Walking
+                    | EFT.Animations.EProceduralAnimationMask.MotionReaction
+                    | EFT.Animations.EProceduralAnimationMask.ForceReaction
+                    | EFT.Animations.EProceduralAnimationMask.Shooting
+                    | EFT.Animations.EProceduralAnimationMask.DrawDown
+                    | EFT.Animations.EProceduralAnimationMask.Aiming;
+
                 weaponAnimation.PhysicalConditionUpdated(EPhysicalCondition.None, player.MovementContext.PhysicalCondition);
+            }
         }
         catch (Exception ex)
         {

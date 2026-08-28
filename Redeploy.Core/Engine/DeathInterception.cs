@@ -200,17 +200,22 @@ public static class DeathInterception
     {
         protected override MethodBase GetTargetMethod()
         {
+            // Must target the DECLARED override: LocalGame.Stop kills the three
+            // spawn scenarios (_bossSpawnScenario/_nonWavesSpawnScenario/
+            // _wavesSpawnScenario) BEFORE chaining to base.Stop — a prefix on the
+            // base declaration only fires after that, so a blocked Killed-stop
+            // would leave every continuation raid with bot spawning permanently
+            // dead. On the override the block prevents the scenario shutdown too.
             return AccessTools.Method(
-                typeof(BaseLocalGame<EftGamePlayerOwner>),
-                nameof(BaseLocalGame<EftGamePlayerOwner>.Stop),
+                typeof(LocalGame),
+                nameof(LocalGame.Stop),
                 new[] { typeof(string), typeof(ExitStatus), typeof(string), typeof(float) });
         }
 
         [PatchPrefix]
-        private static bool Prefix(BaseLocalGame<EftGamePlayerOwner> __instance, ExitStatus exitStatus)
+        private static bool Prefix(LocalGame __instance, ExitStatus exitStatus)
         {
-            if (__instance is not LocalGame localGame)
-                return true;
+            var localGame = __instance;
 
             if (exitStatus == ExitStatus.Killed && Any(d => d.ShouldBlockKilledStop(localGame)))
                 return false;
