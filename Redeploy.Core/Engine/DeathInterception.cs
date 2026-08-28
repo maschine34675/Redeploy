@@ -93,8 +93,6 @@ public static class DeathInterception
             return;
         _patched = true;
 
-        DeadBodyGuard.EnsurePatched();
-
         new CgSpawnPatch().Enable();
         new InitiateGameStoppingPatch().Enable();
         new StopPatch().Enable();
@@ -103,6 +101,9 @@ public static class DeathInterception
         new GameEndPatch().Enable();
         new OwnerCleanupGuardPatch().Enable();
         new StatisticsRestorePatch().Enable();
+
+        // Last: it guards against gear theft, the ones above keep the raid alive.
+        DeadBodyGuard.EnsurePatched();
     }
 
     private static bool Any(Func<IDeathInterceptionDriver, bool> predicate)

@@ -36,7 +36,17 @@ public static class DeadBodyGuard
             return;
 
         _patched = true;
-        new SkipOwnBodyPatch().Enable();
+
+        // Never let this take the death-interception patch set down with it:
+        // losing the guard costs gear, losing those patches breaks the mod.
+        try
+        {
+            new SkipOwnBodyPatch().Enable();
+        }
+        catch (Exception ex)
+        {
+            CoreLog.LogError($"Dead-body guard could not be installed — bots may loot the live inventory after a respawn: {ex}");
+        }
     }
 
     /// <summary>
