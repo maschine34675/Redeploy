@@ -327,6 +327,29 @@ public static class RespawnEngine
         // which ResetProfileHealth already set to the requested percentage — a full
         // restore would override it.
         player.PlayerHealthController?.Start();
+
+        // The replacement body comes out of the SHARED player pool (LIFO), and
+        // ReturnToPool resets animator params/IK but NOT the ProceduralWeaponAnimation
+        // effectors: WalkEffector.CurrentWalkPreset can arrive latched to 'lame'
+        // (plus arm-sway factor and breath tremor) from whoever used the body last —
+        // a bot or the previous own body that died with a blacked leg. The fresh
+        // MovementContext starts at None and SetPhysicalCondition only raises its
+        // event on a TRANSITION, so the stale preset is never cleared on its own.
+        // Mirror BSG's reconnect path: recompute the health conditions, then drive
+        // the condition handler directly to reset the effectors.
+        try
+        {
+            player.UpdateSpeedLimitByHealth();
+            player.UpdateArmsCondition();
+
+            var weaponAnimation = player.ProceduralWeaponAnimation;
+            if (weaponAnimation != null)
+                weaponAnimation.PhysicalConditionUpdated(EPhysicalCondition.None, player.MovementContext.PhysicalCondition);
+        }
+        catch (Exception ex)
+        {
+            CoreLog.LogWarning($"Post-respawn condition reset failed (stale limp/sway may persist): {ex.Message}");
+        }
     }
 
     private static IEnumerator ApplySpawnProtection(LocalPlayer player, SpawnProtectionOptions options)
