@@ -392,7 +392,14 @@ public static class RespawnEngine
         }
 
         var healthController = player.ActiveHealthController;
-        var originalCoeff = healthController.DamageCoeff;
+
+        // NEVER remember a zero as the value to restore. Two overlapping
+        // protections would otherwise hand invulnerability over permanently:
+        // the second one captures the first one's zero and writes it back when
+        // it expires. Falling back to 1 is right in every case here, because a
+        // zero can only mean "someone else is protecting right now".
+        var currentCoeff = healthController.DamageCoeff;
+        var originalCoeff = currentCoeff > 0f ? currentCoeff : 1f;
         healthController.SetDamageCoeff(0f);
         CoreLog.LogInfo($"Spawn protection active for {duration:0.#}s.");
         if (options.ShowToasts)
