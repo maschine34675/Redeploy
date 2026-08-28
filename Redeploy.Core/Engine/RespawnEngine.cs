@@ -201,6 +201,13 @@ public static class RespawnEngine
 
             var bots = LocalGameAccessor.GetBotsController(game);
             bots.DestroyInfo(deadPlayer);
+
+            // DestroyInfo's own chain ends in DeadBodiesController.AddBody for a
+            // dead player — the record bots would use to loot the SHARED profile,
+            // i.e. the freshly equipped live player. The patch blocks new ones;
+            // this clears anything that slipped through earlier.
+            DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
+
             bots.AddActivePLayer(newPlayer);
 
             if (Singleton<GameWorld>.Instantiated)

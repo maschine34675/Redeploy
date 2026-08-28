@@ -93,6 +93,8 @@ public static class DeathInterception
             return;
         _patched = true;
 
+        DeadBodyGuard.EnsurePatched();
+
         new CgSpawnPatch().Enable();
         new InitiateGameStoppingPatch().Enable();
         new StopPatch().Enable();
