@@ -55,7 +55,15 @@ public static class CameraRebindHelper
                 Singleton<PlayerCameraController>.Release(Singleton<PlayerCameraController>.Instance);
         }
 
+        // Create() instantiates a fresh FPS camera and destroys the old one, which
+        // the culling registry would keep referencing forever.
+        var replacedCamera = CameraManager.Instance != null ? CameraManager.Instance.Camera : null;
+
         PlayerCameraController.Create(newPlayer);
+
+        if (!ReferenceEquals(CameraManager.Instance?.Camera, replacedCamera))
+            CullingCameraGuard.EvictReplacedCamera(replacedCamera);
+
         RepairSharedCameraState();
         SyncVisionEffects();
         EnsureCameraActive(newPlayer);
