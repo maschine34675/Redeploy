@@ -64,6 +64,20 @@ public static class EquipmentSurgeon
             populate?.Invoke(newEquipment, factory);
 
             EquipmentField(profile.Inventory) = newEquipment;
+
+            // The weight caches still hold the OLD tree's number. Inventory
+            // exposes TotalWeight as a Deferred<float> and the only thing that
+            // dirties it is UpdateTotalWeight, which fires on CONTROLLER item
+            // events — and everything above builds the tree with raw slot adds
+            // and removes that raise none. Without this the new body bakes its
+            // inertia, overweight and stamina from whatever the last loadout
+            // weighed: a naked respawn keeps a thirty-kilo kit's sluggishness,
+            // and a heavy kit gets none at all. Physical.OnWeightUpdated reads
+            // the value once, when the player is built, so it has to be dirty
+            // before that happens.
+            profile.Inventory.TotalWeight.SetDirty();
+            profile.Inventory.TotalWeightEliteSkill.SetDirty();
+
             ProfileInventorySanitizer.Sanitize(profile);
             CoreLog.LogInfo("Profile equipment swapped; corpse retains raid loadout.");
         }
