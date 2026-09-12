@@ -236,7 +236,8 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
 `dotnet test Redeploy.Tests`. Alles andere bleibt In-Game (Szenarien: `docs/RESPAWN-API.md`, Abschnitt 10).
 
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
-Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md`.
+Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
+Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) und die Fortsetzung `…-r2.md`.
 
 ## Nicht annehmen (Claude Code)
 

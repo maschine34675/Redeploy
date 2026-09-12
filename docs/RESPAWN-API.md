@@ -12,6 +12,12 @@
 > setzt ArenaMode ≥ `668619f` voraus** (Begründung in S0-16). Offen: S0-9 (In-Game-Repro),
 > Stufe 1 (`RespawnApi`-Fassade und Interop-Datei), Stufe 2. In-Game noch unverifiziert:
 > Szenarien 8 bis 11 in Abschnitt 10.
+> **GPU r1 (12.09.2026, ArenaMode `GPU-RESPAWN-STAGE0-TEST-RESULTS-r1.md`):** gewöhnlicher
+> Redeploy-Respawn auf dem deployten Stand bestanden (Markerfolge, Killcam-/AutoIFF-/Freecam-Rebind
+> ohne Exception); Lauf danach durch ein Vanilla-Race gestoppt (`BotSurgicalKit`-Callback eines
+> beim `Stop` bereits disposten Bots, kein Core-Frame). Korrektur zur Erwartung: der Marker
+> `Blocked raid-end black screen while respawn is pending.` erscheint im Normalpfad nie, weil
+> `CG_Spawn` vor jedem `Stop` abgefangen wird. Fortsetzung: `…-INSTRUCTIONS-r2.md`.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
