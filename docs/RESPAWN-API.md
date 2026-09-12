@@ -4,14 +4,14 @@
 > konkurrierenden Designs, drei Bewertungen und drei Widerlegungsprüfungen. Alle Zeilenangaben
 > beziehen sich auf den Stand **vor** Stufe 0: Redeploy `bc95a28`, ArenaMode `0add445`.
 >
-> **Umsetzungsstand:** Stufe 0, Redeploy-Seite (S0-1 Core-Anteil, S0-2 bis S0-8, S0-10 bis
-> S0-14) ist auf dem Branch `respawn-stage0` umgesetzt; die Namen dort weichen teils vom Entwurf
-> ab (`DeathInterception.IsAvailable` statt `RespawnApi.IsAvailable`, weil die Fassade noch fehlt;
-> der Claim-Zustand aus 3.2 existiert noch nicht). Offen: S0-1 ArenaMode-Anteil (`ArenaEvents`),
-> S0-9 (In-Game-Repro), S0-15 und S0-16 (ArenaMode), Stufe 1 (`RespawnApi`-Fassade und
-> Interop-Datei) und Stufe 2. In-Game noch unverifiziert: Szenarien 8 bis 11 in Abschnitt 10.
-> **Deploy-Reihenfolge:** Core aus diesem Branch erst zusammen mit ArenaModes S0-16 deployen
-> (Begründung in S0-16 und im Repo-Handoff).
+> **Umsetzungsstand (12.09.2026):** Stufe 0 ist umgesetzt — Redeploy-Seite auf `main`
+> (`c938f5c`: S0-1 Core-Anteil, S0-2 bis S0-8, S0-10 bis S0-14; Namen weichen teils vom Entwurf
+> ab: `DeathInterception.IsAvailable` statt `RespawnApi.IsAvailable`, weil die Fassade noch fehlt,
+> und der Claim-Zustand aus 3.2 existiert noch nicht), ArenaMode-Seite auf
+> `feature/arena-air-control` (`668619f` S0-16, `bb82ce8` S0-15, `3a5123c` S0-1). **Dieser Core
+> setzt ArenaMode ≥ `668619f` voraus** (Begründung in S0-16). Offen: S0-9 (In-Game-Repro),
+> Stufe 1 (`RespawnApi`-Fassade und Interop-Datei), Stufe 2. In-Game noch unverifiziert:
+> Szenarien 8 bis 11 in Abschnitt 10.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

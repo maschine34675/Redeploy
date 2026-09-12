@@ -226,12 +226,11 @@ Neue Invarianten in Core:
   Vanilla-Tod statt Soft-Lock.
 
 **Deploy-Voraussetzung:** `maschine-Redeploy.Core.dll` wird flach nach `BepInEx/plugins` deployt und
-von ArenaMode mitbenutzt. Diesen Stand erst deployen, wenn ArenaMode S0-16 hat (idempotentes
-`RecoverOldBody`): Vorher endet ein vom Preflight abgelehnter Live-Swap (nur bei
-`IsAvailable == false`, also nach einem Spiel-Update mit fehlgeschlagenem Patch) über
-`RecoverOldBody` → doppeltes `RegisterPlayer` → `EndRaidAsLastResort` als Killed-Raid für einen
-lebenden Spieler. Auf `main` war derselbe Fall schlimmer (Awake-Abbruch, Pipeline im halb
-installierten Hub), aber sauber ist er erst mit S0-16. Review 12.09.: zwei Prüfer bestätigt.
+von ArenaMode mitbenutzt. Dieser Core braucht **ArenaMode ≥ `668619f`** (idempotentes
+`LiveKitRespawn.RecoverOldBody`, 12.09.2026): Ein älteres ArenaMode beendet einen vom Preflight
+abgelehnten Live-Swap (nur bei `IsAvailable == false`, also nach einem Spiel-Update mit
+fehlgeschlagenem Patch) über doppeltes `RegisterPlayer` → `EndRaidAsLastResort` als Killed-Raid
+für einen lebenden Spieler. Review 12.09.: zwei Prüfer bestätigt; seit `668619f` behoben.
 
 Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPreflight` ab —
 `dotnet test Redeploy.Tests`. Alles andere bleibt In-Game (Szenarien: `docs/RESPAWN-API.md`, Abschnitt 10).
