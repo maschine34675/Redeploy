@@ -235,6 +235,9 @@ für einen lebenden Spieler. Review 12.09.: zwei Prüfer bestätigt; seit `66861
 Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPreflight` ab —
 `dotnet test Redeploy.Tests`. Alles andere bleibt In-Game (Szenarien: `docs/RESPAWN-API.md`, Abschnitt 10).
 
+In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
+Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md`.
+
 ## Nicht annehmen (Claude Code)
 
 1. **Equipment wird beim Respawn gelöscht** — es bleibt auf der Leiche im World-Inventar.
