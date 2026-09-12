@@ -35,6 +35,15 @@ internal sealed class RedeployDriver : IDeathInterceptionDriver
         if (game?.Location?.Id == "hideout")
             return false;
 
+        // Mirrors RespawnService.OnPlayerDied exactly: a claim the service then cannot
+        // serve would swallow the death (no prompt, raid never ending). A death that
+        // arrives while the raid is already stopping belongs to that stop.
+        if (game?.LocalPlayer == null || !game.LocalPlayer.IsYourPlayer)
+            return false;
+
+        if (game.Status != GameStatus.Started)
+            return false;
+
         return true;
     }
 

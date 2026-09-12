@@ -10,23 +10,25 @@ namespace Redeploy.Core.Compat;
 /// </summary>
 public static class FikaCompatCheck
 {
-    private static bool? _fikaLoaded;
+    private static bool _fikaLoaded;
 
+    /// <summary>
+    /// Only a positive answer is final. PluginInfos fills up while the chainloader runs, so
+    /// "not loaded" asked from an early Awake may only mean "not yet"; it is re-asked.
+    /// </summary>
     public static bool IsFikaLoaded
     {
         get
         {
-            if (_fikaLoaded == null)
-            {
-                _fikaLoaded = Chainloader.PluginInfos.ContainsKey("com.fika.core");
-                if (_fikaLoaded == true)
-                {
-                    CoreLog.LogWarning(
-                        "Fika detected — Redeploy is disabled (respawn is incompatible with co-op).");
-                }
-            }
+            if (_fikaLoaded)
+                return true;
 
-            return _fikaLoaded.Value;
+            if (!Chainloader.PluginInfos.ContainsKey("com.fika.core"))
+                return false;
+
+            _fikaLoaded = true;
+            CoreLog.LogWarning("Fika detected — Redeploy is disabled (respawn is incompatible with co-op).");
+            return true;
         }
     }
 }

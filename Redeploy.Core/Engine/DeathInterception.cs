@@ -2,6 +2,8 @@ using EFT;
 using EFT.UI;
 using EFT.UI.SessionEnd;
 using HarmonyLib;
+using Redeploy.Core.Compat;
+using Redeploy.Core.GameAccess;
 using SPT.Reflection.Patching;
 using System;
 using System.Collections.Generic;
@@ -66,11 +68,32 @@ public interface IDeathInterceptionDriver
 /// </summary>
 public static class DeathInterception
 {
+    private const int KeepAlivePatchCount = 6;
+
     private static readonly List<IDeathInterceptionDriver> Drivers = new List<IDeathInterceptionDriver>();
     private static bool _patched;
+    private static bool _keepAliveComplete;
 
     /// <summary>Raised when a driver claims a death (before its OnPlayerDied runs).</summary>
     public static event Action<LocalGame, IDeathInterceptionDriver> OnDeathIntercepted;
+
+    /// <summary>
+    /// Every keep-alive patch is installed. With one of them missing a claimed death could
+    /// end half-handled (no death screen, a raid that never ends), so an incomplete set
+    /// means Core claims nothing and blocks nothing.
+    /// </summary>
+    internal static bool IsOperational => _keepAliveComplete;
+
+    internal static int DriverCount => Drivers.Count;
+
+    /// <summary>
+    /// Core can replace the local body in this session: keep-alive patches complete, at
+    /// least one driver registered, Fika not loaded — evaluated in that order, so the Fika
+    /// probe is never asked before a driver exists. When false, Core is idle: no death is
+    /// claimed, no guard blocks anything, and RunRespawn is refused before any teardown.
+    /// </summary>
+    internal static bool IsAvailable
+        => IsOperational && DriverCount > 0 && !FikaCompatCheck.IsFikaLoaded;
 
     public static void Register(IDeathInterceptionDriver driver)
     {
@@ -78,7 +101,13 @@ public static class DeathInterception
             return;
 
         Drivers.Add(driver);
-        Drivers.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+
+        // OrderBy is stable: drivers of equal priority keep their registration order, so
+        // which one claims a death never varies between runs.
+        var ordered = Drivers.OrderByDescending(d => d.Priority).ToList();
+        Drivers.Clear();
+        Drivers.AddRange(ordered);
+
         CoreLog.LogInfo($"Death-interception driver registered: {driver.Name} (priority {driver.Priority})");
     }
 
@@ -93,17 +122,76 @@ public static class DeathInterception
             return;
         _patched = true;
 
-        new CgSpawnPatch().Enable();
-        new InitiateGameStoppingPatch().Enable();
-        new StopPatch().Enable();
-        new BlackScreenGuardPatch().Enable();
-        new SessionResultGuardPatch().Enable();
-        new GameEndPatch().Enable();
-        new OwnerCleanupGuardPatch().Enable();
-        new StatisticsRestorePatch().Enable();
+        // One patch at a time: a target lost to a game update must neither abort the
+        // caller's Awake (ArenaMode installs dozens more sets after this) nor leave the
+        // set half-installed while pretending to work.
+        var keepAlive = 0;
+        keepAlive += Install(() => new CgSpawnPatch(), nameof(CgSpawnPatch));
+        keepAlive += Install(() => new InitiateGameStoppingPatch(), nameof(InitiateGameStoppingPatch));
+        keepAlive += Install(() => new StopPatch(), nameof(StopPatch));
+        keepAlive += Install(() => new BlackScreenGuardPatch(), nameof(BlackScreenGuardPatch));
+        keepAlive += Install(() => new SessionResultGuardPatch(), nameof(SessionResultGuardPatch));
+        keepAlive += Install(() => new OwnerCleanupGuardPatch(), nameof(OwnerCleanupGuardPatch));
 
-        // Last: it guards against gear theft, the ones above keep the raid alive.
+        // The GameEnd postfix (drivers' OnRaidEnded, engine reset) lives with its raid-start
+        // twin so the two are always paired.
+        RaidLifecycle.EnsurePatched();
+
+        _keepAliveComplete = keepAlive == KeepAlivePatchCount && RaidLifecycle.IsRaidEndPatched;
+        if (!_keepAliveComplete)
+            CoreLog.LogError("Death interception is incomplete — Core stands down: no death is claimed, nothing is blocked, RunRespawn is refused.");
+
+        // Optional: losing these degrades a respawn, it does not disable the mod.
+        Install(() => new StatisticsRestorePatch(), nameof(StatisticsRestorePatch));
         DeadBodyGuard.EnsurePatched();
+    }
+
+    private static int Install(Func<ModulePatch> create, string name)
+    {
+        try
+        {
+            create().Enable();
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CoreLog.LogError($"{name} could not be installed: {ex}");
+            return 0;
+        }
+    }
+
+    /// <summary>The highest-priority driver that wants this death, or null. Pure apart from the drivers' own predicates.</summary>
+    internal static IDeathInterceptionDriver FindClaimant(LocalGame game)
+    {
+        foreach (var driver in Drivers)
+        {
+            try
+            {
+                if (driver.WantsToHandleDeath(game))
+                    return driver;
+            }
+            catch (Exception ex)
+            {
+                CoreLog.LogWarning($"Death-interception driver '{driver.Name}' failed in WantsToHandleDeath: {ex}");
+            }
+        }
+
+        return null;
+    }
+
+    internal static void NotifyDriversRaidEnded()
+    {
+        foreach (var driver in Drivers)
+        {
+            try
+            {
+                driver.OnRaidEnded();
+            }
+            catch (Exception ex)
+            {
+                CoreLog.LogWarning($"Death-interception driver '{driver.Name}' failed in OnRaidEnded: {ex}");
+            }
+        }
     }
 
     private static bool Any(Func<IDeathInterceptionDriver, bool> predicate)
@@ -137,34 +225,16 @@ public static class DeathInterception
             if (__instance is not LocalGame localGame)
                 return true;
 
-            IDeathInterceptionDriver claimant = null;
-            foreach (var driver in Drivers)
-            {
-                try
-                {
-                    if (driver.WantsToHandleDeath(localGame))
-                    {
-                        claimant = driver;
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    CoreLog.LogWarning($"Death-interception driver '{driver.Name}' failed in WantsToHandleDeath: {ex}");
-                }
-            }
+            // Fail closed: an incomplete patch set, no driver or Fika means the death runs
+            // vanilla instead of being claimed by machinery that cannot finish it.
+            if (!IsAvailable)
+                return true;
 
+            var claimant = FindClaimant(localGame);
             if (claimant == null)
                 return true;
 
-            try
-            {
-                OnDeathIntercepted?.Invoke(localGame, claimant);
-            }
-            catch (Exception ex)
-            {
-                CoreLog.LogWarning($"OnDeathIntercepted subscriber failed: {ex}");
-            }
+            CoreSignals.Respawn.Raise(OnDeathIntercepted, h => h(localGame, claimant), nameof(OnDeathIntercepted));
 
             try
             {
@@ -195,6 +265,9 @@ public static class DeathInterception
             if (__instance is not LocalGame localGame)
                 return true;
 
+            if (!IsAvailable)
+                return true;
+
             return !Any(d => d.ShouldBlockDeathScreen(localGame));
         }
     }
@@ -220,7 +293,8 @@ public static class DeathInterception
         {
             var localGame = __instance;
 
-            if (exitStatus == ExitStatus.Killed && Any(d => d.ShouldBlockKilledStop(localGame)))
+            // An unavailable Core blocks nothing; the stand-down below is still delivered.
+            if (exitStatus == ExitStatus.Killed && IsAvailable && Any(d => d.ShouldBlockKilledStop(localGame)))
                 return false;
 
             // An external raid end (MIA timer, menu leave, transit, another mod) is
@@ -251,6 +325,9 @@ public static class DeathInterception
         [PatchPrefix]
         private static bool Prefix()
         {
+            if (!IsAvailable)
+                return true;
+
             if (!Any(d => d.ShouldHoldBlackScreen()))
                 return true;
 
@@ -284,33 +361,10 @@ public static class DeathInterception
             if (exitStatus != ExitStatus.Killed)
                 return true;
 
+            if (!IsAvailable)
+                return true;
+
             return !Any(d => d.ShouldSuppressKilledSessionResult());
-        }
-    }
-
-    private sealed class GameEndPatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod()
-        {
-            return AccessTools.Method(typeof(BaseLocalGame<EftGamePlayerOwner>), "GameEnd");
-        }
-
-        [PatchPostfix]
-        private static void Postfix()
-        {
-            foreach (var driver in Drivers)
-            {
-                try
-                {
-                    driver.OnRaidEnded();
-                }
-                catch (Exception ex)
-                {
-                    CoreLog.LogWarning($"Death-interception driver '{driver.Name}' failed in OnRaidEnded: {ex}");
-                }
-            }
-
-            RaidLifecycle.RaiseRaidEnded();
         }
     }
 
@@ -331,8 +385,17 @@ public static class DeathInterception
         [PatchPrefix]
         private static bool Prefix(GamePlayerOwner __instance)
         {
-            if (!RespawnEngineState.IsPipelineRunning && !Any(d => d.ShouldGuardOwnerCleanup()))
-                return true;
+            // The owner the pipeline retired is skipped whatever the flags say by now: its
+            // deferred Destroy resolves at the end of the replacing frame, after the
+            // pipeline flag is down, and vanilla cleanup would null MyPlayer for the NEW body.
+            if (!OwnerCleanupHelper.IsRetired(__instance))
+            {
+                if (!IsAvailable)
+                    return true;
+
+                if (!RespawnEngineState.IsPipelineRunning && !Any(d => d.ShouldGuardOwnerCleanup()))
+                    return true;
+            }
 
             // Do not invoke CleanupOnDestroy virtually — that re-enters this prefix and overflows the stack.
             if (OwnerDisposableField.GetValue(__instance) is CompositeDisposable disposable)

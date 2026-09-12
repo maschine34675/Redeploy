@@ -23,26 +23,34 @@ public static class RespawnService
 
     public static void OnPlayerDied(LocalGame game)
     {
+        // Core has already announced this death as claimed. Returning silently from here
+        // would leave the player dead with no prompt and a raid that never ends; throwing
+        // makes Core fail open and run the vanilla death instead. RedeployDriver mirrors
+        // every one of these gates, so a throw only means the two drifted apart — and the
+        // message says where.
         if (!Settings.Enabled.Value)
-            return;
+            throw Drift("the mod is disabled");
 
-        // A replacement player can never sync across Fika co-op clients — stay hands-off.
+        // A replacement player can never sync across Fika co-op clients.
         if (Core.Compat.FikaCompatCheck.IsFikaLoaded)
-            return;
+            throw Drift("Fika is loaded");
 
-        // Without the server mod the profile corrupts after a respawn raid — let death proceed normally.
+        // Without the server mod the profile corrupts after a respawn raid.
         if (!ServerModCheck.IsServerModAvailable)
-            return;
+            throw Drift("the server mod is unavailable");
 
-        if (game == null || game.Location?.Id == "hideout")
-            return;
+        if (game == null)
+            throw Drift("there is no game");
+
+        if (game.Location?.Id == "hideout")
+            throw Drift("the location is the hideout");
+
+        if (!Settings.HasRespawnsRemaining(RespawnSessionState.RespawnsUsed))
+            throw Drift("no respawns remain");
 
         var deadPlayer = game.LocalPlayer;
         if (deadPlayer == null || !deadPlayer.IsYourPlayer)
-            return;
-
-        if (!Settings.HasRespawnsRemaining(RespawnSessionState.RespawnsUsed))
-            return;
+            throw Drift("there is no local player to respawn");
 
         var corpsePos = deadPlayer.Position;
 
@@ -58,6 +66,9 @@ public static class RespawnService
 
         RespawnPromptPanel.Instance?.Show();
     }
+
+    private static InvalidOperationException Drift(string reason)
+        => new InvalidOperationException($"RedeployDriver claimed a death that RespawnService cannot serve: {reason} (driver gates drifted).");
 
     /// <summary>
     /// The corpse reuses the first-person body whose torso renders as shadows-only;
@@ -150,6 +161,19 @@ public static class RespawnService
         if (cooldown > 0f)
             yield return new WaitForSeconds(cooldown);
 
+        // The cooldown is the one window in which the raid can end underneath a chosen
+        // respawn (MIA timer, extract, menu leave). Nothing in the pipeline is reversible,
+        // so it must not start then. IsRespawnInProgress stays set on purpose: it keeps the
+        // owner-cleanup guard armed through the teardown, and the GameEnd reset clears it.
+        if (!ReferenceEquals(RespawnSessionState.CurrentLocalGame, game)
+            || !RespawnSessionState.IsInRaid
+            || RespawnSessionState.HasGivenUp
+            || game.Status != GameStatus.Started)
+        {
+            Plugin.ModLogger.LogInfo("Respawn cancelled: the raid ended during the cooldown.");
+            yield break;
+        }
+
         var request = new RespawnRequest
         {
             Game = game,
@@ -173,7 +197,11 @@ public static class RespawnService
         if (failure != null)
         {
             Plugin.ModLogger.LogError($"Respawn failed: {failure}");
-            GiveUpRaid();
+
+            // A refusal because the raid is already ending needs no death screen, and one on
+            // a stopping raid would only paint a Killed panel over the real exit status.
+            if (!(failure is OperationCanceledException) && game.Status == GameStatus.Started)
+                GiveUpRaid();
         }
         else
         {

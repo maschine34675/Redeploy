@@ -68,6 +68,18 @@ public static class RespawnEngineState
     public static bool IsPipelineRunning { get; internal set; }
 
     public static LocalPlayer LastRespawnedPlayer { get; internal set; }
+
+    /// <summary>
+    /// Raid start and raid end both clear the per-raid state, so a raid whose GameEnd was
+    /// missed cannot leave a hanging flag (which arms the owner-cleanup and statistics
+    /// guards) or a previous raid's body behind.
+    /// </summary>
+    internal static void ResetForRaidBoundary()
+    {
+        IsPipelineRunning = false;
+        LastRespawnedPlayer = null;
+        SpawnSystemCache.Clear();
+    }
 }
 
 /// <summary>
@@ -89,6 +101,26 @@ public static class RespawnEngine
     /// </summary>
     public static IEnumerator RunRespawn(RespawnRequest request, Action<Exception> onFailure)
     {
+        // Refuse before the teardown: everything from the owner destroy on is irreversible,
+        // so a request that cannot succeed must fail with nothing changed. A refusal is
+        // reported synchronously through onFailure and raises no event.
+        var refusal = RespawnPreflight.Check(
+            hasRequest: request != null,
+            hasGame: request?.Game != null,
+            hasSpawnSelector: request?.SpawnSelector != null,
+            engineAvailable: DeathInterception.IsAvailable,
+            raidTearingDown: RaidIsTearingDown(request?.Game),
+            respawnSignalDepth: CoreSignals.Respawn.Depth,
+            pipelineRunning: RespawnEngineState.IsPipelineRunning);
+
+        if (refusal != null)
+        {
+            CoreLog.LogWarning($"Respawn refused before any teardown: {refusal.Message}");
+            onFailure?.Invoke(refusal);
+            yield break;
+        }
+
+        RespawnEngineState.LastRespawnedPlayer = null;
         RespawnEngineState.IsPipelineRunning = true;
 
         var game = request.Game;
@@ -259,7 +291,7 @@ public static class RespawnEngine
         RespawnEngineState.IsPipelineRunning = false;
     }
 
-    private static bool RaidIsTearingDown(LocalGame game)
+    internal static bool RaidIsTearingDown(LocalGame game)
         => game == null
            || game.Status == GameStatus.Stopping
            || game.Status == GameStatus.SoftStopping
@@ -272,6 +304,12 @@ public static class RespawnEngine
         yield return null;
 
         if (RaidIsTearingDown(game))
+            yield break;
+
+        // A second replacement (or a camera owner such as a spectator) may have moved on in
+        // the meantime; finishing the UI of an owner that is no longer the game's would
+        // rebind MyPlayer to a retired body.
+        if (!ReferenceEquals(LocalGameAccessor.GetPlayerOwner(game), owner))
             yield break;
 
         RaidUiHelper.RestoreInputAfterDeath();
@@ -291,6 +329,11 @@ public static class RespawnEngine
         yield return null;
 
         if (RaidIsTearingDown(game))
+            yield break;
+
+        // Same identity guard: RebindToPlayer destroys whatever controller does not belong
+        // to its argument, which would drag the camera back to a body already replaced.
+        if (!ReferenceEquals(game.LocalPlayer, player))
             yield break;
 
         RaidUiHelper.ClearBlackScreen();
@@ -511,26 +554,8 @@ public static class RespawnEngine
     }
 
     private static void RaiseRespawned(LocalPlayer player)
-    {
-        try
-        {
-            OnPlayerRespawned?.Invoke(player);
-        }
-        catch (Exception ex)
-        {
-            CoreLog.LogWarning($"OnPlayerRespawned subscriber failed: {ex}");
-        }
-    }
+        => CoreSignals.Respawn.Raise(OnPlayerRespawned, h => h(player), nameof(OnPlayerRespawned));
 
     private static void RaiseProtectionEnded(LocalPlayer player)
-    {
-        try
-        {
-            OnSpawnProtectionEnded?.Invoke(player);
-        }
-        catch (Exception ex)
-        {
-            CoreLog.LogWarning($"OnSpawnProtectionEnded subscriber failed: {ex}");
-        }
-    }
+        => CoreSignals.Respawn.Raise(OnSpawnProtectionEnded, h => h(player), nameof(OnSpawnProtectionEnded));
 }

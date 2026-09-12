@@ -189,6 +189,53 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 - [ ] Ggf. weitere Edge Cases: mehrfacher Respawn, Mod-Konflikte (SAIN, UIFixes), Scav-Runs
 - [ ] Keine automatisierten Tests im Repo — alles manuell im Spiel
 
+## Respawn-Engine: Stufe-0-Härtung und API-Entwurf (12.09.2026)
+
+Entwurf samt Begründungen und In-Game-Testszenarien: `docs/RESPAWN-API.md` (deutsch,
+Entwicklerdoku). Umgesetzt ist die Redeploy-Seite von Stufe 0; die öffentliche
+`RespawnApi`-Fassade (Stufe 1) noch nicht.
+
+Neue Invarianten in Core:
+
+- **`RunRespawn` lehnt vor jedem Teardown ab** (`RespawnPreflight`): null-Request/Game/Selector,
+  `!DeathInterception.IsAvailable`, Raid endet bereits, Aufruf aus einem Todes-/Pipeline-Raise
+  (`CoreSignals.Respawn.Depth > 0`), laufende Pipeline. Ablehnung = synchrones `onFailure`, kein
+  Zustand verändert, kein Event. **Aufrufer müssen das von einem Teardown-Fehler unterscheiden** —
+  ArenaModes `LiveKitRespawn.RecoverOldBody` tut das noch nicht (S0-16 im Entwurf, offen).
+- **Alle Core-Events laufen über `SignalDispatcher`** (pro Abonnent isoliert, Snapshot der
+  Invocation-List, zerstörte Unity-Targets übersprungen). `CoreSignals.Respawn` für Todes- und
+  Pipeline-Raises (zählt für die Reentranz-Regel), `CoreSignals.Lifecycle` für Raid-Grenzen.
+- **`DeathInterception.EnsurePatched` ist fehlerisoliert und fail-closed**: fehlt ein
+  Keep-alive-Patch, ist `IsAvailable == false` und Core bleibt komplett untätig (kein Claim, kein
+  Guard-Block, `RunRespawn` abgelehnt). `IsAvailable` = Patches vollständig && Treiber registriert
+  && kein Fika. `FikaCompatCheck` cacht nur noch eine positive Antwort.
+- **Raid-Grenzen leben in `RaidLifecycle`** (Start + Ende immer gepaart; `DeathInterception.
+  EnsurePatched` installiert sie mit). Start filtert `NarrateGameWorld`, Ende filtert `HideoutGame`;
+  beide setzen `RespawnEngineState` zurück (`IsPipelineRunning`, `LastRespawnedPlayer`,
+  `SpawnSystemCache`). Reihenfolge am Ende: Treiber → Core-Reset → Legacy-Event. Freecam-Patches
+  aktiviert jetzt Core im Raid-Start (gekapselt), nicht mehr nur Redeploy.Client.
+- **Owner-Cleanup-Guard ist an die Instanz gebunden** (`OwnerCleanupHelper.IsRetired`): der vom
+  Pipeline-Teardown zerstörte Owner überspringt Vanilla-`CleanupOnDestroy`, egal wie lange die
+  Treiber-Flags leben.
+- **Finalize-Coroutinen prüfen Identität** (`game.LocalPlayer` bzw. Owner), bevor sie Kamera und
+  `MyPlayer` anfassen.
+- `DeadBodyGuard` wirkt nur noch in einem `LocalGame` (nicht unter Fikas `CoopGame`).
+- Client: Der Cooldown bricht ab, wenn der Raid währenddessen endet (`IsRespawnInProgress` bleibt
+  bis `GameEnd` absichtlich gesetzt — hält den Owner-Guard scharf). `RedeployDriver` beansprucht nur
+  Tode, die `RespawnService` bedienen kann; jede verbleibende Lücke wirft → Core fail-open →
+  Vanilla-Tod statt Soft-Lock.
+
+**Deploy-Voraussetzung:** `maschine-Redeploy.Core.dll` wird flach nach `BepInEx/plugins` deployt und
+von ArenaMode mitbenutzt. Diesen Stand erst deployen, wenn ArenaMode S0-16 hat (idempotentes
+`RecoverOldBody`): Vorher endet ein vom Preflight abgelehnter Live-Swap (nur bei
+`IsAvailable == false`, also nach einem Spiel-Update mit fehlgeschlagenem Patch) über
+`RecoverOldBody` → doppeltes `RegisterPlayer` → `EndRaidAsLastResort` als Killed-Raid für einen
+lebenden Spieler. Auf `main` war derselbe Fall schlimmer (Awake-Abbruch, Pipeline im halb
+installierten Hub), aber sauber ist er erst mit S0-16. Review 12.09.: zwei Prüfer bestätigt.
+
+Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPreflight` ab —
+`dotnet test Redeploy.Tests`. Alles andere bleibt In-Game (Szenarien: `docs/RESPAWN-API.md`, Abschnitt 10).
+
 ## Nicht annehmen (Claude Code)
 
 1. **Equipment wird beim Respawn gelöscht** — es bleibt auf der Leiche im World-Inventar.

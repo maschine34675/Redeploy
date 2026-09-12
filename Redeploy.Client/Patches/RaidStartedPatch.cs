@@ -27,8 +27,8 @@ internal sealed class RaidStartedPatch : ModulePatch
         if (!Settings.Enabled.Value)
             return;
 
-        FreecamCompatHelper.EnablePatchesIfPresent();
-
+        // Freecam's camera-operation patches are enabled by Core's own raid-start postfix
+        // now, for every consumer of the engine.
         if (FikaCompatCheck.IsFikaLoaded)
         {
             NotificationManager.DisplayMessageNotification(

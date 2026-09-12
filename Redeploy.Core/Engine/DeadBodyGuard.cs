@@ -99,6 +99,12 @@ public static class DeadBodyGuard
                 if (player == null || !Singleton<GameWorld>.Instantiated)
                     return true;
 
+                // Only a LocalGame can respawn. Under Fika (CoopGame) or in any other game
+                // the raid ends with the local player's death, and the vanilla record must
+                // stay so bots treat that body like any corpse.
+                if (!Singleton<AbstractGame>.Instantiated || !(Singleton<AbstractGame>.Instance is LocalGame))
+                    return true;
+
                 var localId = Singleton<GameWorld>.Instance.MainPlayer?.ProfileId;
                 return localId == null || player.ProfileId != localId;
             }
