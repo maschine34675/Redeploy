@@ -263,9 +263,31 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
   (mit Unity-null) und eine Mock-Fassade mit der wörtlichen v1-Oberfläche — Tier-Äquivalenz,
   Fehlerpfad, Late Attach, Entdopplung, `IsReplacing`-Halt samt 35-s-Kappe, kein falscher raid-start
   nach `RaidEnded`, `null` bei nicht verfügbarem Core, Teilbindung, Abmeldung, werfender Konsument.
-- **Nicht enthalten**: Golden-Order-Guard (8.4), In-Game-Probe (8.5), Bindungstest gegen den echten
-  gebauten Core, Treiber-Versionsprüfung (3.9), ArenaMode-Migration 4–6 (Abschnitt 5). Kein Konsument
-  benutzt bisher ein neues Member; KillcamReplay ist der geplante erste (Abschnitt 7).
+- **Nicht enthalten** (Stand Stufe 1): Golden-Order-Guard (8.4), In-Game-Probe (8.5), Bindungstest
+  gegen den echten gebauten Core, Treiber-Versionsprüfung (3.9), ArenaMode-Migration 4–6 (Abschnitt 5).
+  Probe, Versionsprüfung, Punkt 6 und KillcamReplay kamen danach, siehe nächster Abschnitt.
+
+### Folgearbeiten zu Stufe 1 (13.09.2026 abends)
+
+- **Core-Version** in `Redeploy.Core/CoreVersion.props` (1.0.0), nicht mehr aus `Shared.props`. Bei
+  jeder Core-Änderung, auf die sich ein Treiber verlassen kann, dort erhöhen.
+- **Treiber-Check** `drivers/CoreVersionGate.cs`, in Redeploy.Client und ArenaMode.Client verlinkt;
+  beide csproj importieren `CoreVersion.props` und stempeln `RedeployCoreBuiltAgainst`. Älterer Core
+  ⇒ Warnung + `Chainloader.DependencyErrors` (SPT-Toast „plugin failed to load", der Treiber läuft
+  trotzdem). Die Datei darf keine Core-Typen benutzen. Tests: `CoreVersionTests` (Vergleich, Props,
+  Version des gebauten Core, Stempel der gebauten Treiber inklusive ArenaMode).
+- **Probe** `tools/RespawnApiProbe` (Anleitung im README dort). Ein normaler Build deployt nichts,
+  auch nicht Core (`AdditionalProperties="SPTModType=Library"` an der Referenz); deployen mit
+  `-p:DeployProbe=true`. Deployt ist sie seit 13.09. abends mit allen Schaltern aus; ihr immer
+  werfender `Replaced`-Abonnent erzeugt pro Ersetzung absichtlich eine Core-Warnung.
+- **Befund:** Eine erfolgreiche Ersetzung läuft synchron in einem Aufruf (`Player.Init` mit
+  `async: false`). `IsReplacing` ist nur auf Fehler-/Timeout-Pfaden über Frames sichtbar.
+- **Falle:** Jedes Projekt mit `ProjectReference` auf Core deployt Core mit, wenn es ohne
+  `-p:SPTModType=Library` gebaut wird (Core setzt `SPTModType=Client` fest). Kompilierprüfungen
+  deshalb immer mit dem Schalter.
+- **KillcamReplay 0.9.8** ist der erste Konsument (eigenes Repo, Commit `9ba08cc`).
+- Weiter offen: 8.4, Bindungstest gegen den echten Core, ArenaMode-Migration 4 und 5, die
+  Probe-Szenarien im Spiel.
 
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
 Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
@@ -273,11 +295,12 @@ Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) un
 `…-r2.md`, `…-r3.md`, `…-r4.md`. **Stand 13.09.2026:** r2/r3 stoppten nur auf Fremdbefunden
 (Vanilla-Race-Familie beim `Stop`, SAIN-Gehirnkonflikt); der User-Playtest (r4 wurde nicht mehr
 gebraucht) bestätigte alle Stufe-0-Szenarien, die sich nativ auslösen lassen. Details im Kopf
-von `docs/RESPAWN-API.md`. Deployt sind Core `82A7C33A…` (Code `9f16dc5`, Stufe 1) und
-Redeploy.Client `7EC406A1…`; ArenaMode seit `a2fcced` mit Gesten- und Corpse-Looting-Gate.
-Der User-Playtest am Abend des 13.09. auf diesem Core (Arena und gewöhnlicher Raid, acht
-Ersetzungen, ein Give-up) lief fehlerfrei; was er nicht auslösen konnte, steht im Kopf von
-`docs/RESPAWN-API.md`.
+von `docs/RESPAWN-API.md`. Der User-Playtest am Abend des 13.09. auf Core `82A7C33A…` (Code
+`9f16dc5`, Stufe 1; Arena und gewöhnlicher Raid, acht Ersetzungen, ein Give-up) lief fehlerfrei;
+was er nicht auslösen konnte, steht im Kopf von `docs/RESPAWN-API.md`. **Deployt seit den
+Folgearbeiten:** Core `C3DC2F12…` (`1.0.0+33c79a7`), Redeploy.Client `FC2F1A40…` (`33c79a7`),
+ArenaMode.Client `54C2D7B7…` (`b5011cd`), KillcamReplay `9D3245A8…` (0.9.8), RespawnApiProbe
+`FE381E77…`; der ArenaMode-Server blieb `70FDD6CB…` (`699df57`). In-game noch ungetestet.
 
 ## Nicht annehmen (Claude Code)
 

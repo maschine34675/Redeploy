@@ -90,7 +90,9 @@ reference the DLL: copy `interop/RedeployRespawnInterop.cs` into your project, c
 namespace, and add the `LocalBodyTracker` component to your plugin. It binds to Core by
 reflection when it is installed and falls back to polling `GameWorld.MainPlayer` otherwise,
 so the same code runs with or without Redeploy. The contract is frozen at `ApiVersion` 1;
-the reasoning and the guarantees are in `docs/RESPAWN-API.md`.
+the reasoning and the guarantees are in `docs/RESPAWN-API.md`. Core's own version
+(`maschine-Redeploy.Core.dll`, 1.0.0 and up) is independent of Redeploy's and only tells fix
+levels apart; check `ApiVersion`, not the file version, before using the API.
 
 ## Support
 

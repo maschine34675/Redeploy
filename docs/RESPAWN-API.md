@@ -64,6 +64,29 @@
 > false-Zweige von `AvailabilityRule`; die öffentlichen Abfragen ruft noch niemand auf (8.5 bleibt
 > der Weg dahin). Vorbestehend, für KillcamReplay als ersten Konsumenten relevant: solange
 > KillcamReplay `LocalGame.Stop` zurückhält, meldet `RaidIsTearingDown` noch false.
+> **Folgearbeiten umgesetzt (13.09.2026 abends), in-game noch ungetestet:**
+> - *Versionslinie (3.9):* Core hat eine eigene Version in `Redeploy.Core/CoreVersion.props`, beginnend
+>   bei 1.0.0 (`9f9932d`). `Shared.props` gilt nur noch für Redeploy.Client.
+> - *Treiber-Check (3.9, Abschnitt 5 Punkt 6):* Beide Treiber stempeln die Core-Version, gegen die sie
+>   gebaut sind, als `AssemblyMetadata("RedeployCoreBuiltAgainst")` und vergleichen sie im Awake direkt
+>   nach `RedeployCore.Init` über die gemeinsame Quelle `drivers/CoreVersionGate.cs` mit
+>   `RedeployCore.Version` (Redeploy `9f9932d`, ArenaMode `b5011cd`). Ein älterer Core wird geloggt und in
+>   `Chainloader.DependencyErrors` eingetragen; SPT zeigt dafür im Hauptmenü einen roten Toast
+>   „plugin(s) failed to load". Deshalb sagt der Text ausdrücklich, dass nichts ausgefallen ist.
+> - *In-Game-Probe (8.5):* `tools/RespawnApiProbe` (`33c79a7`), Szenarien und erwartete Zeilen in dessen
+>   README. Code-Befund dabei zu Frage 2: Eine erfolgreiche Ersetzung läuft vom Teardown bis `Replaced`
+>   in einem Aufruf, weil das Spiel den Spieler mit `async: false` erzeugt (`LocalPlayer.Create` →
+>   `Player.Init`). `IsReplacing` ist deshalb nur auf Fehler- und Timeout-Pfaden über eine Frame-Grenze
+>   sichtbar; der Schalter „`RunRespawn` während laufender Pipeline" fragt aus einem Prefix auf
+>   `BaseLocalGame.vmethod_3`.
+> - *Erster Konsument (Abschnitt 7):* KillcamReplay 0.9.8 (`9ba08cc`) nutzt die Interop-Datei, beendet ein
+>   Replay bei `BodyChanged` mit dem Opfer als altem Body im Frame der Ersetzung (nicht beim Raid-Ende),
+>   prüft im `OnDead`-Postfix `ReferenceEquals(MainPlayer, __instance)` und loggt `IsRespawnPending`
+>   nur. Ob ein beanspruchter Tod das Replay kürzt, bleibt offen.
+> - Deployt: Core `C3DC2F12…` (`1.0.0+33c79a7`), Redeploy.Client `FC2F1A40…`, ArenaMode.Client
+>   `54C2D7B7…` (`b5011cd`), KillcamReplay `9D3245A8…`, Probe `FE381E77…` (alle Schalter aus).
+> - Weiter offen: 8.4 (Golden-Order-Guard), Bindungstest gegen den echten gebauten Core, Punkte 4 und 5
+>   der ArenaMode-Migration, die Probe-Szenarien im Spiel.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
@@ -683,7 +706,7 @@ Core rollt nichts zurück. Für jeden Konsumenten gilt dieselbe Regel: gecachte 
 - Genau eine flache Datei, `BepInEx/plugins/maschine-Redeploy.Core.dll`, byte-identisch im Redeploy- und im ArenaMode-Zip. Es gewinnt die zuletzt entpackte.
 - Heute gibt es dafür noch keine Werkzeuge. `Redeploy/build` und `ArenaMode/build` enthalten nur Server-Ausgaben. Core deployt sich über `Redeploy/Shared.props` selbst. Deployt ist derzeit der Debug-Build (`plugins/maschine-Redeploy.Core.dll` hat 60928 Bytes und ist identisch mit `bin/Debug`, `bin/Release` hat 57344 Bytes). Keines der beiden Mods ist in `spt-release` registriert.
 - Regel: nie einen Core ausliefern, der älter ist als der neueste veröffentlichte.
-- Empfehlung: eine eigene Versionslinie für Core, also die Kopplung an Redeploys `Shared.props:3` lösen. Der eigentliche Vertrag ist `ApiVersion`; die Fix-Ebene prüft `RedeployCore.Version`.
+- Empfehlung: eine eigene Versionslinie für Core, also die Kopplung an Redeploys `Shared.props:3` lösen. Der eigentliche Vertrag ist `ApiVersion`; die Fix-Ebene prüft `RedeployCore.Version`. *Umgesetzt 13.09.2026:* `Redeploy.Core/CoreVersion.props`, Core 1.0.0. Die Bytezahlen im Punkt davor sind historisch; seit Stufe 1 ist der Release-Build deployt.
 - Core bleibt in 1.0 ein Nicht-Plugin. Getrennte Statics sind **nicht** der Grund: Bei genau einer Datei ist das ausgeschlossen, auch als Plugin, weil der Chainloader pro GUID nur die neueste Kopie behält und pro Pfad lädt. Der Grund ist, dass die Versionsprüfung über `RedeployCore.Version` den Skew ohne Umbau abdeckt. Ein `BepInPlugin` mit eigener GUID bleibt eine Option (Abschnitt 6): `[BepInDependency(coreGuid, "x.y.z")]` liefert eingebauten Mindestversions-Schutz über `DependencyErrors`.
 
 ---
@@ -1215,13 +1238,13 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
 Alle Punkte laufen über die Probe aus Abschnitt 8.5.
 
 1. **Bindung aus einem frühen Awake:** Lädt `Type.GetType(aqn)` Core im Spiel (nativer Mono-Pfad) per `LocalResolve`, bevor irgendein Treiber sein Awake durchlaufen hat? Im CoreCLR-Harness funktionierte es. Wenn nicht, bleibt es beim erneuten Versuch pro `GameWorld`.
-2. **Frame-Abstand:** Wie viele Frames liegen zwischen `Replaced`, der Fortsetzung des Anforderers (N+1 oder N+2), `FinalizeRespawnView` und `EnsureBattleUiReady`? Fällt `Replaced` mit dem Wechsel von `MainPlayer` in denselben Frame, auch mit SAIN, BigBrain und UIFixes, also bleibt die Erzeugung synchron?
+2. **Frame-Abstand:** Wie viele Frames liegen zwischen `Replaced`, der Fortsetzung des Anforderers (N+1 oder N+2), `FinalizeRespawnView` und `EnsureBattleUiReady`? Fällt `Replaced` mit dem Wechsel von `MainPlayer` in denselben Frame, auch mit SAIN, BigBrain und UIFixes, also bleibt die Erzeugung synchron? *Code-Stand 13.09.2026:* Im Vanilla-Pfad ja, `LocalPlayer.Create` ruft `Player.Init(..., async: false)`, dessen `await`s alle hinter `if (async)` stehen; `RunRespawn` erreicht `Replaced` ohne `yield`. Offen bleibt, ob ein Mod diesen Pfad asynchron macht.
 3. **Todesfenster nach der Pipeline:** Der Code belegt, dass nur der anfordernde Treiber ablehnt. Offen ist das tatsächliche Verhalten bei einem Tod innerhalb von etwa 0,5 s nach dem Raidstart-Swap (Protection = null): Zeigt Redeploy (installiert) seinen Prompt im Arena-Raid, und blockiert sich der Raid ohne Redeploy? Das entscheidet über die Stufe-2-Punkte "Lease" und "Raid-Besitz". Eine günstige Übergangslösung wäre ein kurzer Schutz für den Raidstart-Swap.
 4. **Hideout und Narrate:**
    - Der Hideout ruft `OnGameStarted` nicht auf. Der `HideoutGame`-Filter am Ende ist deshalb unbedingt sicher und steht in S0-7. Offen ist nur, ob der `GameEnd`-Postfix über geteilte Generics dort überhaupt feuert (Log-Probe beim Verlassen des Hideouts). Ohne Filter würde `ArenaSession.OnRaidEnded` `ArmedForNextRaid` löschen (`ArenaSession.cs:366-370`).
    - Sind Trader-Narrate-Szenen in SPT 4.1 erreichbar? Wenn ja: Unterdrückt der `NarrateGameWorld`-Filter den Start, bleibt ArenaMode armiert, und unterbleibt `ConfirmOrdinaryRaidStarted`?
 5. **SAIN nach Live-Swap:** Entspricht das deployte SAIN 4.5.1 dem Referenz-Quelltext? Ist die `PlayerComponent` des lokalen Spielers weg, und hören und sehen Bots den Spieler noch? Entscheidet S0-9.
-6. **KillcamReplay-`StopPlayback` im `Replaced`-Handler:** Keine Exception am bereits zerstörten alten `PlayerCameraController`, kein Bildfehler? Entscheidet, ob `Replacing` (Stufe 2) überhaupt gebraucht wird.
+6. **KillcamReplay-`StopPlayback` im `Replaced`-Handler:** Keine Exception am bereits zerstörten alten `PlayerCameraController`, kein Bildfehler? Entscheidet, ob `Replacing` (Stufe 2) überhaupt gebraucht wird. *Seit KillcamReplay 0.9.8 prüfbar:* Ein Redeploy-Respawn während des Replays muss „Playback end ...: replacement (death)" statt „camera destroyed" loggen.
 7. **Fika-Testbett (`D:\SPT41Fika`):**
    - `IsAvailable == false`, keine Core-Events, der Tracker liefert Poll-Wechsel und `IsRespawnPending == null`;
    - die eigene Leiche bekommt einen `DeadBodiesController`-Eintrag (S0-11);
