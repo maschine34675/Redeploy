@@ -1,0 +1,49 @@
+<!-- In-game probe for RespawnApi v1 (docs/RESPAWN-API.md, section 8.5; scenarios in section
+     10 and tools/RespawnApiProbe/README.md). A development BepInEx plugin, never shipped.
+     A plain build deploys nothing: SPTModType is not "Client" here, and the Core reference
+     below builds Core as a Library, so Core's own self-deploy cannot fire either. Deploy the
+     probe on purpose with
+       dotnet build tools/RespawnApiProbe -c Release -p:DeployProbe=true
+     and remove BepInEx/plugins/maschine-RespawnApiProbe.dll when done. -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>maschine-RespawnApiProbe</AssemblyName>
+    <RootNamespace>RespawnApiProbe</RootNamespace>
+    <Description>In-game probe for Redeploy.Core RespawnApi v1 (development only)</Description>
+    <Authors>maschine</Authors>
+    <SPTModType>Probe</SPTModType>
+    <LangVersion>latest</LangVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The consumer interop master copy, UNCHANGED including its namespace (8.5). -->
+    <Compile Include="..\..\interop\RedeployRespawnInterop.cs" Link="Production\RedeployRespawnInterop.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Private="false": the probe never carries a copy of Core. AdditionalProperties: build
+         Core as a Library for this reference, so building the probe never redeploys Core. -->
+    <ProjectReference Include="..\..\Redeploy.Core\Redeploy.Core.csproj" Private="false" AdditionalProperties="SPTModType=Library" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" />
+    <Reference Include="Comfort" />
+    <Reference Include="Comfort.Unity" />
+    <Reference Include="UnityEngine" />
+    <Reference Include="UnityEngine.CoreModule" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+  </ItemGroup>
+
+  <Target Name="DeployProbe" AfterTargets="PostBuildEvent" Condition="'$(DeployProbe)'=='true'">
+    <Exec Command='xcopy /F /Y "$(TargetPath)" "$(SPTPath)\BepInEx\plugins\"' />
+  </Target>
+
+</Project>
