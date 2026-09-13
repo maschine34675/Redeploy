@@ -2,6 +2,7 @@ using EFT;
 using EFT.UI;
 using EFT.UI.SessionEnd;
 using HarmonyLib;
+using Redeploy.Core.Api;
 using Redeploy.Core.Compat;
 using Redeploy.Core.GameAccess;
 using SPT.Reflection.Patching;
@@ -93,7 +94,7 @@ public static class DeathInterception
     /// claimed, no guard blocks anything, and RunRespawn is refused before any teardown.
     /// </summary>
     internal static bool IsAvailable
-        => IsOperational && DriverCount > 0 && !FikaCompatCheck.IsFikaLoaded;
+        => AvailabilityRule.Evaluate(IsOperational, DriverCount, () => FikaCompatCheck.IsFikaLoaded);
 
     public static void Register(IDeathInterceptionDriver driver)
     {
@@ -230,11 +231,19 @@ public static class DeathInterception
             if (!IsAvailable)
                 return true;
 
+            var body = localGame.LocalPlayer;
             var claimant = FindClaimant(localGame);
             if (claimant == null)
+            {
+                // Vanilla takes this death; the OnDead-time prediction must stop for it.
+                RespawnClaims.MarkProcessed(body);
                 return true;
+            }
 
+            // Pending from here until the driver has acted, whatever the raid status.
+            RespawnClaims.BeginClaim(body, claimant);
             CoreSignals.Respawn.Raise(OnDeathIntercepted, h => h(localGame, claimant), nameof(OnDeathIntercepted));
+            RespawnApi.PublishDeathClaimed(body, claimant.Name);
 
             try
             {
@@ -244,10 +253,12 @@ public static class DeathInterception
             {
                 // Fail open: a throwing driver must not swallow the death — let the
                 // vanilla death handler run so the death screen still appears.
+                RespawnClaims.EndDispatch(failedOpen: true);
                 CoreLog.LogError($"Death-interception driver '{claimant.Name}' failed in OnPlayerDied — vanilla death proceeds: {ex}");
                 return true;
             }
 
+            RespawnClaims.EndDispatch(failedOpen: false);
             return false;
         }
     }

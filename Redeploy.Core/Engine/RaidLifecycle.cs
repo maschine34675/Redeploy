@@ -83,8 +83,10 @@ public static class RaidLifecycle
             if (__instance is NarrateGameWorld)
                 return;
 
-            // A raid whose GameEnd was missed is cleaned up here rather than never.
+            // A raid whose GameEnd was missed is cleaned up here rather than never. No
+            // synthetic RaidEnded for it: consumers learn of the new raid from the start.
             RespawnEngineState.ResetForRaidBoundary();
+            RespawnClaims.ResetForRaidBoundary();
 
             // Every consumer that rebinds the owner needs Freecam's camera-operation patches,
             // not only Redeploy. Kept apart from the raise: a failure here must cost nobody
@@ -127,7 +129,19 @@ public static class RaidLifecycle
             // such as ArenaSession's, which read driver state.
             DeathInterception.NotifyDriversRaidEnded();
             RespawnEngineState.ResetForRaidBoundary();
+            RespawnClaims.ResetForRaidBoundary();
+
+            // The public contract speaks of LocalGame raids only (never Fika's CoopGame);
+            // the legacy event keeps its wider audience. Marking the game first closes the
+            // door on a ReplacementFailed from a pipeline coroutine that outlives its raid.
+            var localGame = __instance as LocalGame;
+            if (localGame != null)
+                RespawnClaims.MarkRaidEnded(localGame);
+
             RaiseRaidEnded();
+
+            if (localGame != null)
+                Api.RespawnApi.PublishRaidEnded();
         }
     }
 }

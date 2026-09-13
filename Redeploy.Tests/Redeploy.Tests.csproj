@@ -19,12 +19,17 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- Contract checks read the BUILT Core and the installed consumers as metadata only. -->
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="9.0.0" />
   </ItemGroup>
 
   <!-- Linked, not referenced: Redeploy.Core itself cannot load outside the game. -->
   <ItemGroup>
     <Compile Include="..\Redeploy.Core\Engine\SignalDispatcher.cs" Link="Engine\SignalDispatcher.cs" />
     <Compile Include="..\Redeploy.Core\Engine\RespawnPreflight.cs" Link="Engine\RespawnPreflight.cs" />
+    <Compile Include="..\Redeploy.Core\Engine\RespawnClaimLogic.cs" Link="Engine\RespawnClaimLogic.cs" />
+    <Compile Include="..\Redeploy.Core\Engine\AvailabilityRule.cs" Link="Engine\AvailabilityRule.cs" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using EFT.Interactive;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.Screens;
+using Redeploy.Core.Api;
 using Redeploy.Core.Compat;
 using Redeploy.Core.GameAccess;
 using Redeploy.Core.Spawning;
@@ -128,10 +129,16 @@ public static class RespawnEngine
         LocalPlayer deadPlayer = null;
         EftGamePlayerOwner oldOwner;
         Exception pipelineFailure = null;
+        // The public reason is read from the old body at entry, before anything is torn
+        // down: a dead body is replaced after its death, a living one is swapped. No request
+        // field carries it, so no driver can mislabel a replacement.
+        var reason = RespawnApi.ReasonDeath;
+        var replacedPublished = false;
 
         try
         {
             deadPlayer = request.DeadPlayer ?? game.LocalPlayer;
+            reason = deadPlayer?.HealthController?.IsAlive == true ? RespawnApi.ReasonSwap : RespawnApi.ReasonDeath;
             oldOwner = LocalGameAccessor.GetPlayerOwner(game);
 
             LocalGameAccessor.UnsubscribeDeathHandler(game, deadPlayer);
@@ -189,6 +196,7 @@ public static class RespawnEngine
             // be skipped (pre-Core builds cleared their flag one frame later too).
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            PublishFailure(game, deadPlayer, RespawnApi.StagePrepare);
             onFailure(pipelineFailure);
             yield break;
         }
@@ -200,6 +208,7 @@ public static class RespawnEngine
             {
                 yield return null;
                 RespawnEngineState.IsPipelineRunning = false;
+                PublishFailure(game, deadPlayer, RespawnApi.StageCreate);
                 onFailure(new TimeoutException("Replacement player creation timed out after 30s."));
                 yield break;
             }
@@ -215,6 +224,7 @@ public static class RespawnEngine
         {
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            PublishFailure(game, deadPlayer, RespawnApi.StageRaidEnding);
             onFailure(new OperationCanceledException("Raid ended during respawn — pipeline aborted."));
             yield break;
         }
@@ -268,6 +278,12 @@ public static class RespawnEngine
             ApplyRespawnHealth(newPlayer);
 
             RespawnEngineState.LastRespawnedPlayer = newPlayer;
+
+            // The public event first, the legacy one right after: both isolated per
+            // subscriber, both before spawn protection and before the requester continues.
+            replacedPublished = true;
+            RespawnClaims.Resolve(deadPlayer);
+            RespawnApi.PublishReplaced(deadPlayer, newPlayer, reason);
             RaiseRespawned(newPlayer);
 
             if (request.Protection != null && request.Protection.DurationSeconds > 0f)
@@ -284,11 +300,26 @@ public static class RespawnEngine
         {
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            // Exactly one public outcome per pipeline: a throw after Replaced still reaches
+            // onFailure, but it is not a second event.
+            if (!replacedPublished)
+                PublishFailure(game, deadPlayer, createTask?.IsFaulted == true ? RespawnApi.StageCreate : RespawnApi.StageRewire);
             onFailure(pipelineFailure);
             yield break;
         }
 
         RespawnEngineState.IsPipelineRunning = false;
+    }
+
+    /// <summary>
+    /// The old body is resolved either way; the public event is suppressed once RaidEnded
+    /// has been published for this game (a coroutine that outlives its raid).
+    /// </summary>
+    private static void PublishFailure(LocalGame game, LocalPlayer deadPlayer, string stage)
+    {
+        RespawnClaims.Resolve(deadPlayer);
+        if (!RespawnClaims.RaidEndedFor(game))
+            RespawnApi.PublishReplacementFailed(deadPlayer, stage);
     }
 
     internal static bool RaidIsTearingDown(LocalGame game)
