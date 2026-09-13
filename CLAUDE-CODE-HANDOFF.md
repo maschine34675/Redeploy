@@ -235,6 +235,38 @@ für einen lebenden Spieler. Review 12.09.: zwei Prüfer bestätigt; seit `66861
 Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPreflight` ab —
 `dotnet test Redeploy.Tests`. Alles andere bleibt In-Game (Szenarien: `docs/RESPAWN-API.md`, Abschnitt 10).
 
+### Stufe 1: `RespawnApi` v1 (13.09.2026)
+
+- **Fassade** `Redeploy.Core/Api/RespawnApi.cs` (einziger neuer öffentlicher Typ; Reflection-Name
+  `Redeploy.Core.Api.RespawnApi, maschine-Redeploy.Core`): `ApiVersion` (Property, 1), die Literale
+  `ReasonDeath/ReasonSwap` und `StagePrepare/StageCreate/StageRaidEnding/StageRewire`, die Abfragen
+  `IsAvailable`, `IsReplacing`, `IsRespawnPending(Player)`, die Events `DeathClaimed(body, driver)`,
+  `Replaced(old, new, reason)`, `ReplacementFailed(old, stage)`, `RaidEnded()`. Alle Raises laufen
+  über `CoreSignals` (pro Abonnent isoliert). Die Legacy-Events bleiben: `OnDeathIntercepted` direkt
+  vor `DeathClaimed`, `OnPlayerRespawned` direkt nach `Replaced`.
+- **Claims** `Engine/RespawnClaims.cs` + reine Entscheidung `Engine/RespawnClaimLogic.Decide`
+  (Reihenfolge: kein Body → false; Dispatch-Fenster → true; Core kann nicht ersetzen → false;
+  beansprucht → hält der Treiber?; verarbeitet → false; sonst Vorhersage „aktueller toter Body und
+  ein Treiber will ihn"). Zurückgesetzt an beiden Raid-Grenzen. `MarkRaidEnded(game)` sperrt späte
+  `ReplacementFailed` nach `RaidEnded`.
+- **Interop** `interop/RedeployRespawnInterop.cs` — Masterkopie des `LocalBodyTracker` für Konsumenten
+  (nur Namespace ändern). Bindet per Reflection, pollt sonst `GameWorld.MainPlayer`.
+- **Vertrag**: `Redeploy.Core/Api/api-v1.baseline.txt` ist eingefroren; `ApiContractTests` prüft den
+  gebauten Core (Release oder Debug in `Redeploy.Core/bin`), die Interop-Literale, die installierten
+  `ArenaMode.Client`/`Redeploy.Client` (MemberRefs/TypeRefs) und die von ihnen implementierten
+  Core-Schnittstellen (InterfaceImpl). Ein neues Member ⇒ `ApiVersion` 2 + neue Baseline. Die
+  DLL-Tests überspringen sich ohne Build oder ohne Spielinstallation neben dem Repo.
+  Die Suite bricht nachweislich bei einer fehlenden Baseline-Zeile und bei einer abweichenden
+  Handler-Signatur in der Interop-Datei.
+- **Harness** `tools/RespawnInteropChecks` (`dotnet run --project tools/RespawnInteropChecks -c Release`,
+  Token `RESPAWN_INTEROP_CHECKS_PASSED`): die unveränderte Interop-Datei gegen Stubs für Unity/Comfort/EFT
+  (mit Unity-null) und eine Mock-Fassade mit der wörtlichen v1-Oberfläche — Tier-Äquivalenz,
+  Fehlerpfad, Late Attach, Entdopplung, `IsReplacing`-Halt samt 35-s-Kappe, kein falscher raid-start
+  nach `RaidEnded`, `null` bei nicht verfügbarem Core, Teilbindung, Abmeldung, werfender Konsument.
+- **Nicht enthalten**: Golden-Order-Guard (8.4), In-Game-Probe (8.5), Bindungstest gegen den echten
+  gebauten Core, Treiber-Versionsprüfung (3.9), ArenaMode-Migration 4–6 (Abschnitt 5). Kein Konsument
+  benutzt bisher ein neues Member; KillcamReplay ist der geplante erste (Abschnitt 7).
+
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
 Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
 Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) und die Fortsetzungen

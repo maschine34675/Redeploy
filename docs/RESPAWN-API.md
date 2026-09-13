@@ -27,6 +27,28 @@
 > Live-Swap normal (Frage 5 praktisch beantwortet, `PlayerComponent`-Detail offen). Frage 8
 > (Cooldown-Race) ist nativ nicht auslösbar (kein Exit im toten Zustand); 9 bis 11 brauchen
 > erzwungene Bedingungen und bleiben offen. Weiter offen: S0-9-Detail, Stufe 1, Stufe 2.
+> **Stufe 1 umgesetzt (13.09.2026):** `Redeploy.Core/Api/RespawnApi.cs` wörtlich nach 3.1
+> (`IsAvailable` delegiert an `DeathInterception.IsAvailable`, gleiche Operandenreihenfolge);
+> Claim-Zustand in `Engine/RespawnClaims.cs`, die Entscheidung als reine Funktion
+> `Engine/RespawnClaimLogic.Decide` (Wahrheitstabelle aus 8.1 in `Redeploy.Tests`); Verdrahtung
+> nach 3.2 in `RunRespawn` (Grund aus `IsAlive` beim Eingang, `ReplacementFailed` je Ausgang mit
+> Stufe, `Replaced` vor dem Legacy-`OnPlayerRespawned`, genau ein öffentliches Ergebnis je
+> Pipeline, Unterdrückung nach `RaidEnded` desselben Spiels), im CG_Spawn-Prefix
+> (`MarkProcessed` für unbeanspruchte Tode, `BeginClaim` → `OnDeathIntercepted` → `DeathClaimed`
+> → Treiber → `EndDispatch`) und in `RaidLifecycle` (öffentliches `RaidEnded` nur für `LocalGame`,
+> nach Treiber-Reset, Core-Reset und Legacy-Event). Interop-Masterkopie `interop/RedeployRespawnInterop.cs`
+> (4.1 wörtlich). Vertragstests nach 8.2 in `Redeploy.Tests/ApiContractTests.cs`: Baseline
+> `Redeploy.Core/Api/api-v1.baseline.txt` gegen den gebauten Core (MetadataLoadContext),
+> Drift-Check der Interop-Literale samt Handler-Signaturen, MemberRef-/TypeRef-Auflösung der
+> installierten `ArenaMode.Client`/`Redeploy.Client` gegen den neuen Core und der
+> InterfaceImpl-Check (jede von einem Konsumenten implementierte Core-Schnittstelle hat exakt ihre
+> Baseline-Member). Die Operandenreihenfolge von `IsAvailable` (S0-12) ist als reine Regel
+> `Engine/AvailabilityRule` getestet. 8.3 als `tools/RespawnInteropChecks` (47 Prüfungen, die
+> unveränderte Interop-Datei gegen Stand-ins und die wörtliche Mock-Fassade, einschließlich der
+> Laufzeit-Bindung, Teilbindung und Abmeldung aus 8.2). Noch nicht umgesetzt: 8.4
+> (Golden-Order-Guard), 8.5 (In-Game-Probe), der Bindungstest gegen den echten gebauten Core, die
+> Treiber-Versionsprüfung aus 3.9 und die Punkte 4 bis 6 der ArenaMode-Migration (Abschnitt 5).
+> Kein Konsument nutzt bisher ein neues Member.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

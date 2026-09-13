@@ -81,6 +81,17 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or edit `B
 - **Scav raids** work the same way, but have seen less testing than PMC raids.
 - The mod changes how your profile is written at the end of a raid. Keep a profile backup while trying it out.
 
+## For mod authors
+
+Mods that keep a reference to the local player can follow body replacements through
+`Redeploy.Core.Api.RespawnApi` (events `DeathClaimed`, `Replaced`, `ReplacementFailed`,
+`RaidEnded`; queries `IsAvailable`, `IsReplacing`, `IsRespawnPending`). You do not need to
+reference the DLL: copy `interop/RedeployRespawnInterop.cs` into your project, change its
+namespace, and add the `LocalBodyTracker` component to your plugin. It binds to Core by
+reflection when it is installed and falls back to polling `GameWorld.MainPlayer` otherwise,
+so the same code runs with or without Redeploy. The contract is frozen at `ApiVersion` 1;
+the reasoning and the guarantees are in `docs/RESPAWN-API.md`.
+
 ## Support
 
 Report problems at <https://github.com/maschine34675/Redeploy/issues>.
