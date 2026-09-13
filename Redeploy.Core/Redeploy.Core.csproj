@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\Shared.props" />
+  <Import Project="CoreVersion.props" />
 
   <PropertyGroup>
+    <!-- Core's own version line (CoreVersion.props), not Redeploy's Shared.props version. -->
+    <Version>$(RedeployCoreVersion)</Version>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>maschine-Redeploy.Core</AssemblyName>
     <RootNamespace>Redeploy.Core</RootNamespace>

@@ -1,0 +1,14 @@
+<!-- The one place Core's version lives (docs/RESPAWN-API.md, 3.9 "Paketierung"). Core has
+     its own version line, decoupled from Redeploy's Shared.props: the contract other mods
+     rely on is RespawnApi.ApiVersion, and the fix level below it is this number.
+     Imported by Redeploy.Core.csproj (sets its Version) and by every compiled driver
+     (Redeploy.Client, ArenaMode.Client), which stamp it into their own assembly as the
+     Core version they were built against (drivers/CoreVersionGate.cs compares it with the
+     installed Core in Awake). Bump it whenever Core changes in a way a driver may rely on;
+     never ship a Core older than the newest one published. -->
+<Project>
+  <PropertyGroup>
+    <RedeployCoreVersion>1.0.0</RedeployCoreVersion>
+    <RedeployCoreBuiltAgainstKey>RedeployCoreBuiltAgainst</RedeployCoreBuiltAgainstKey>
+  </PropertyGroup>
+</Project>
