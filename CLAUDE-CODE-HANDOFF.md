@@ -285,7 +285,12 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
 - **Falle:** Jedes Projekt mit `ProjectReference` auf Core deployt Core mit, wenn es ohne
   `-p:SPTModType=Library` gebaut wird (Core setzt `SPTModType=Client` fest). Kompilierprüfungen
   deshalb immer mit dem Schalter.
-- **KillcamReplay 0.9.8** ist der erste Konsument (eigenes Repo, Commit `9ba08cc`).
+- **KillcamReplay 0.9.8** ist der erste Konsument (eigenes Repo, Commit `9ba08cc`). Seit **0.9.9**
+  (`49b1c8b`, User-Entscheidung) hält KillcamReplay einen Respawn seines Replay-Opfers per Postfix auf
+  `RespawnEngine.RunRespawn`, bis das Replay schwarz ausgeblendet hat (Überspringen mit Leertaste).
+  Wer `RunRespawn`, `RespawnRequest.Game` oder `RespawnRequest.DeadPlayer` umbenennt, schaltet diesen
+  Hold still ab; `tools/HandoffChecks` im KillcamReplay-Repo liest die Member aus dem gebauten Core.
+  Redeploy.Client loggt einen vom Raid-Ende abgebrochenen Respawn seitdem als Info (`de7b8f7`).
 - Weiter offen: 8.4, Bindungstest gegen den echten Core, ArenaMode-Migration 4 und 5, die
   Probe-Szenarien im Spiel.
 
@@ -298,9 +303,11 @@ gebraucht) bestätigte alle Stufe-0-Szenarien, die sich nativ auslösen lassen. 
 von `docs/RESPAWN-API.md`. Der User-Playtest am Abend des 13.09. auf Core `82A7C33A…` (Code
 `9f16dc5`, Stufe 1; Arena und gewöhnlicher Raid, acht Ersetzungen, ein Give-up) lief fehlerfrei;
 was er nicht auslösen konnte, steht im Kopf von `docs/RESPAWN-API.md`. **Deployt seit den
-Folgearbeiten:** Core `C3DC2F12…` (`1.0.0+33c79a7`), Redeploy.Client `FC2F1A40…` (`33c79a7`),
-ArenaMode.Client `54C2D7B7…` (`b5011cd`), KillcamReplay `9D3245A8…` (0.9.8), RespawnApiProbe
-`FE381E77…`; der ArenaMode-Server blieb `70FDD6CB…` (`699df57`). In-game noch ungetestet.
+Folgearbeiten:** Core `C3DC2F12…` (`1.0.0+33c79a7`), ArenaMode.Client `54C2D7B7…` (`b5011cd`),
+RespawnApiProbe `FE381E77…`; der ArenaMode-Server blieb `70FDD6CB…` (`699df57`). Der Playtest am
+13.09. spät lief darauf fehlerfrei. Danach neu deployt: KillcamReplay `705FB569…` (0.9.9, `49b1c8b`)
+und Redeploy.Client `10F017AD…` (`de7b8f7`, mit `-p:SPTModType=Library` gebaut und von Hand kopiert,
+damit Core nicht mit neuer ProductVersion mitdeployt). Diese beiden sind in-game noch ungetestet.
 
 ## Nicht annehmen (Claude Code)
 
