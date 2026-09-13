@@ -18,6 +18,15 @@
 > beim `Stop` bereits disposten Bots, kein Core-Frame). Korrektur zur Erwartung: der Marker
 > `Blocked raid-end black screen while respawn is pending.` erscheint im Normalpfad nie, weil
 > `CG_Spawn` vor jedem `Stop` abgefangen wird. Fortsetzung: `…-INSTRUCTIONS-r2.md`.
+> **r2/r3 und User-Playtest (13.09.2026):** r2 (`…-RESULTS-r2.md`) und r3 (`…-RESULTS-r3.md`)
+> stoppten erneut nur auf Fremdbefunden (dieselbe Vanilla-Race-Familie beim `Stop`, nun auch als
+> `BotFirstAid`-Callback; SAIN lehnt das von SPT gewürfelte `bossKilla`-Gehirn simulierter
+> Player-Scavs ab). Der User-Playtest schloss die Liste: mehrfacher gewöhnlicher Respawn
+> (0/3 → 1/3, Give-up bei 2/3 endet als Killed), Reset an der Raid-Grenze, Arena-Startkitwechsel,
+> natürlicher Tod, Give-up, Rundenrespawn und TDM ohne verbotenen Marker; Bots kämpfen nach dem
+> Live-Swap normal (Frage 5 praktisch beantwortet, `PlayerComponent`-Detail offen). Frage 8
+> (Cooldown-Race) ist nativ nicht auslösbar (kein Exit im toten Zustand); 9 bis 11 brauchen
+> erzwungene Bedingungen und bleiben offen. Weiter offen: S0-9-Detail, Stufe 1, Stufe 2.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

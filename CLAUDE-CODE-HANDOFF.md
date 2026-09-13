@@ -237,7 +237,12 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
 
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
 Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
-Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) und die Fortsetzung `…-r2.md`.
+Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) und die Fortsetzungen
+`…-r2.md`, `…-r3.md`, `…-r4.md`. **Stand 13.09.2026:** r2/r3 stoppten nur auf Fremdbefunden
+(Vanilla-Race-Familie beim `Stop`, SAIN-Gehirnkonflikt); der User-Playtest (r4 wurde nicht mehr
+gebraucht) bestätigte alle Stufe-0-Szenarien, die sich nativ auslösen lassen. Details im Kopf
+von `docs/RESPAWN-API.md`. Deployt sind weiterhin Core `287c2d9` (Code `c938f5c`) und
+Redeploy.Client `7EC406A1…`; ArenaMode seit `a2fcced` mit Gesten- und Corpse-Looting-Gate.
 
 ## Nicht annehmen (Claude Code)
 
