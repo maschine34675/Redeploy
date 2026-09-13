@@ -273,8 +273,11 @@ Stopp durch Vanilla-Race beim Raid-Stop — siehe `docs/RESPAWN-API.md`-Kopf) un
 `…-r2.md`, `…-r3.md`, `…-r4.md`. **Stand 13.09.2026:** r2/r3 stoppten nur auf Fremdbefunden
 (Vanilla-Race-Familie beim `Stop`, SAIN-Gehirnkonflikt); der User-Playtest (r4 wurde nicht mehr
 gebraucht) bestätigte alle Stufe-0-Szenarien, die sich nativ auslösen lassen. Details im Kopf
-von `docs/RESPAWN-API.md`. Deployt sind weiterhin Core `287c2d9` (Code `c938f5c`) und
+von `docs/RESPAWN-API.md`. Deployt sind Core `82A7C33A…` (Code `9f16dc5`, Stufe 1) und
 Redeploy.Client `7EC406A1…`; ArenaMode seit `a2fcced` mit Gesten- und Corpse-Looting-Gate.
+Der User-Playtest am Abend des 13.09. auf diesem Core (Arena und gewöhnlicher Raid, acht
+Ersetzungen, ein Give-up) lief fehlerfrei; was er nicht auslösen konnte, steht im Kopf von
+`docs/RESPAWN-API.md`.
 
 ## Nicht annehmen (Claude Code)
 

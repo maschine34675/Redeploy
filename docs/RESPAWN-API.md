@@ -49,6 +49,21 @@
 > (Golden-Order-Guard), 8.5 (In-Game-Probe), der Bindungstest gegen den echten gebauten Core, die
 > Treiber-Versionsprüfung aus 3.9 und die Punkte 4 bis 6 der ArenaMode-Migration (Abschnitt 5).
 > Kein Konsument nutzt bisher ein neues Member.
+> **Stufe 1 im Spiel (13.09.2026 abends):** User-Session auf Core `82A7C33A…` (`0.9.0+9f16dc5`),
+> Log `BepInEx/logs/LogOutput-2026-09-13_18-48-19.log`: Arena-TDM mit Startkitwechsel und fünf
+> Rundenrespawns, danach ein gewöhnlicher Raid mit zwei Respawns und Give-up beim dritten Tod
+> (KillcamReplay verzögert `Stop` um 9,5 s). Alle acht Pipelines liefen in den Erfolgszweig; kein
+> Fehlertext aus `SignalDispatcher`, `DeathInterception`, `RespawnClaims`, `RespawnPreflight` oder
+> `RaidLifecycle`, keine Error-Zeile in Client- und Serverlog. `DeathClaimed` und `Replaced` sind
+> positiv belegt über Zeilen, die im selben synchronen Ablauf erst nach dem Publish entstehen
+> („Death intercepted", „Arena death #N", „Spawn protection active", „Respawn complete",
+> „Arena respawn timing"); `RaidEnded` für die Arena indirekt über „Arena session ended." (Legacy-
+> Abonnent unmittelbar davor). Pipeline-Zeiten unverändert gegenüber den Sessions davor. Nicht
+> ausgelöst und damit weiter nur durch Tests belegt: `ReplacementFailed` samt Unterdrückung nach
+> `RaidEnded`, Fail-open im CG_Spawn-Prefix, `MarkProcessed` für unbeanspruchte Tode, die
+> false-Zweige von `AvailabilityRule`; die öffentlichen Abfragen ruft noch niemand auf (8.5 bleibt
+> der Weg dahin). Vorbestehend, für KillcamReplay als ersten Konsumenten relevant: solange
+> KillcamReplay `LocalGame.Stop` zurückhält, meldet `RaidIsTearingDown` noch false.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
