@@ -194,13 +194,19 @@ public static class RespawnService
         Exception failure = null;
         yield return game.StartCoroutine(RespawnEngine.RunRespawn(request, e => failure = e));
 
-        if (failure != null)
+        if (failure is OperationCanceledException)
+        {
+            // The raid ended before or while the pipeline ran (MIA, extract, menu leave). That
+            // is the same race the cooldown check above catches, only later: a KillcamReplay
+            // death replay may hold the respawn until it has faded out. No death screen either:
+            // one on a stopping raid would only paint a Killed panel over the real exit status.
+            Plugin.ModLogger.LogInfo($"Respawn cancelled: {failure.Message}");
+        }
+        else if (failure != null)
         {
             Plugin.ModLogger.LogError($"Respawn failed: {failure}");
 
-            // A refusal because the raid is already ending needs no death screen, and one on
-            // a stopping raid would only paint a Killed panel over the real exit status.
-            if (!(failure is OperationCanceledException) && game.Status == GameStatus.Started)
+            if (game.Status == GameStatus.Started)
                 GiveUpRaid();
         }
         else
