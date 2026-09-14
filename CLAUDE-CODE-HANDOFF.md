@@ -323,6 +323,10 @@ noch ungetestet.
 - Diagnose: eine Logzeile `Respawn position on <map>: ...` mit Leiche, Ziel und Ablehnungsgründen.
 - Konstruktoren von `NearPositionSpawnSelector`/`InfilSpawnSelector` nicht ändern: Die installierten
   Treiber binden sie (Old-Binary-Check).
+- Playtest 14.09. 17:32 auf Core 1.0.1: Platzierungen gültig, keine Fehler. Danach (`cdf2fca`, Client
+  `9C1EFE88…`, Core unverändert `EE09B6B5…`): `RespawnCooldownSeconds` zählt ab dem Tod
+  (`Services/RespawnCooldown.cs`, getestet), mindestens ein Frame vor der Pipeline, weil der Klick im
+  OnGUI des Prompts ankommt; bewusst keine Countdown-Meldung (KillcamReplay kann länger halten).
 
 ## Nicht annehmen (Claude Code)
 
