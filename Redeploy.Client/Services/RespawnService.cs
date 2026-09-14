@@ -157,9 +157,22 @@ public static class RespawnService
     {
         RespawnSessionState.IsRespawnInProgress = true;
 
-        var cooldown = Mathf.Max(0f, Settings.RespawnCooldownSeconds.Value);
+        // Counted from the death: time spent watching a death replay or looking around already counts.
+        var configured = Settings.RespawnCooldownSeconds.Value;
+        var deadFor = RespawnSessionState.LastDeathTime >= 0f ? Time.time - RespawnSessionState.LastDeathTime : -1f;
+        var cooldown = RespawnCooldown.Remaining(configured, RespawnSessionState.LastDeathTime, Time.time);
+        Plugin.ModLogger.LogInfo(deadFor >= 0f
+            ? $"Respawn chosen {deadFor:0.0}s after death; cooldown {configured:0.#}s leaves {cooldown:0.0}s."
+            : $"Respawn chosen; death time unknown, full cooldown {cooldown:0.0}s.");
+
+        // No countdown notification: a KillcamReplay death replay may still hold the respawn after
+        // the cooldown, so any number shown here could promise too little (its own hint covers that).
+        // At least one frame always passes: the click arrives inside the prompt's OnGUI, and the
+        // pipeline's teardown must not run in that call.
         if (cooldown > 0f)
             yield return new WaitForSeconds(cooldown);
+        else
+            yield return null;
 
         // The cooldown is the one window in which the raid can end underneath a chosen
         // respawn (MIA timer, extract, menu leave). Nothing in the pipeline is reversible,

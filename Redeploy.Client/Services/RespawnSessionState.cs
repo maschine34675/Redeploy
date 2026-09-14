@@ -15,6 +15,9 @@ public static class RespawnSessionState
     public static int DeathsThisRaid { get; private set; }
     public static LocalGame CurrentLocalGame { get; set; }
     public static Vector3 LastCorpsePosition { get; set; }
+
+    /// <summary>Time.time of the last death this raid; negative when there was none.</summary>
+    public static float LastDeathTime { get; private set; } = -1f;
     public static RespawnLocationMode SelectedSpawnMode { get; set; } = RespawnLocationMode.NearCorpse;
     public static bool RespawnItemAvailable { get; set; } = true;
 
@@ -40,6 +43,7 @@ public static class RespawnSessionState
     {
         DeathsThisRaid++;
         LastCorpsePosition = corpsePosition;
+        LastDeathTime = Time.time;
         PendingRespawnChoice = true;
     }
 
@@ -61,6 +65,7 @@ public static class RespawnSessionState
         DeathsThisRaid = 0;
         CurrentLocalGame = null;
         LastCorpsePosition = default;
+        LastDeathTime = -1f;
         Core.Spawning.SpawnSystemCache.Clear();
         SelectedSpawnMode = RespawnLocationMode.NearCorpse;
         RespawnItemAvailable = true;

@@ -51,7 +51,7 @@ public static class Settings
             "Respawn",
             "RespawnCooldownSeconds",
             5f,
-            "Delay in seconds before respawning after choosing Respawn.");
+            "Minimum seconds between death and respawn, counted from the death: time spent watching a death replay counts, so choosing Respawn after it spawns you right away.");
 
         CorpseSpawnDistanceMeters = config.Bind(
             "Respawn",

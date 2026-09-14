@@ -66,7 +66,7 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or edit `B
 | `Enabled` | `true` | Master switch. When off, death behaves like vanilla. |
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` means unlimited. |
 | `RespawnHealthPercent` | `100` | Health the replacement character starts with (1–100). |
-| `RespawnCooldownSeconds` | `5` | Delay between choosing a respawn and actually spawning. |
+| `RespawnCooldownSeconds` | `5` | Minimum time between death and respawn, counted from the death: choose Respawn later than that and you spawn right away. |
 | `CorpseSpawnDistanceMeters` | `20` | Preferred distance from your body for *Respawn near corpse*; closer spots (half of it, 3 m) are tried when it does not work out. |
 | `SpawnProtectionSeconds` | `10` | Invulnerability after respawning; `0` disables it. |
 | `RequiredRespawnItem` | `None` | Item that must be carried and is consumed to respawn. |
