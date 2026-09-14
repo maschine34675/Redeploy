@@ -49,7 +49,7 @@ If you ran an early internal build, delete these leftovers first — otherwise a
 
 There are no hotkeys. When you die, the raid keeps running and a window opens with the mouse cursor released:
 
-- **Respawn near corpse** — you spawn a configurable distance from your body.
+- **Respawn near corpse** — you spawn about a configurable distance from your body, at a spot you could have walked to: reachable without a long detour, not through a wall or fence, outside the map's sniper and mine zones, with room to stand. If nothing around your body qualifies, you spawn on your body's own spot, and if that is unusable too (for example inside a sniper zone), at one of the map's regular player spawns.
 - **Respawn at spawn point** — you spawn at one of the map's regular player spawns.
 - **End raid** — the raid ends as killed, exactly as it would without the mod.
 
@@ -67,7 +67,7 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or edit `B
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` means unlimited. |
 | `RespawnHealthPercent` | `100` | Health the replacement character starts with (1–100). |
 | `RespawnCooldownSeconds` | `5` | Delay between choosing a respawn and actually spawning. |
-| `CorpseSpawnDistanceMeters` | `20` | Distance from your body for *Respawn near corpse*. |
+| `CorpseSpawnDistanceMeters` | `20` | Preferred distance from your body for *Respawn near corpse*; closer spots (half of it, 3 m) are tried when it does not work out. |
 | `SpawnProtectionSeconds` | `10` | Invulnerability after respawning; `0` disables it. |
 | `RequiredRespawnItem` | `None` | Item that must be carried and is consumed to respawn. |
 
@@ -91,14 +91,14 @@ namespace, and add the `LocalBodyTracker` component to your plugin. It binds to 
 reflection when it is installed and falls back to polling `GameWorld.MainPlayer` otherwise,
 so the same code runs with or without Redeploy. The contract is frozen at `ApiVersion` 1;
 the reasoning and the guarantees are in `docs/RESPAWN-API.md`. Core's own version
-(`maschine-Redeploy.Core.dll`, 1.0.0 and up) is independent of Redeploy's and only tells fix
+(`maschine-Redeploy.Core.dll`, 1.0.1 and up) is independent of Redeploy's and only tells fix
 levels apart; check `ApiVersion`, not the file version, before using the API.
 
 ## Support
 
 Report problems at <https://github.com/maschine34675/Redeploy/issues>.
 
-Please include the exact Redeploy and SPT versions, what you expected and what happened instead, short reproduction steps, and for the affected raid both `BepInEx/LogOutput.log` and the server console output. Also list the other mods you have installed, especially any that affect the camera, the player character or the end-of-raid screen.
+Please include the exact Redeploy and SPT versions, what you expected and what happened instead, short reproduction steps, and for the affected raid both `BepInEx/LogOutput.log` and the server console output. For a respawn in an odd place, the lines starting with `Respawn position` in `LogOutput.log` name the map, the corpse and the chosen position, and why nearby spots were rejected. Also list the other mods you have installed, especially any that affect the camera, the player character or the end-of-raid screen.
 
 ## License and credits
 

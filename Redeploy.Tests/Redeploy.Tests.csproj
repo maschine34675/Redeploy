@@ -31,6 +31,7 @@
     <Compile Include="..\Redeploy.Core\Engine\RespawnClaimLogic.cs" Link="Engine\RespawnClaimLogic.cs" />
     <Compile Include="..\Redeploy.Core\Engine\AvailabilityRule.cs" Link="Engine\AvailabilityRule.cs" />
     <Compile Include="..\drivers\CoreVersionGate.cs" Link="Drivers\CoreVersionGate.cs" />
+    <Compile Include="..\Redeploy.Core\Spawning\NearSpawnPolicy.cs" Link="Spawning\NearSpawnPolicy.cs" />
   </ItemGroup>
 
 </Project>

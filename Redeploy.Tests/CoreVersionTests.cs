@@ -85,19 +85,35 @@ public class CoreVersionTests
         Assert.Equal(new Version(expected.Major, expected.Minor, Math.Max(expected.Build, 0), 0), actual);
     }
 
+    /// <summary>
+    /// Redeploy.Client lives in this repo and is rebuilt with every Core bump: its stamp must equal
+    /// CoreVersion.props. ArenaMode has its own release cadence: a build stamped with an older Core
+    /// is fine against a newer one (the gate only warns about an older installed Core), so its
+    /// stamp only has to exist and must not be newer than this repo's Core.
+    /// </summary>
     [SkippableTheory]
-    [InlineData("Redeploy", "Redeploy.Client", "maschine-Redeploy.Client.dll")]
-    [InlineData("ArenaMode", "ArenaMode.Client", "maschine-ArenaMode.Client.dll")]
-    public void BuiltDriversAreStampedWithTheCoreVersion(string repo, string project, string fileName)
+    [InlineData("Redeploy", "Redeploy.Client", "maschine-Redeploy.Client.dll", true)]
+    [InlineData("ArenaMode", "ArenaMode.Client", "maschine-ArenaMode.Client.dll", false)]
+    public void BuiltDriversAreStampedWithTheCoreVersion(string repo, string project, string fileName, bool sameRepo)
     {
         var projectBin = Path.Combine(RepoRoot, "..", repo, project, "bin");
         var built = FirstBuilt(projectBin, fileName);
         Skip.If(built == null, $"{fileName} is not built next to this repo");
 
         var stamp = ReadAssemblyMetadata(built, CoreVersionGate.BuiltAgainstKey);
+        var core = ReadCoreVersionProps()["RedeployCoreVersion"];
 
         Assert.True(stamp != null, $"{fileName} has no {CoreVersionGate.BuiltAgainstKey} stamp; its Awake skew check would never fire");
-        Assert.Equal(ReadCoreVersionProps()["RedeployCoreVersion"], stamp);
+        if (sameRepo)
+        {
+            Assert.Equal(core, stamp);
+        }
+        else
+        {
+            Assert.True(Version.TryParse(stamp, out var stamped), $"{fileName} stamp '{stamp}' is not a version");
+            Assert.True(stamped <= Version.Parse(core),
+                $"{fileName} is stamped {stamp}, newer than this repo's Core {core}: it would warn against the Core built here");
+        }
     }
 
     // ---------------------------------------------------------------- helpers

@@ -57,7 +57,7 @@ public static class Settings
             "Respawn",
             "CorpseSpawnDistanceMeters",
             20f,
-            "Distance from corpse when respawning near the corpse (chosen in the death prompt).");
+            "Preferred distance from the corpse when respawning near the corpse (chosen in the death prompt). Only spots you could have walked to count; closer ones are tried if needed, then the corpse's own spot, then a map spawn point.");
 
         SpawnProtectionSeconds = config.Bind(
             "Respawn",
