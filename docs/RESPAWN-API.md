@@ -100,6 +100,19 @@
 > abgebrochenen Respawn seitdem als Info (`de7b8f7`). Deployt: KillcamReplay `705FB569…` (`0.9.9+49b1c8b`),
 > Redeploy.Client `10F017AD…` (`de7b8f7`, von Hand kopiert, damit Core `C3DC2F12…` unverändert bleibt).
 > In-game noch ungetestet.
+>
+> **Core 1.0.1, Respawn außerhalb der Map (14.09.2026, `d532a3c`):** Der User respawnte dreimal hintereinander
+> außerhalb der Map, ohne Log. Ursache im Code: `NearPositionSpawnSelector` nahm den ersten von 12 festen
+> Ringpunkten mit irgendeinem NavMesh im Umkreis von 8 m, ohne Verbindung, Wand- oder Zonenprüfung; das
+> DrakiaXYZ-Waypoints-NavMesh ersetzt auf jeder Map das Original, und jeder weitere Respawn startet von der
+> letzten Leiche. Jetzt muss ein Kandidat erreichbar sein, ohne langen Umweg, ohne dass der Laufweg in
+> Spielerhöhe Wände schneidet, außerhalb der Sniper- und Minenzonen, mit Platz zum Stehen; keine Suche um
+> eine Leiche in einer solchen Zone; Fallbacks Leichenstelle, Map-Spawnpunkt, altes Verhalten. Entscheidungen
+> rein in `Spawning/NearSpawnPolicy.cs` (in `Redeploy.Tests` verlinkt). Öffentliche Konstruktoren unverändert;
+> betrifft auch ArenaModes offenen Fallback (`ArenaSpawnSelector` → `InfilSpawnSelector` → hier). Deployt:
+> Core `EE09B6B5…` (`1.0.1+d532a3c`), Redeploy.Client `B7C07223…` (gestempelt 1.0.1). ArenaMode.Client
+> `54C2D7B7…` bleibt, sein Stempel 1.0.0 ist gegen Core 1.0.1 in Ordnung. In-game noch ungetestet; jede
+> Platzierung loggt eine Zeile `Respawn position on <map>: ...`.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

@@ -307,7 +307,22 @@ Folgearbeiten:** Core `C3DC2F12…` (`1.0.0+33c79a7`), ArenaMode.Client `54C2D7B
 RespawnApiProbe `FE381E77…`; der ArenaMode-Server blieb `70FDD6CB…` (`699df57`). Der Playtest am
 13.09. spät lief darauf fehlerfrei. Danach neu deployt: KillcamReplay `705FB569…` (0.9.9, `49b1c8b`)
 und Redeploy.Client `10F017AD…` (`de7b8f7`, mit `-p:SPTModType=Library` gebaut und von Hand kopiert,
-damit Core nicht mit neuer ProductVersion mitdeployt). Diese beiden sind in-game noch ungetestet.
+damit Core nicht mit neuer ProductVersion mitdeployt). Der User testete danach Warten und Skip
+erfolgreich (ohne Log). **Seit 14.09.:** Core `EE09B6B5…` (1.0.1, `d532a3c`, Respawn-Platzierung nahe
+der Leiche abgesichert, siehe Kopf von `docs/RESPAWN-API.md`) und Redeploy.Client `B7C07223…`; in-game
+noch ungetestet.
+
+### Respawn-Platzierung (Core 1.0.1)
+
+- `NearPositionSpawnSelector` prüft Kandidaten in der Reihenfolge `NearSpawnPolicy.CheckOrder`:
+  NavMesh (6 m), Sniper-/Minenzone (`BorderZone.IsInTriggerZone`, nur XZ), Höhe (8 m), Pfad
+  (`CalculatePath` komplett, höchstens 24 Suchen), Umweg (> 2,5 × 3D-Distanz + 15 m), Laufweg-Sweep in
+  1,3 m Höhe gegen `PlayerStaticCollisionsMask` ohne Terrain, Türen, Interactive, Stehkapsel.
+- Neue Entscheidungen gehören in `NearSpawnPolicy` (rein, getestet), Weltabfragen in die `Probe`-Klasse.
+  `Resolve` darf nicht werfen: Es läuft nach dem Abbau des alten Körpers.
+- Diagnose: eine Logzeile `Respawn position on <map>: ...` mit Leiche, Ziel und Ablehnungsgründen.
+- Konstruktoren von `NearPositionSpawnSelector`/`InfilSpawnSelector` nicht ändern: Die installierten
+  Treiber binden sie (Old-Binary-Check).
 
 ## Nicht annehmen (Claude Code)
 
