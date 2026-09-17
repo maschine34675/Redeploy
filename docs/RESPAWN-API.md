@@ -147,9 +147,10 @@
 >   (statisches `CullingJob.JobParameters`, pro neuer Kamera +1, nur an der Raid-Grenze geleert) und
 >   `cullingCameras`.
 > - Nach einer Ersetzung eine zweite Zeile `Respawn pipeline #N after: … ms to the next frame's coroutines,
->   next frame … ms`, jeder fünfte Respawn zusätzlich die Zahl aktiver `LocalPlayer`-Objekte (zwei Frames
->   später, außerhalb jedes gemessenen Fensters). Hier landen Kosten, die der Respawn nur anstößt (Start neuer
->   Komponenten, erster Render der neuen Kamera).
+>   next frame … ms`. Hier landen Kosten, die der Respawn nur anstößt (Start neuer Komponenten, erster Render
+>   der neuen Kamera). Bis Core 1.0.3 zählte jeder fünfte Respawn zusätzlich die aktiven
+>   `LocalPlayer`-Objekte; das war selbst eine Suche über die Szene (bis 303 ms) und ist seit 1.0.4 weg. Wie
+>   viele Leichen ein Arena-Raid hält, sagt ArenaModes eigene Zeile `Arena corpse cleanup: … trimmed in total`.
 > - Verhältnis zu ArenaModes `Arena respawn timing: … prepare P s, pipeline X s`: X ist Cores Gesamtzeit plus
 >   der Rest des Frames bis zur nächsten Coroutine-Runde (`yield return StartCoroutine(RunRespawn)` setzt erst
 >   im nächsten Frame fort). Im Messraid vom 17.09. stimmt das auf 10 ms: #20 432,6 + 705,6 ms = 1,14 s,

@@ -41,9 +41,6 @@ namespace Redeploy.Core.Engine;
 /// </summary>
 internal sealed class RespawnPipelineTiming
 {
-    /// <summary>A scene-wide object count is O(scene): only every n-th respawn, and two frames late.</summary>
-    private const int SceneCountEvery = 5;
-
     private const float MinStepMilliseconds = 0.05f;
 
     private static readonly RespawnPipelineTiming Disabled = new RespawnPipelineTiming();
@@ -171,18 +168,8 @@ internal sealed class RespawnPipelineTiming
         var next = Stopwatch.GetTimestamp();
 
         var frequency = Stopwatch.Frequency;
-        var line = $"Respawn pipeline #{index} after: {PipelineStages.Milliseconds(resumed - finishedAt, frequency)} ms to the next frame's coroutines, "
-                   + $"next frame {PipelineStages.Milliseconds(next - resumed, frequency)} ms";
-
-        if (index % SceneCountEvery == 0)
-        {
-            // Two frames after the respawn, outside every timed window (Arena's included).
-            var started = Stopwatch.GetTimestamp();
-            var bodies = Read(() => UnityEngine.Object.FindObjectsOfType<LocalPlayer>().Length);
-            line += $", active LocalPlayer objects {bodies} (counted in {PipelineStages.Milliseconds(Stopwatch.GetTimestamp() - started, frequency)} ms)";
-        }
-
-        CoreLog.LogInfo(line + ".");
+        CoreLog.LogInfo($"Respawn pipeline #{index} after: {PipelineStages.Milliseconds(resumed - finishedAt, frequency)} ms to the next frame's coroutines, "
+                        + $"next frame {PipelineStages.Milliseconds(next - resumed, frequency)} ms.");
     }
 
     private static string DescribeState(LocalGame game)
