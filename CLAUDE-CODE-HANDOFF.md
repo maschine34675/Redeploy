@@ -332,6 +332,21 @@ noch ungetestet.
 - BepInEx-Logs rotieren (LogTools behält zehn Sessions, GPU-Host-Läufe zählen mit): Belege aus einem
   Playtest sofort in Doku oder Commit festhalten, der Dateiname ist nach einem Tag oft weg.
 
+### Source Guards, Bindungstest, Pipeline-Messung (17.09.2026)
+
+- `Redeploy.Tests/SourceGuardTests.cs` (RESPAWN-API 8.4, Roslyn, nur Syntax): `RunRespawn` gegen
+  `Redeploy.Tests/Golden/RunRespawn.order.txt`. Gewollte Änderung: einmal `REDEPLOY_UPDATE_GOLDEN=1 dotnet test
+  Redeploy.Tests` (schlägt absichtlich fehl), Diff der Golden-Datei prüfen, dann ohne Variable. Öffentliche
+  Core-Events nur über `CoreSignals.<Signal>.Raise(E, ...)` (Positivliste), Freecam-Patches nur in einem
+  `try` mit nicht werfendem `catch (Exception)`.
+- `Redeploy.Tests/CoreBindingTests.cs` (8.2): kompiliert die Interop-Datei gegen `Managed`, bindet sie im
+  eigenen `AssemblyLoadContext` an das gebaute Core (Release vor Debug, wie die Vertragstests).
+- Messung ab Core 1.0.2: jede Anweisung in `RunRespawn` über den Local `timing` muss inert sein (nur
+  Literale und schlichte Namen von Parametern/Locals als Argumente), sonst ändert sich die Golden-Order.
+  Logzeilen `Respawn pipeline #N …` und `Respawn pipeline #N after: …`, Format im Kopf von
+  `docs/RESPAWN-API.md`. Reflection der Zähler liegt in `RespawnPipelineTiming.Fields`, damit ein
+  fehlendes Feld nie den Raid-Grenzen-Reset trifft.
+
 ## Nicht annehmen (Claude Code)
 
 1. **Equipment wird beim Respawn gelöscht** — es bleibt auf der Leiche im World-Inventar.

@@ -148,7 +148,19 @@
 >   `cullingCameras`.
 > - Nach einer Ersetzung eine zweite Zeile `Respawn pipeline #N after: … ms to the next frame's coroutines,
 >   next frame … ms`, jeder fünfte Respawn zusätzlich die Zahl aktiver `LocalPlayer`-Objekte (zwei Frames
->   später, außerhalb jedes gemessenen Fensters). ArenaModes `pipeline`-Wert enthält diesen Rest des Frames.
+>   später, außerhalb jedes gemessenen Fensters). Das ist ein eigenes Signal für Kosten, die der Respawn nur
+>   anstößt (Start neuer Komponenten, erster Render der neuen Kamera, gewachsene Kosten pro Frame); ArenaModes
+>   `pipeline`-Wert endet, wenn `RunRespawn` fertig ist, und enthält es nicht.
+> - Verhältnis zu ArenaModes `Arena respawn timing: … pipeline X s`: X umfasst Cores Gesamtzeit, das Lesen der
+>   Zähler (`before (read in … ms)`) und die Arena-Vorbereitung vor `RunRespawn` (terminaler TDM-Hold, Wahl und
+>   Vorbereitung des Spawnpunkts in `ArenaAreaRespawn.TryPrepare`). Cores `spawn` packt dort nur das
+>   vorbereitete Ergebnis aus. Wächst X, Cores Gesamtzeit aber nicht, liegt das Wachstum in dieser
+>   Vorbereitung; die misst Core nicht.
+> - `create` ist ein einziger Aufruf ins Spiel (Körper aus dem Pool, Inventar-, Quest- und
+>   Achievement-Controller, `Player.Init`) und lässt sich ohne Patches auf diese Methoden nicht teilen; nur die
+>   Wiederherstellung der Kill-Liste darin ist als `restore` getrennt. Eine nach 30 s aufgegebene Erzeugung kann
+>   ihr `restore` später in eine andere Pipeline schreiben (die aufgegebene hat vorher
+>   `failed-create-timeout` geloggt).
 > - Die Golden-Order-Prüfung bleibt mit allen Marken grün, die Messung verschiebt also keine Anweisung.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.

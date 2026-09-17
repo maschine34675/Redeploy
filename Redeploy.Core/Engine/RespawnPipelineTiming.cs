@@ -20,7 +20,7 @@ namespace Redeploy.Core.Engine;
 /// (ArenaMode LONG-RAID-REVIEW-2026-09-16.md: 0.50 s to 1.02 s over 26 respawns) and the cause is
 /// to be measured, not guessed. Writes one Info line per pipeline:
 ///
-///   Respawn pipeline #7 (death, replaced) on factory4_day: 812.4 ms in 0 frame(s) | teardown 3.1 (owner 2.8) | ... || restore 4.1 ms | before: frame 16.9 ms, heap 1843 MB, ...
+///   Respawn pipeline #7 (death, replaced) on factory4_day: 812.4 ms in 0 frame(s) | teardown 3.1 (owner 2.8) | ... || restore 4.1 ms (212 victims) | before (read in 0.3 ms): frame 16.9 ms, heap 1843 MB, ...
 ///
 /// and, for a replacement, a second line with the rest of that frame and the frame after, where
 /// work the pipeline only scheduled (Start of new components, the first render of the new camera,
@@ -28,6 +28,11 @@ namespace Redeploy.Core.Engine;
 /// out of the line. The "before" counters are read before the clock starts, so they cost the timed
 /// stages nothing: the state each candidate from the research depends on (handlers piling up on
 /// shared objects, the kill list cloned twice, the dead-body registry scan, culling jobs).
+///
+/// What it cannot see: work a driver does before calling RunRespawn (ArenaMode picks and prepares
+/// the spawn point in ArenaAreaRespawn.TryPrepare first, so "spawn" here only unwraps that result),
+/// and the inside of "create", which is one call into the game (pooled body, inventory, quest and
+/// achievement controllers, Player.Init) that cannot be split without patching those methods.
 ///
 /// Measurement only: every member swallows its own failures, and RunRespawn calls it only through
 /// inert statements, which the golden-order guard proves (Redeploy.Tests/SourceGuards.cs).
@@ -50,6 +55,7 @@ internal sealed class RespawnPipelineTiming
     private readonly int _startFrame;
     private readonly string _map;
     private readonly string _before;
+    private readonly long _beforeTicks;
     private bool _finished;
 
     private RespawnPipelineTiming()
@@ -62,7 +68,11 @@ internal sealed class RespawnPipelineTiming
         _index = ++_respawnsThisRaid;
         _startFrame = Time.frameCount;
         _map = Read(() => game.Location.Id);
+        // Outside Core's stages but inside a driver's own respawn timer (ArenaMode's "pipeline"),
+        // and some of it scales with the handler counts it reads: timed, so it can be subtracted.
+        var reading = Stopwatch.GetTimestamp();
         _before = DescribeState(game);
+        _beforeTicks = Stopwatch.GetTimestamp() - reading;
         _restoreTicks = 0;
         _restoredVictims = -1;
         // Last, so reading the counters above is not part of any stage.
@@ -107,7 +117,9 @@ internal sealed class RespawnPipelineTiming
 
     /// <summary>
     /// The kill-list restore runs inside player creation, in Core's BeginStatisticsSession postfix;
-    /// it is timed there and reported next to the create stage it is part of.
+    /// it is timed there and reported next to the create stage it is part of. Known blind spot: a
+    /// creation abandoned after the 30 s timeout keeps running and may still restore later, inside
+    /// whichever pipeline runs then; the abandoned one has already logged "failed-create-timeout".
     /// </summary>
     internal static void RecordVictimsRestore(long ticks, int victims)
     {
@@ -137,7 +149,7 @@ internal sealed class RespawnPipelineTiming
                 .Append(_stages.Format(frequency, MinStepMilliseconds))
                 .Append(" || restore ").Append(PipelineStages.Milliseconds(_restoreTicks, frequency)).Append(" ms (")
                 .Append(_restoredVictims < 0 ? "-" : _restoredVictims.ToString(CultureInfo.InvariantCulture)).Append(" victims)")
-                .Append(" | before: ").Append(_before);
+                .Append(" | before (read in ").Append(PipelineStages.Milliseconds(_beforeTicks, frequency)).Append(" ms): ").Append(_before);
             CoreLog.LogInfo(line.ToString());
 
             if (game != null)
