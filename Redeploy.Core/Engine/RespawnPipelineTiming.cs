@@ -29,10 +29,12 @@ namespace Redeploy.Core.Engine;
 /// stages nothing: the state each candidate from the research depends on (handlers piling up on
 /// shared objects, the kill list cloned twice, the dead-body registry scan, culling jobs).
 ///
-/// What it cannot see: work a driver does before calling RunRespawn (ArenaMode picks and prepares
-/// the spawn point in ArenaAreaRespawn.TryPrepare first, so "spawn" here only unwraps that result),
+/// What it cannot see: work a driver does before calling RunRespawn (ArenaMode's area modes prepare
+/// the spawn point in ArenaAreaRespawn.TryPrepare first, so "spawn" there only unwraps that result),
 /// and the inside of "create", which is one call into the game (pooled body, inventory, quest and
 /// achievement controllers, Player.Init) that cannot be split without patching those methods.
+/// A driver that yields on RunRespawn resumes a frame later, so its own timer also contains the
+/// "after" line's first number.
 ///
 /// Measurement only: every member swallows its own failures, and RunRespawn calls it only through
 /// inert statements, which the golden-order guard proves (Redeploy.Tests/SourceGuards.cs).

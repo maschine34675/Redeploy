@@ -148,20 +148,50 @@
 >   `cullingCameras`.
 > - Nach einer Ersetzung eine zweite Zeile `Respawn pipeline #N after: … ms to the next frame's coroutines,
 >   next frame … ms`, jeder fünfte Respawn zusätzlich die Zahl aktiver `LocalPlayer`-Objekte (zwei Frames
->   später, außerhalb jedes gemessenen Fensters). Das ist ein eigenes Signal für Kosten, die der Respawn nur
->   anstößt (Start neuer Komponenten, erster Render der neuen Kamera, gewachsene Kosten pro Frame); ArenaModes
->   `pipeline`-Wert endet, wenn `RunRespawn` fertig ist, und enthält es nicht.
-> - Verhältnis zu ArenaModes `Arena respawn timing: … pipeline X s`: X umfasst Cores Gesamtzeit, das Lesen der
->   Zähler (`before (read in … ms)`) und die Arena-Vorbereitung vor `RunRespawn` (terminaler TDM-Hold, Wahl und
->   Vorbereitung des Spawnpunkts in `ArenaAreaRespawn.TryPrepare`). Cores `spawn` packt dort nur das
->   vorbereitete Ergebnis aus. Wächst X, Cores Gesamtzeit aber nicht, liegt das Wachstum in dieser
->   Vorbereitung; die misst Core nicht.
+>   später, außerhalb jedes gemessenen Fensters). Hier landen Kosten, die der Respawn nur anstößt (Start neuer
+>   Komponenten, erster Render der neuen Kamera).
+> - Verhältnis zu ArenaModes `Arena respawn timing: … prepare P s, pipeline X s`: X ist Cores Gesamtzeit plus
+>   der Rest des Frames bis zur nächsten Coroutine-Runde (`yield return StartCoroutine(RunRespawn)` setzt erst
+>   im nächsten Frame fort). Im Messraid vom 17.09. stimmt das auf 10 ms: #20 432,6 + 705,6 ms = 1,14 s,
+>   #37 648,3 + 1015,1 ms = 1,66 s. Die Arena-Vorbereitung vor `RunRespawn` (TDM-Hold, `TryPrepare`) steht seit
+>   ArenaMode `b00ef56` getrennt als P. Nur in Area-Modi bereitet `TryPrepare` den Spawnpunkt vor; im
+>   Deathmatch wählt ihn Cores `spawn` selbst (bis 254 ms, wenn der Arena-Selector auf `NearPositionSpawnSelector`
+>   zurückfällt).
 > - `create` ist ein einziger Aufruf ins Spiel (Körper aus dem Pool, Inventar-, Quest- und
 >   Achievement-Controller, `Player.Init`) und lässt sich ohne Patches auf diese Methoden nicht teilen; nur die
 >   Wiederherstellung der Kill-Liste darin ist als `restore` getrennt. Eine nach 30 s aufgegebene Erzeugung kann
 >   ihr `restore` später in eine andere Pipeline schreiben (die aufgegebene hat vorher
 >   `failed-create-timeout` geloggt).
 > - Die Golden-Order-Prüfung bleibt mit allen Marken grün, die Messung verschiebt also keine Anweisung.
+>
+> **Messraid 17.09.2026 (GPU-Host, per Fernsteuerung):** Arena-Deathmatch FFA auf Labyrinth, 37 Pipelines (Kit-Tausch
+> zum Start, dann Aufgeben per Backspace etwa alle 30 s, nach #19 drei Minuten ohne Respawn), Core `1.0.2+701f81b`,
+> ArenaMode.Client `630b098`. Auswertung mit `tools/pipeline-timing/analyze.py <log>`.
+> - ArenaModes `pipeline` wuchs von 0,66 s (#4) auf 1,66 s (#37), 31 ms pro Respawn; das Wachstum aus dem Review
+>   ist reproduziert, ohne einen einzigen Kill des Spielers (`victims 0`).
+> - Gewachsen sind nur drei Posten: `rewire.freecam` 94 → 309 ms, `rewire.camera` 105 → 295 ms und der Rest des
+>   Frames danach 414 → 1015 ms. Flach blieben `teardown`, `profile`, `create` (14 bis 18 ms), `ownerStart`,
+>   `publish` und `restore`; ebenso die Kill-Liste und der Dead-Body-Scan.
+> - Nicht die Zahl der Respawns treibt es, sondern die Zeit: Über die Pause (#19 → #20, ein Respawn in 2,9 min)
+>   sprang `freecam` um 37 ms, `camera` um 26 ms, der Rest um 114 ms, pro Respawn wären 6, 6 und 19 ms zu erwarten.
+>   Mit der Zeit wuchs die Zahl aktiver `LocalPlayer`-Objekte (53 nach 3 min, 232 nach 14 min, 415 nach 23 min;
+>   ArenaModes Leichenpflege blendet Leichen nur aus, 446 im Raid) und mit ihr die Dauer eines Szenen-Sweeps: Die
+>   Zählung selbst per `FindObjectsOfType<LocalPlayer>` brauchte 95, 178 und 303 ms.
+> - Belegte Sweeps in den wachsenden Posten: `FreecamCompatHelper.RebindOwner` ruft
+>   `FindObjectOfType(FreecamController)` (1 Sweep, ganz `rewire.freecam`); im Frame danach startet der
+>   `PerfectCullingCrossSceneSampler` der neuen Kamera, und die Start-Prefixe von `PerfectCullingFix` aus Core und
+>   aus KillcamReplay rufen je `FindObjectsOfType(sampler)` (2 Sweeps im Rest). `rewire.camera`
+>   (`PlayerCameraController.Create` und die Awake-Methoden der neuen Kamera) wächst im gleichen Takt; welcher
+>   Aufruf darin sucht, ist nicht einzeln gemessen.
+> - Die Handler auf geteilten Objekten wachsen wie vermutet (`traderHandlers` +1, `skillHandlers` +20 pro eigenem
+>   Körper, `cullingJobs` +1), kosten die Pipeline aber messbar nichts.
+> - Nebenbefund: Der verwaltete Heap wuchs ohne eine einzige Collection (`collections` blieb bei 216) von 1,1 auf
+>   11,4 GB, etwa 7 MB/s, auch in der Pause, also unabhängig von Respawns.
+> - Hebel: die drei eigenen Sweeps (Freecam-Rebind in Core, Sampler-Suche in Core und in KillcamReplay) durch
+>   gemerkte Instanzen ersetzen, am Ende des Raids zusammen etwa 0,9 s von 1,66 s (309 ms Freecam; der Rest wuchs
+>   um 600 ms, zwei Sweeps zu je etwa 300 ms wie die Zählung bei #35); ausgeblendete Leichen in
+>   ArenaMode wirklich zerstören oder in den Pool geben, was jede Suche über die Szene entlastet, auch die
+>   unbekannte in `rewire.camera`.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
