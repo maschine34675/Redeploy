@@ -35,6 +35,7 @@
     <Compile Include="..\drivers\CoreVersionGate.cs" Link="Drivers\CoreVersionGate.cs" />
     <Compile Include="..\Redeploy.Core\Spawning\NearSpawnPolicy.cs" Link="Spawning\NearSpawnPolicy.cs" />
     <Compile Include="..\Redeploy.Core\Engine\PipelineStages.cs" Link="Engine\PipelineStages.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\StaleSamplerRegistry.cs" Link="Compat\StaleSamplerRegistry.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
   </ItemGroup>
 

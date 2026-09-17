@@ -1,5 +1,6 @@
 using HarmonyLib;
 using SPT.Reflection.Patching;
+using System;
 using System.Reflection;
 using UnityEngine;
 
@@ -11,6 +12,10 @@ namespace Redeploy.Core.Compat;
 // the next raid with a half-culled map. DestroyImmediate the stale ones before the new
 // sampler initializes. Idempotent alongside the same patch in Killcam/KillcamReplay
 // (the prefix only destroys stale duplicates, so double-patching is harmless).
+//
+// The stale ones come from a registry of samplers seen starting plus the sampler's static
+// Instance, not from FindObjectsOfType: that walked the whole scene on every respawn and grew
+// with every corpse a long raid keeps (docs/RESPAWN-API.md, "Messraid 17.09.2026").
 public static class PerfectCullingFix
 {
     private static bool _enabled;
@@ -28,12 +33,20 @@ public static class PerfectCullingFix
             return;
         }
 
+        SamplerPatch.InstanceProperty = AccessTools.Property(SamplerPatch.SamplerType, "Instance");
+        if (SamplerPatch.InstanceProperty == null)
+            CoreLog.LogWarning("PerfectCullingCrossSceneSampler.Instance not found — only samplers seen starting are checked");
+
         new SamplerPatch().Enable();
     }
 
     private sealed class SamplerPatch : ModulePatch
     {
-        internal static System.Type SamplerType;
+        internal static Type SamplerType;
+        internal static PropertyInfo InstanceProperty;
+
+        private static readonly StaleSamplerRegistry Started =
+            new StaleSamplerRegistry(sampler => sampler is UnityEngine.Object unity && unity != null);
 
         protected override MethodBase GetTargetMethod()
         {
@@ -41,19 +54,24 @@ public static class PerfectCullingFix
         }
 
         [PatchPrefix]
-        private static void Prefix(Object __instance)
+        private static void Prefix(UnityEngine.Object __instance)
         {
             if (SamplerType == null)
                 return;
 
-            var existing = Object.FindObjectsOfType(SamplerType);
-            foreach (var obj in existing)
+            try
             {
-                if (obj != __instance)
+                var current = InstanceProperty?.GetValue(null, null);
+                foreach (UnityEngine.Object stale in Started.TakeStale(__instance, current))
                 {
-                    CoreLog.LogWarning($"Destroying stale PerfectCulling sampler '{obj.name}'.");
-                    Object.DestroyImmediate(obj);
+                    CoreLog.LogWarning($"Destroying stale PerfectCulling sampler '{stale.name}'.");
+                    UnityEngine.Object.DestroyImmediate(stale);
                 }
+            }
+            catch (Exception ex)
+            {
+                // Never cost the sampler its Start: without it the map is not culled at all.
+                CoreLog.LogWarning($"Stale PerfectCulling sampler check failed: {ex.Message}");
             }
         }
     }

@@ -346,6 +346,11 @@ noch ungetestet.
   Logzeilen `Respawn pipeline #N …` und `Respawn pipeline #N after: …`, Format im Kopf von
   `docs/RESPAWN-API.md`. Reflection der Zähler liegt in `RespawnPipelineTiming.Fields`, damit ein
   fehlendes Feld nie den Raid-Grenzen-Reset trifft.
+- Core 1.0.3: keine Szenen-Suche mehr im Respawn-Pfad. `FreecamCompatHelper.FindController` liest
+  `FreecamPlugin.FreecamControllerInstance` bzw. die Komponente am GameWorld-Objekt (Szenen-Suche nur als
+  gewarnter Notfall), `PerfectCullingFix` nimmt die gesehenen Sampler plus `PerfectCullingCrossSceneSampler.Instance`
+  (`Compat/StaleSamplerRegistry.cs`, getestet; KillcamReplay 0.9.10 hat eine geprüfte Kopie). Keine neuen
+  `FindObjectOfType`/`FindObjectsOfType` in Pfaden, die pro Respawn laufen: sie wachsen mit jeder Leiche im Raid.
 
 ## Nicht annehmen (Claude Code)
 

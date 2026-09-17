@@ -192,6 +192,10 @@
 >   um 600 ms, zwei Sweeps zu je etwa 300 ms wie die Zählung bei #35); ausgeblendete Leichen in
 >   ArenaMode wirklich zerstören oder in den Pool geben, was jede Suche über die Szene entlastet, auch die
 >   unbekannte in `rewire.camera`.
+> - *Umgesetzt (17.09.2026):* Core 1.0.3 findet den Freecam-Controller über `FreecamPlugin.FreecamControllerInstance`
+>   bzw. am GameWorld-Objekt und die veralteten PerfectCulling-Sampler über die gesehenen Starts plus
+>   `PerfectCullingCrossSceneSampler.Instance` (`Compat/StaleSamplerRegistry.cs`); KillcamReplay 0.9.10 ebenso. Das
+>   Aufräumen der Leichen in ArenaMode ist eine eigene Aufgabe.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

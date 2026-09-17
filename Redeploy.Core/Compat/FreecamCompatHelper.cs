@@ -25,6 +25,8 @@ public static class FreecamCompatHelper
     private static FieldInfo _controlsToggledField;
     private static FieldInfo _freecamIsActiveField;
     private static FieldInfo _mainCameraField;
+    private static FieldInfo _pluginControllerField;
+    private static bool _warnedSceneSearch;
 
     private static readonly FieldInfo CameraOperationField =
         AccessTools.Field(typeof(PlayerCameraController), "_currentCameraState");
@@ -85,7 +87,7 @@ public static class FreecamCompatHelper
             if (camera == null)
                 return;
 
-            var instance = UnityEngine.Object.FindObjectOfType(_controllerType);
+            var instance = FindController();
             if (instance == null)
                 return;
 
@@ -163,7 +165,7 @@ public static class FreecamCompatHelper
             if (_controllerType == null || _ownerField == null)
                 return;
 
-            var instance = UnityEngine.Object.FindObjectOfType(_controllerType);
+            var instance = FindController();
             if (instance == null)
                 return;
 
@@ -180,6 +182,35 @@ public static class FreecamCompatHelper
         }
     }
 
+    /// <summary>
+    /// The raid's FreecamController without walking the scene. Freecam keeps it in
+    /// FreecamPlugin.FreecamControllerInstance and adds it to the GameWorld's own GameObject
+    /// (1.4.8, FreecamPatch on GameWorld.OnGameStarted). FindObjectOfType, used before, walked
+    /// every object in the scene and grew with every corpse a long raid keeps: 94 to 309 ms per
+    /// respawn in the measurement raid (docs/RESPAWN-API.md, "Messraid 17.09.2026"). The scene
+    /// search stays only as a last resort, with a warning that the lookup needs an update.
+    /// </summary>
+    private static UnityEngine.Object FindController()
+    {
+        if (_pluginControllerField?.GetValue(null) is UnityEngine.Object kept && kept != null)
+            return kept;
+
+        if (Singleton<GameWorld>.Instantiated)
+        {
+            var onWorld = Singleton<GameWorld>.Instance.gameObject.GetComponent(_controllerType);
+            if (onWorld != null)
+                return onWorld;
+        }
+
+        var searched = UnityEngine.Object.FindObjectOfType(_controllerType);
+        if (searched != null && !_warnedSceneSearch)
+        {
+            _warnedSceneSearch = true;
+            CoreLog.LogWarning("Freecam compat: controller found only by a scene search (slow in long raids); Freecam changed where it keeps it.");
+        }
+        return searched;
+    }
+
     private static void Resolve()
     {
         if (_resolved)
@@ -187,11 +218,13 @@ public static class FreecamCompatHelper
 
         _resolved = true;
 
+        Type pluginType = null;
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             _controllerType ??= assembly.GetType("Terkoiz.Freecam.FreecamController", false);
             _freecamScriptType ??= assembly.GetType("Terkoiz.Freecam.Freecam", false);
-            if (_controllerType != null && _freecamScriptType != null)
+            pluginType ??= assembly.GetType("Terkoiz.Freecam.FreecamPlugin", false);
+            if (_controllerType != null && _freecamScriptType != null && pluginType != null)
                 break;
         }
 
@@ -202,6 +235,8 @@ public static class FreecamCompatHelper
         _freecamScriptField = AccessTools.Field(_controllerType, "_freeCamScript");
         _controlsToggledField = AccessTools.Field(_controllerType, "_controlsToggled");
         _mainCameraField = AccessTools.Field(_controllerType, "_mainCamera");
+        if (pluginType != null)
+            _pluginControllerField = AccessTools.Field(pluginType, "FreecamControllerInstance");
 
         if (_freecamScriptType != null)
             _freecamIsActiveField = AccessTools.Field(_freecamScriptType, "IsActive");
