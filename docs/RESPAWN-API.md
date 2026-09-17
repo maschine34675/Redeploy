@@ -197,6 +197,21 @@
 >   bzw. am GameWorld-Objekt und die veralteten PerfectCulling-Sampler über die gesehenen Starts plus
 >   `PerfectCullingCrossSceneSampler.Instance` (`Compat/StaleSamplerRegistry.cs`); KillcamReplay 0.9.10 ebenso. Das
 >   Aufräumen der Leichen in ArenaMode ist eine eigene Aufgabe.
+>
+> **Kontrollraid 17.09.2026 20:25 (Core `1.0.4+9aba783`, KillcamReplay 0.9.10, ArenaMode `630b098`):** gleicher
+> Ablauf, 35 Respawns auf Labyrinth. Zahlen bei gleicher Raidminute, alt → neu:
+>
+> | Minute | ArenaModes `pipeline` | Core-Gesamt | Frame-Rest | `rewire.freecam` | `rewire.camera` |
+> |---|---|---|---|---|---|
+> | 3 | 0,70 s → **0,38 s** | 262 → 156 ms | 433 → 225 ms | 105 → **0,3 ms** | 106 → 111 ms |
+> | 11 | 0,96 s → **0,51 s** | 365 → 219 ms | 591 → 286 ms | 164 → **0,3 ms** | 157 → 168 ms |
+> | 20 | 1,58 s → **0,73 s** | 516 → 308 ms | 1064 → 417 ms | 233 → **0,4 ms** | 227 → 239 ms |
+>
+> Die Steigung pro Raidminute fiel von 44,3 auf 20,6 ms (Frame-Rest 27,3 → 11,1; `freecam` 8,4 → 0,0). Was übrig
+> bleibt, wächst weiter mit der Szene: `rewire.camera` (8,8 ms/min, unverändert — das ist die Kamera-Erzeugung des
+> Spiels samt PerfectCulling-Sampler-Init) und der Rest des Frames. Beides hängt an der Zahl der Leichen, also an
+> der ArenaMode-Aufgabe. Unverändert: `create`, `ownerStart`, `publish`, und der Heap wächst weiter ohne Collection
+> (10,5 GB nach 21 min).
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
