@@ -1,0 +1,108 @@
+# RespawnEngine.RunRespawn, one statement per line (Redeploy.Tests/SourceGuards.cs).
+# The order is the respawn's contract with every driver and consumer (docs/RESPAWN-API.md 3.2, 8.4).
+# Intended change: set REDEPLOY_UPDATE_GOLDEN=1, run dotnet test once, and review this file's diff.
+# Inert timing statements (RespawnPipelineTiming) are not listed.
+var refusal = RespawnPreflight.Check(hasRequest: request != null, hasGame: request?.Game != null, hasSpawnSelector: request?.SpawnSelector != null, engineAvailable: DeathInterception.IsAvailable, raidTearingDown: RaidIsTearingDown(request?.Game), respawnSignalDepth: CoreSignals.Respawn.Depth, pipelineRunning: RespawnEngineState.IsPipelineRunning);
+if (refusal != null)
+  CoreLog.LogWarning($"Respawn refused before any teardown: {refusal.Message}");
+  onFailure?.Invoke(refusal);
+  yield break;
+RespawnEngineState.LastRespawnedPlayer = null;
+RespawnEngineState.IsPipelineRunning = true;
+var game = request.Game;
+Task<LocalPlayer> createTask = null;
+LocalPlayer deadPlayer = null;
+EftGamePlayerOwner oldOwner;
+Exception pipelineFailure = null;
+var reason = RespawnApi.ReasonDeath;
+var replacedPublished = false;
+try
+  deadPlayer = request.DeadPlayer ?? game.LocalPlayer;
+  reason = deadPlayer?.HealthController?.IsAlive == true ? RespawnApi.ReasonSwap : RespawnApi.ReasonDeath;
+  oldOwner = LocalGameAccessor.GetPlayerOwner(game);
+  LocalGameAccessor.UnsubscribeDeathHandler(game, deadPlayer);
+  if (oldOwner != null)
+    OwnerCleanupHelper.DestroyOwnerWithoutClosingBattleUi(oldOwner, deadPlayer);
+  UnregisterDeadPlayerFromWorld(deadPlayer);
+  request.OnBeforeProfileMutation?.Invoke(deadPlayer);
+  ResetProfileHealth(game.Profile, request.HealthPercent);
+  RaidVictimsSnapshot.Snapshot(game.Profile);
+  request.EquipmentStrategy?.Invoke(game.Profile, deadPlayer);
+  var(position, rotation) = request.SpawnSelector.Resolve(game);
+  var playerId = LocalGameAccessor.GetNextPlayerId(game);
+  var armsMode = AppEnvironment.Config.UseHandsFastAnimator ? Player.EUpdateMode.Manual : Player.EUpdateMode.Auto;
+  var raidSettings = LocalGameAccessor.GetLocalRaidSettings(game);
+  var localMode = raidSettings != null ? raidSettings.mode : ELocalMode.TRAINING;
+  createTask = game.vmethod_3(game.GameWorld, playerId, position, rotation, "Player", string.Empty, EPointOfView.FirstPerson, game.Profile, false, game.UpdateQueue, armsMode, Player.EUpdateMode.Auto, AppEnvironment.Config.CharacterController.ClientPlayerMode, () => 1f, () => 1f, new LocalStatisticManager(), LocalGameAccessor.GetSession(game), localMode);
+catch (Exception ex)
+  pipelineFailure = ex;
+if (pipelineFailure != null)
+  yield return null;
+  RespawnEngineState.IsPipelineRunning = false;
+  PublishFailure(game, deadPlayer, RespawnApi.StagePrepare);
+  onFailure(pipelineFailure);
+  yield break;
+var creationDeadline = Time.realtimeSinceStartup + 30f;
+while (!createTask.IsCompleted)
+  if (Time.realtimeSinceStartup > creationDeadline)
+    yield return null;
+    RespawnEngineState.IsPipelineRunning = false;
+    PublishFailure(game, deadPlayer, RespawnApi.StageCreate);
+    onFailure(new TimeoutException("Replacement player creation timed out after 30s."));
+    yield break;
+  yield return null;
+if (RaidIsTearingDown(game))
+  yield return null;
+  RespawnEngineState.IsPipelineRunning = false;
+  PublishFailure(game, deadPlayer, RespawnApi.StageRaidEnding);
+  onFailure(new OperationCanceledException("Raid ended during respawn — pipeline aborted."));
+  yield break;
+try
+  if (createTask.IsFaulted)
+    throw createTask.Exception?.InnerException ?? createTask.Exception;
+  var newPlayer = createTask.Result;
+  newPlayer.Location = game.Location.Id;
+  game.LocalPlayer = newPlayer;
+  LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
+  LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
+  var bots = LocalGameAccessor.GetBotsController(game);
+  bots.DestroyInfo(deadPlayer);
+  DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
+  bots.AddActivePLayer(newPlayer);
+  if (Singleton<GameWorld>.Instantiated)
+    Singleton<GameWorld>.Instance.MainPlayer = newPlayer;
+  var newOwner = LocalGameAccessor.CreatePlayerOwner(game, newPlayer);
+  LocalGameAccessor.SetPlayerOwner(game, newOwner);
+  LocalGameAccessor.WirePlayerGameEvents(game, newPlayer);
+  GamePlayerOwnerHelper.SetMyPlayer(newPlayer);
+  FreecamCompatHelper.RebindOwner(newOwner);
+  DynamicMapsCompatHelper.RebindPlayerMarker(newPlayer);
+  ExfiltrationController.Instance.InitSecretExfils(newPlayer);
+  CameraRebindHelper.RebindToPlayer(newPlayer);
+  DeathEffectsHelper.RebindEffectsController(newPlayer);
+  newOwner.vmethod_0();
+  RaidUiHelper.ClearBlackScreen();
+  DeathEffectsHelper.ClearDeathScreenEffects();
+  RaidUiHelper.RestoreInputAfterDeath();
+  game.StartCoroutine(EnsureBattleUiReady(game, newOwner));
+  game.StartCoroutine(FinalizeRespawnView(game, newPlayer));
+  ApplyRespawnHealth(newPlayer);
+  RespawnEngineState.LastRespawnedPlayer = newPlayer;
+  replacedPublished = true;
+  RespawnClaims.Resolve(deadPlayer);
+  RespawnApi.PublishReplaced(deadPlayer, newPlayer, reason);
+  RaiseRespawned(newPlayer);
+  if (request.Protection != null && request.Protection.DurationSeconds > 0f)
+    game.StartCoroutine(ApplySpawnProtection(newPlayer, request.Protection));
+  else
+    RaiseProtectionEnded(newPlayer);
+catch (Exception ex)
+  pipelineFailure = ex;
+if (pipelineFailure != null)
+  yield return null;
+  RespawnEngineState.IsPipelineRunning = false;
+  if (!replacedPublished)
+    PublishFailure(game, deadPlayer, createTask?.IsFaulted == true ? RespawnApi.StageCreate : RespawnApi.StageRewire);
+  onFailure(pipelineFailure);
+  yield break;
+RespawnEngineState.IsPipelineRunning = false;

@@ -1226,7 +1226,7 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
    - Teilbindung: Fehlt `ReplacementFailed` oder ist seine Signatur verändert, bleibt der Tracker trotzdem gebunden.
    - Nach `OnDestroy` hat jedes Stub-Event null Abonnenten.
    - Ein werfender Konsumenten-Handler bricht den Tracker nicht.
-4. **Golden-Order-Source-Guard** (PowerShell wie `Invoke-ArenaSourceChecks.ps1`):
+4. **Golden-Order-Source-Guard.** *Umgesetzt (17.09.2026)* nicht als PowerShell-Skript, sondern als xunit-Tests in `Redeploy.Tests/SourceGuardTests.cs` (Roslyn, nur Syntax, braucht das Spiel nicht), damit er bei jedem `dotnet test` mitläuft. Die Liste steht in `Redeploy.Tests/Golden/RunRespawn.order.txt`: eine Zeile pro Anweisung, Kommentare und Layout zählen nicht, eine gewollte Änderung schreibt `REDEPLOY_UPDATE_GOLDEN=1` neu, danach den Diff prüfen. Anweisungen über den Mess-Local `timing` (Typ `RespawnPipelineTiming`) fehlen in der Liste, solange ihre Argumente nur Literale, Namen oder Memberzugriffe sind. Jede Prüfung bekommt zusätzlich ihren Fehler eingespielt (vertauschter, entfernter, zusätzlicher Schritt; jede Form des direkten Raise; Freecam-Aufruf ohne `try`, im `catch`, in einem Lambda, mit zu engem `catch` oder nur `finally`). Ursprünglicher Plan:
    - Die Anweisungen von `RunRespawn` in `:105-116` und `:196-236` stimmen mit einer extrahierten, eingecheckten Liste überein.
    - Kein `?.Invoke` auf öffentlichen Core-Events; alles läuft über den Dispatcher.
    - `FreecamCompatHelper.EnablePatchesIfPresent` wird im GameStarted-Postfix nur innerhalb eines `try` aufgerufen.

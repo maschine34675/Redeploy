@@ -20,7 +20,7 @@ public class ApiContractTests
     private const string ApiTypeFullName = "Redeploy.Core.Api.RespawnApi";
     private const BindingFlags Declared = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-    private static readonly string RepoRoot = FindRepoRoot();
+    internal static readonly string RepoRoot = FindRepoRoot();
     private static readonly string InstallRoot = Path.GetFullPath(Path.Combine(RepoRoot, "..", ".."));
     private static readonly string BaselinePath = Path.Combine(RepoRoot, "Redeploy.Core", "Api", "api-v1.baseline.txt");
     private static readonly string InteropPath = Path.Combine(RepoRoot, "interop", "RedeployRespawnInterop.cs");

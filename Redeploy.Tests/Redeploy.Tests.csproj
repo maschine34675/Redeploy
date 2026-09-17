@@ -22,6 +22,8 @@
     <!-- Contract checks read the BUILT Core and the installed consumers as metadata only. -->
     <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="9.0.0" />
+    <!-- Source guards parse Core's files (syntax only, no references needed). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
   </ItemGroup>
 
   <!-- Linked, not referenced: Redeploy.Core itself cannot load outside the game. -->
