@@ -113,6 +113,23 @@
 > Core `EE09B6B5…` (`1.0.1+d532a3c`), Redeploy.Client `B7C07223…` (gestempelt 1.0.1). ArenaMode.Client
 > `54C2D7B7…` bleibt, sein Stempel 1.0.0 ist gegen Core 1.0.1 in Ordnung. In-game noch ungetestet; jede
 > Platzierung loggt eine Zeile `Respawn position on <map>: ...`.
+>
+> **Playtests 14. bis 16.09.2026 (ersetzen die „ungetestet"-Vermerke der beiden Blöcke davor):**
+> - *Core 1.0.1 (14.09. 17:32, factory4_day):* alle Platzierungen gültig, beide „near corpse"-Respawns im
+>   20-m-Ring, keine Error-Zeile. Dabei fiel auf, dass die Kamera nach dem Klick auf „Respawn" noch volle
+>   `RespawnCooldownSeconds` an der Leiche hing, auch wenn der Spieler schon länger tot war.
+> - *Redeploy.Client `cdf2fca` (14.09.):* der Cooldown zählt ab dem Tod statt ab dem Klick
+>   (`Services/RespawnCooldown.cs`, Tests in `Redeploy.Tests/RespawnCooldownTests.cs`). Playtest 16.09.:
+>   „Respawn chosen 12.3s after death; cooldown 5s leaves 0.0s" nach einem ausgelaufenen Replay, „2.5s after
+>   death … leaves 2.5s" bei einem frühen Klick; die Pause ist laut User weg.
+> - *KillcamReplay 0.9.9:* der Hold ist belegt (15.09., „Holding the respawn until the death replay hands
+>   off" → „Releasing the held respawn after 5.4s (replay handed off)"), Überspringen und Abwarten laut User
+>   in Ordnung.
+> - Die zitierten Logs sind inzwischen rotiert (LogTools behält zehn Sessions), belegt sind die Zeilen nur
+>   noch hier und im Verlauf.
+> - Weiter offen: 8.4 (Golden-Order-Guard), Bindungstest gegen den echten gebauten Core, Punkte 4 und 5
+>   der ArenaMode-Migration, die Probe-Szenarien 3 bis 6 im Spiel, und das Wachstum der Pipeline-Zeit pro
+>   Respawn aus ArenaModes `LONG-RAID-REVIEW-2026-09-16.md` (0,50 s → 1,02 s über 26 Respawns, ungeklärt).
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 

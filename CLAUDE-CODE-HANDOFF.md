@@ -327,6 +327,10 @@ noch ungetestet.
   `9C1EFE88…`, Core unverändert `EE09B6B5…`): `RespawnCooldownSeconds` zählt ab dem Tod
   (`Services/RespawnCooldown.cs`, getestet), mindestens ein Frame vor der Pipeline, weil der Klick im
   OnGUI des Prompts ankommt; bewusst keine Countdown-Meldung (KillcamReplay kann länger halten).
+  Playtest 16.09.: keine Pause mehr zwischen Klick und Respawn (Logzeile `Respawn chosen …s after death;
+  cooldown …s leaves …s`). KillcamReplays Respawn-Hold ist seit 15.09. im Log belegt.
+- BepInEx-Logs rotieren (LogTools behält zehn Sessions, GPU-Host-Läufe zählen mit): Belege aus einem
+  Playtest sofort in Doku oder Commit festhalten, der Dateiname ist nach einem Tag oft weg.
 
 ## Nicht annehmen (Claude Code)
 
