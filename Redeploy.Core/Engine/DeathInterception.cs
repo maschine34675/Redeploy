@@ -433,7 +433,12 @@ public static class DeathInterception
             if (!RespawnEngineState.IsPipelineRunning)
                 return;
 
+            // Timed here because it runs inside player creation, where the pipeline cannot place a mark.
+            var started = System.Diagnostics.Stopwatch.GetTimestamp();
             RaidVictimsSnapshot.Restore(__instance.Profile);
+            RespawnPipelineTiming.RecordVictimsRestore(
+                System.Diagnostics.Stopwatch.GetTimestamp() - started,
+                __instance.Profile?.EftStats?.Victims?.Count ?? -1);
         }
     }
 }

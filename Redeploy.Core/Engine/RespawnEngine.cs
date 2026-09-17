@@ -80,6 +80,7 @@ public static class RespawnEngineState
         IsPipelineRunning = false;
         LastRespawnedPlayer = null;
         SpawnSystemCache.Clear();
+        RespawnPipelineTiming.ResetForRaidBoundary();
     }
 }
 
@@ -125,6 +126,8 @@ public static class RespawnEngine
         RespawnEngineState.IsPipelineRunning = true;
 
         var game = request.Game;
+        // Measurement only: every timing statement is inert, which the golden order proves (docs/RESPAWN-API.md 8.4).
+        var timing = RespawnPipelineTiming.Begin(game);
         Task<LocalPlayer> createTask = null;
         LocalPlayer deadPlayer = null;
         EftGamePlayerOwner oldOwner;
@@ -142,19 +145,27 @@ public static class RespawnEngine
             oldOwner = LocalGameAccessor.GetPlayerOwner(game);
 
             LocalGameAccessor.UnsubscribeDeathHandler(game, deadPlayer);
+            timing.Mark("teardown.unsubscribe");
 
             if (oldOwner != null)
                 OwnerCleanupHelper.DestroyOwnerWithoutClosingBattleUi(oldOwner, deadPlayer);
+            timing.Mark("teardown.owner");
 
             UnregisterDeadPlayerFromWorld(deadPlayer);
+            timing.Mark("teardown.unregister");
 
             request.OnBeforeProfileMutation?.Invoke(deadPlayer);
+            timing.Mark("profile.beforeMutation");
 
             ResetProfileHealth(game.Profile, request.HealthPercent);
+            timing.Mark("profile.health");
             RaidVictimsSnapshot.Snapshot(game.Profile);
+            timing.Mark("profile.victims");
             request.EquipmentStrategy?.Invoke(game.Profile, deadPlayer);
+            timing.Mark("profile.equipment");
 
             var (position, rotation) = request.SpawnSelector.Resolve(game);
+            timing.Mark("spawn");
             var playerId = LocalGameAccessor.GetNextPlayerId(game);
 
             var armsMode = AppEnvironment.Config.UseHandsFastAnimator
@@ -183,6 +194,7 @@ public static class RespawnEngine
                 new LocalStatisticManager(),
                 LocalGameAccessor.GetSession(game),
                 localMode);
+            timing.Mark("create");
         }
         catch (Exception ex)
         {
@@ -191,6 +203,7 @@ public static class RespawnEngine
 
         if (pipelineFailure != null)
         {
+            timing.Finish("failed-prepare", reason, null);
             // Keep the pipeline flag armed through the end of the failing frame: the old
             // owner's deferred Destroy resolves then, and its CleanupOnDestroy must still
             // be skipped (pre-Core builds cleared their flag one frame later too).
@@ -206,6 +219,7 @@ public static class RespawnEngine
         {
             if (Time.realtimeSinceStartup > creationDeadline)
             {
+                timing.Finish("failed-create-timeout", reason, null);
                 yield return null;
                 RespawnEngineState.IsPipelineRunning = false;
                 PublishFailure(game, deadPlayer, RespawnApi.StageCreate);
@@ -215,6 +229,7 @@ public static class RespawnEngine
 
             yield return null;
         }
+        timing.Mark("wait");
 
         // An external raid end may have raced the creation wait. Stop() has started the
         // raid-end fade whose completion callback is the ONLY invoker of GameEnd — the
@@ -222,6 +237,7 @@ public static class RespawnEngine
         // Stopping forever. Abort instead; the raid teardown owns the session now.
         if (RaidIsTearingDown(game))
         {
+            timing.Finish("aborted-raid-ending", reason, null);
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
             PublishFailure(game, deadPlayer, RespawnApi.StageRaidEnding);
@@ -237,45 +253,64 @@ public static class RespawnEngine
             var newPlayer = createTask.Result;
             newPlayer.Location = game.Location.Id;
             game.LocalPlayer = newPlayer;
+            timing.Mark("rewire.result");
 
             LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
+            timing.Mark("rewire.dictionary");
             LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
+            timing.Mark("rewire.deathHandler");
 
             var bots = LocalGameAccessor.GetBotsController(game);
             bots.DestroyInfo(deadPlayer);
+            timing.Mark("rewire.destroyInfo");
 
             // DestroyInfo's own chain ends in DeadBodiesController.AddBody for a
             // dead player — the record bots would use to loot the SHARED profile,
             // i.e. the freshly equipped live player. The patch blocks new ones;
             // this clears anything that slipped through earlier.
             DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
+            timing.Mark("rewire.purgeBodies");
 
             bots.AddActivePLayer(newPlayer);
+            timing.Mark("rewire.addActive");
 
             if (Singleton<GameWorld>.Instantiated)
                 Singleton<GameWorld>.Instance.MainPlayer = newPlayer;
+            timing.Mark("rewire.mainPlayer");
 
             // CreatePlayerOwner runs the game's func_1 factory, which already subscribes
             // OnLeave -> vmethod_4; wiring it again here would double the leave handling.
             var newOwner = LocalGameAccessor.CreatePlayerOwner(game, newPlayer);
+            timing.Mark("rewire.createOwner");
             LocalGameAccessor.SetPlayerOwner(game, newOwner);
             LocalGameAccessor.WirePlayerGameEvents(game, newPlayer);
+            timing.Mark("rewire.wireEvents");
 
             GamePlayerOwnerHelper.SetMyPlayer(newPlayer);
+            timing.Mark("rewire.myPlayer");
             FreecamCompatHelper.RebindOwner(newOwner);
+            timing.Mark("rewire.freecam");
             DynamicMapsCompatHelper.RebindPlayerMarker(newPlayer);
+            timing.Mark("rewire.dynamicMaps");
             ExfiltrationController.Instance.InitSecretExfils(newPlayer);
+            timing.Mark("rewire.secretExfils");
 
             CameraRebindHelper.RebindToPlayer(newPlayer);
+            timing.Mark("rewire.camera");
             DeathEffectsHelper.RebindEffectsController(newPlayer);
+            timing.Mark("rewire.effects");
             newOwner.vmethod_0();
+            timing.Mark("rewire.ownerStart");
             RaidUiHelper.ClearBlackScreen();
             DeathEffectsHelper.ClearDeathScreenEffects();
             RaidUiHelper.RestoreInputAfterDeath();
+            timing.Mark("rewire.ui");
             game.StartCoroutine(EnsureBattleUiReady(game, newOwner));
             game.StartCoroutine(FinalizeRespawnView(game, newPlayer));
+            timing.Mark("rewire.coroutines");
 
             ApplyRespawnHealth(newPlayer);
+            timing.Mark("rewire.health");
 
             RespawnEngineState.LastRespawnedPlayer = newPlayer;
 
@@ -283,13 +318,17 @@ public static class RespawnEngine
             // subscriber, both before spawn protection and before the requester continues.
             replacedPublished = true;
             RespawnClaims.Resolve(deadPlayer);
+            timing.Mark("publish.claims");
             RespawnApi.PublishReplaced(deadPlayer, newPlayer, reason);
+            timing.Mark("publish.replaced");
             RaiseRespawned(newPlayer);
+            timing.Mark("publish.respawned");
 
             if (request.Protection != null && request.Protection.DurationSeconds > 0f)
                 game.StartCoroutine(ApplySpawnProtection(newPlayer, request.Protection));
             else
                 RaiseProtectionEnded(newPlayer);
+            timing.Mark("publish.protection");
         }
         catch (Exception ex)
         {
@@ -298,6 +337,7 @@ public static class RespawnEngine
 
         if (pipelineFailure != null)
         {
+            timing.Finish("failed-rewire", reason, null);
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
             // Exactly one public outcome per pipeline: a throw after Replaced still reaches
@@ -308,6 +348,7 @@ public static class RespawnEngine
             yield break;
         }
 
+        timing.Finish("replaced", reason, game);
         RespawnEngineState.IsPipelineRunning = false;
     }
 

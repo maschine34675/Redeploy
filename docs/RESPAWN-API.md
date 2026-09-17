@@ -130,6 +130,26 @@
 > - Weiter offen: 8.4 (Golden-Order-Guard), Bindungstest gegen den echten gebauten Core, Punkte 4 und 5
 >   der ArenaMode-Migration, die Probe-Szenarien 3 bis 6 im Spiel, und das Wachstum der Pipeline-Zeit pro
 >   Respawn aus ArenaModes `LONG-RAID-REVIEW-2026-09-16.md` (0,50 s → 1,02 s über 26 Respawns, ungeklärt).
+>
+> **17.09.2026:** 8.4 und der Bindungstest sind umgesetzt (Abschnitt 8, Punkte 2 und 4). **Core 1.0.2 misst die
+> Pipeline** (`Engine/RespawnPipelineTiming.cs`, reine Buchhaltung in `Engine/PipelineStages.cs`, getestet):
+> - Pro Respawn eine Info-Zeile `Respawn pipeline #N (<reason>, <outcome>) on <map>: <gesamt> ms in <frames>
+>   frame(s) | <gruppe> <ms> (<schritt> <ms>, ...) | ... || restore <ms> (<n> victims) | before: ...`. Gruppen:
+>   `teardown`, `profile`, `spawn`, `create`, `wait`, `rewire`, `publish`; Schritte unter 0,05 ms fehlen in der
+>   Klammer, zählen aber in der Gruppe; `*` heißt, während des Schritts lief eine Garbage Collection.
+>   `restore` ist die Wiederherstellung der Kill-Liste, die innerhalb von `create` im
+>   `BeginStatisticsSession`-Postfix läuft.
+> - `before:` liest vor dem Start der Uhr, was die Code-Recherche als wachsend verdächtigt: Frame-Zeit
+>   davor, Heap, GC-Zähler, lebende Spieler, `victims` (Kill-Liste, pro Respawn zweimal durchlaufen),
+>   `deadBodies` (Scan in `PurgeRecords`), Handler, die jeder neue Body auf geteilten Objekten anmeldet und
+>   kein ersetzter Body wieder abmeldet (`traderHandlers` auf `Profile`, `skillHandlers` auf
+>   `Profile.Skills`, `environmentHandlers` auf `EnvironmentManager`, `flareSubscribers`), `cullingJobs`
+>   (statisches `CullingJob.JobParameters`, pro neuer Kamera +1, nur an der Raid-Grenze geleert) und
+>   `cullingCameras`.
+> - Nach einer Ersetzung eine zweite Zeile `Respawn pipeline #N after: … ms to the next frame's coroutines,
+>   next frame … ms`, jeder fünfte Respawn zusätzlich die Zahl aktiver `LocalPlayer`-Objekte (zwei Frames
+>   später, außerhalb jedes gemessenen Fensters). ArenaModes `pipeline`-Wert enthält diesen Rest des Frames.
+> - Die Golden-Order-Prüfung bleibt mit allen Marken grün, die Messung verschiebt also keine Anweisung.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
