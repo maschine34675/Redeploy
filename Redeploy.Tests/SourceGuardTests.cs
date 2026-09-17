@@ -33,6 +33,9 @@ public class SourceGuardTests
                 "# Inert timing statements (RespawnPipelineTiming) are not listed.",
             };
             File.WriteAllLines(GoldenPath, header.Concat(actual));
+            // Never a pass: a variable left set in a shell or on a build agent would otherwise bless
+            // every later change to the order without anyone looking at it.
+            Assert.Fail($"{GoldenPath} was rewritten. Review its diff, then run the tests again without {UpdateVariable}.");
         }
 
         Assert.True(File.Exists(GoldenPath), $"{GoldenPath} is missing; create it with {UpdateVariable}=1");
@@ -71,18 +74,30 @@ public class SourceGuardTests
         const string anchor = "ResetProfileHealth(game.Profile, request.HealthPercent);";
 
         var timed = Replace(source, "var game = request.Game;",
-                "var timing = RespawnPipelineTiming.Begin(request.Game, 3, \"death\"); var game = request.Game;");
-        timed = Replace(timed, anchor, "timing.Mark(\"teardown\"); " + anchor + " timing.Mark(RespawnApi.StagePrepare, deadPlayer);");
+                "var game = request.Game; var timing = RespawnPipelineTiming.Begin(game, 3, \"death\", 2.5f, null);");
+        timed = Replace(timed, anchor, "timing.Mark(\"teardown\"); " + anchor + " timing.Mark(\"profile\", deadPlayer, request);");
         Assert.True(golden.SequenceEqual(SourceGuards.RunRespawnOutline(timed)), "inert timing statements changed the order");
 
-        var hiddenWork = Replace(source, anchor, anchor + " timing.Mark(\"x\", bots.AddActivePLayer(newPlayer));");
-        Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(hiddenWork)), "a call hidden in a timing argument was ignored");
-
-        var assignment = Replace(source, anchor, anchor + " timing.Mark(game = null);");
-        Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(assignment)), "an assignment hidden in a timing argument was ignored");
+        foreach (var (argument, why) in new[]
+                 {
+                     ("bots.AddActivePLayer(newPlayer)", "a call"),
+                     ("game = null", "an assignment"),
+                     ("RespawnEngineState.LastRespawnedPlayer", "a property getter behind a member access"),
+                     ("() => RaidUiHelper.ClearBlackScreen()", "a lambda"),
+                     ("request?.Game", "a conditional access"),
+                     ("undeclaredName", "a name that is not one of RunRespawn's locals"),
+                     ("x: deadPlayer", "a named argument"),
+                 })
+        {
+            var hidden = Replace(source, anchor, anchor + " timing.Mark(\"x\", " + argument + ");");
+            Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(hidden)), $"{why} hidden in a timing argument was ignored");
+        }
 
         var otherLocal = Replace(source, anchor, anchor + " measure.Mark(\"x\");");
         Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(otherLocal)), "a call on another local was ignored");
+
+        var otherType = Replace(source, "var game = request.Game;", "var game = request.Game; var timing = RaidUiHelper.Begin(game);");
+        Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(otherType)), "a timing local of another type was ignored");
     }
 
     // ---------------------------------------------------------------- events
@@ -90,31 +105,49 @@ public class SourceGuardTests
     [Fact]
     public void CoreRaisesItsPublicEventsOnlyThroughTheDispatcher()
     {
-        var violations = SourceGuards.DirectEventRaises(CoreSources());
+        var violations = SourceGuards.EventDelegateUsesOutsideDispatcher(CoreSources());
         Assert.True(violations.Count == 0, "Raise these through CoreSignals (SignalDispatcher):\n" + string.Join("\n", violations));
     }
 
     [Theory]
-    [InlineData("RespawnEngine.cs", "RaiseRespawned(newPlayer);", "OnPlayerRespawned?.Invoke(newPlayer);")]
-    [InlineData("RespawnEngine.cs", "RaiseRespawned(newPlayer);", "OnPlayerRespawned.Invoke(newPlayer);")]
-    [InlineData("RespawnEngine.cs", "RaiseRespawned(newPlayer);", "OnPlayerRespawned(newPlayer);")]
-    [InlineData("RespawnEngine.cs", "RaiseRespawned(newPlayer);", "RespawnEngine.OnPlayerRespawned?.Invoke(newPlayer);")]
-    [InlineData("RespawnEngine.cs", "RaiseRespawned(newPlayer);", "foreach (var h in OnPlayerRespawned.GetInvocationList()) { }")]
-    [InlineData("RespawnApi.cs", "CoreSignals.Respawn.Raise(Replaced, h => h(oldBody, newBody, reason), nameof(Replaced));", "Replaced?.Invoke(oldBody, newBody, reason);")]
-    [InlineData("RaidLifecycle.cs", "RaiseRaidStarted(__instance);", "RaidLifecycle.OnRaidStarted?.Invoke(__instance);")]
-    public void ADirectRaiseIsCaught(string file, string original, string fault)
+    [InlineData("RespawnEngine.cs", "OnPlayerRespawned?.Invoke(player)")]
+    [InlineData("RespawnEngine.cs", "OnPlayerRespawned.Invoke(player)")]
+    [InlineData("RespawnEngine.cs", "OnPlayerRespawned(player)")]
+    [InlineData("RespawnEngine.cs", "RespawnEngine.OnPlayerRespawned?.Invoke(player)")]
+    [InlineData("RespawnEngine.cs", "this.OnPlayerRespawned.DynamicInvoke(player)")]
+    [InlineData("RespawnEngine.cs", "OnPlayerRespawned.GetInvocationList()")]
+    [InlineData("RespawnEngine.cs", "System.Threading.Volatile.Read(ref OnPlayerRespawned)?.Invoke(player)")]
+    [InlineData("RespawnEngine.cs", "Helper(OnPlayerRespawned)")]
+    [InlineData("RespawnEngine.cs", "CoreSignals.Respawn.Raise(h => h(player), OnPlayerRespawned, nameof(OnPlayerRespawned))")]
+    [InlineData("RespawnEngine.cs", "Other.Raise(OnPlayerRespawned, h => h(player), nameof(OnPlayerRespawned))")]
+    public void ADelegateUseAroundTheDispatcherIsCaught(string file, string fault)
     {
+        const string original = "CoreSignals.Respawn.Raise(OnPlayerRespawned, h => h(player), nameof(OnPlayerRespawned))";
         var sources = CoreSources();
         Assert.Contains(sources, source => Path.GetFileName(source.Path) == file);
         var faulted = sources.Select(source => Path.GetFileName(source.Path) == file ? (source.Path, Replace(source.Source, original, fault)) : source);
-        Assert.NotEmpty(SourceGuards.DirectEventRaises(faulted));
+        Assert.NotEmpty(SourceGuards.EventDelegateUsesOutsideDispatcher(faulted));
     }
 
     [Fact]
-    public void AMethodSharingAnEventsNameIsNotARaise()
+    public void ALocalCopyOfTheDelegateIsCaught()
     {
-        const string sample = "static class RaidLifecycle { public static event Action OnRaidEnded; static void End(IDriver driver) { driver.OnRaidEnded(); } }";
-        Assert.Empty(SourceGuards.DirectEventRaises(new[] { ("sample.cs", sample) }));
+        const string original = "        => CoreSignals.Respawn.Raise(OnPlayerRespawned, h => h(player), nameof(OnPlayerRespawned));";
+        const string fault = "    { var handler = OnPlayerRespawned; handler?.Invoke(player); }";
+        var faulted = CoreSources().Select(source => Path.GetFileName(source.Path) == "RespawnEngine.cs" ? (source.Path, Replace(source.Source, original, fault)) : source);
+        Assert.NotEmpty(SourceGuards.EventDelegateUsesOutsideDispatcher(faulted));
+
+        const string otherFile = "CoreSignals.Respawn.Raise(Replaced, h => h(oldBody, newBody, reason), nameof(Replaced));";
+        var api = CoreSources().Select(source => Path.GetFileName(source.Path) == "RespawnApi.cs" ? (source.Path, Replace(source.Source, otherFile, "Replaced?.Invoke(oldBody, newBody, reason);")) : source);
+        Assert.NotEmpty(SourceGuards.EventDelegateUsesOutsideDispatcher(api));
+    }
+
+    [Fact]
+    public void AMethodSharingAnEventsNameAndSubscriptionsAreNotRaises()
+    {
+        const string sample = "static class RaidLifecycle { public static event Action OnRaidEnded; "
+                              + "static void End(IDriver driver) { driver.OnRaidEnded(); OnRaidEnded += Log; RaidLifecycle.OnRaidEnded -= Log; OnRaidEnded = null; } }";
+        Assert.Empty(SourceGuards.EventDelegateUsesOutsideDispatcher(new[] { ("sample.cs", sample) }));
     }
 
     // ---------------------------------------------------------------- Freecam
@@ -134,6 +167,8 @@ public class SourceGuardTests
     [InlineData("FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}", "Action later = () => FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}\nlater();")]
     [InlineData("FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}", "FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (InvalidOperationException ex)\n{\n}")]
     [InlineData("FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}", "FreecamCompatHelper.EnablePatchesIfPresent();\n}\nfinally\n{\n}")]
+    [InlineData("FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}", "FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\nthrow;\n}")]
+    [InlineData("FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch (Exception ex)\n{\n}", "FreecamCompatHelper.EnablePatchesIfPresent();\n}\ncatch\n{\nif (ex != null) throw new InvalidOperationException();\n}")]
     public void AnUnguardedFreecamEnableIsCaught(string original, string fault)
     {
         var sample = "class RaidLifecycle { static void Postfix() { try\n{\n" + original + " } }";

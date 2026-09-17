@@ -20,8 +20,6 @@ internal static class SourceGuards
     public const string TimingType = "RespawnPipelineTiming";
     public const string TimingLocal = "timing";
 
-    private static readonly string[] RaiseMembers = { "Invoke", "BeginInvoke", "DynamicInvoke", "GetInvocationList" };
-
     // ------------------------------------------------------------------ golden order
 
     /// <summary>
@@ -39,66 +37,68 @@ internal static class SourceGuards
         if (methods.Count != 1 || methods[0].Body == null)
             throw new InvalidOperationException($"expected exactly one RespawnEngine.RunRespawn with a block body, found {methods.Count}");
 
+        var method = methods[0];
+        var locals = LocalNames(method);
         var lines = new List<string>();
-        foreach (var statement in methods[0].Body.Statements)
-            Walk(statement, 0, lines);
+        foreach (var statement in method.Body.Statements)
+            Walk(statement, 0, lines, locals);
         return lines;
     }
 
-    private static void Walk(StatementSyntax statement, int depth, List<string> lines)
+    private static void Walk(StatementSyntax statement, int depth, List<string> lines, ISet<string> locals)
     {
         switch (statement)
         {
             case BlockSyntax block:
                 // Braces are layout; the owning statement already contributed the nesting.
                 foreach (var inner in block.Statements)
-                    Walk(inner, depth, lines);
+                    Walk(inner, depth, lines, locals);
                 return;
 
             case IfStatementSyntax conditional:
                 Add(lines, depth, "if (" + Text(conditional.Condition) + ")");
-                Walk(conditional.Statement, depth + 1, lines);
+                Walk(conditional.Statement, depth + 1, lines, locals);
                 if (conditional.Else != null)
                 {
                     Add(lines, depth, "else");
-                    Walk(conditional.Else.Statement, depth + 1, lines);
+                    Walk(conditional.Else.Statement, depth + 1, lines, locals);
                 }
                 return;
 
             case WhileStatementSyntax loop:
                 Add(lines, depth, "while (" + Text(loop.Condition) + ")");
-                Walk(loop.Statement, depth + 1, lines);
+                Walk(loop.Statement, depth + 1, lines, locals);
                 return;
 
             case DoStatementSyntax loop:
                 Add(lines, depth, "do");
-                Walk(loop.Statement, depth + 1, lines);
+                Walk(loop.Statement, depth + 1, lines, locals);
                 Add(lines, depth, "while (" + Text(loop.Condition) + ")");
                 return;
 
             case ForStatementSyntax loop:
                 Add(lines, depth, Text(loop.WithStatement(SyntaxFactory.Block())));
-                Walk(loop.Statement, depth + 1, lines);
+                Walk(loop.Statement, depth + 1, lines, locals);
                 return;
 
             case ForEachStatementSyntax loop:
                 Add(lines, depth, Text(loop.WithStatement(SyntaxFactory.Block())));
-                Walk(loop.Statement, depth + 1, lines);
+                Walk(loop.Statement, depth + 1, lines, locals);
                 return;
 
             case UsingStatementSyntax scope:
                 Add(lines, depth, Text(scope.WithStatement(SyntaxFactory.Block())));
-                Walk(scope.Statement, depth + 1, lines);
+                Walk(scope.Statement, depth + 1, lines, locals);
                 return;
 
             case LockStatementSyntax scope:
                 Add(lines, depth, Text(scope.WithStatement(SyntaxFactory.Block())));
-                Walk(scope.Statement, depth + 1, lines);
+                Walk(scope.Statement, depth + 1, lines, locals);
                 return;
 
             case TryStatementSyntax attempt:
                 Add(lines, depth, "try");
-                Walk(attempt.Block, depth + 1, lines);
+                Walk(attempt.Block, depth + 1, lines, locals);
                 foreach (var handler in attempt.Catches)
                 {
                     var header = "catch";
@@ -107,17 +107,19 @@ internal static class SourceGuards
                     if (handler.Filter != null)
                         header += " when (" + Text(handler.Filter.FilterExpression) + ")";
                     Add(lines, depth, header);
-                    Walk(handler.Block, depth + 1, lines);
+                    Walk(handler.Block, depth + 1, lines, locals);
                 }
                 if (attempt.Finally != null)
                 {
                     Add(lines, depth, "finally");
-                    Walk(attempt.Finally.Block, depth + 1, lines);
+                    Walk(attempt.Finally.Block, depth + 1, lines, locals);
                 }
                 return;
 
             default:
-                if (IsTimingStatement(statement))
+                // Any other statement, including ones with nested bodies (switch, labeled, checked),
+                // is kept whole: a change anywhere inside it still changes its line.
+                if (IsTimingStatement(statement, locals))
                     return;
                 Add(lines, depth, Text(statement));
                 return;
@@ -125,11 +127,12 @@ internal static class SourceGuards
     }
 
     /// <summary>
-    /// <c>var timing = RespawnPipelineTiming.X(...);</c> or <c>timing.X(...);</c>, where every argument
-    /// is a literal, a name or a member access. An argument that calls, assigns or builds a lambda
-    /// could hide real work, so such a statement stays in the order.
+    /// <c>var timing = RespawnPipelineTiming.X(...);</c> or <c>timing.X(...);</c>, where every argument is
+    /// a literal or a plain name of one of RunRespawn's own parameters or locals. Anything else could
+    /// run code (a call, an assignment, a lambda, even a property getter behind a member access), so
+    /// such a statement stays in the order.
     /// </summary>
-    public static bool IsTimingStatement(StatementSyntax statement)
+    public static bool IsTimingStatement(StatementSyntax statement, ISet<string> locals)
     {
         if (statement is LocalDeclarationStatementSyntax local)
         {
@@ -138,23 +141,49 @@ internal static class SourceGuards
                    && local.Declaration.Variables[0].Initializer?.Value is InvocationExpressionSyntax start
                    && start.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax type }
                    && type.Identifier.ValueText == TimingType
-                   && AreInert(start.ArgumentList);
+                   && AreInert(start.ArgumentList, locals);
         }
 
         return statement is ExpressionStatementSyntax { Expression: InvocationExpressionSyntax call }
                && call.Expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax target }
                && target.Identifier.ValueText == TimingLocal
-               && AreInert(call.ArgumentList);
+               && AreInert(call.ArgumentList, locals);
     }
 
-    private static bool AreInert(ArgumentListSyntax arguments)
+    private static bool AreInert(ArgumentListSyntax arguments, ISet<string> locals)
         => arguments.Arguments.All(argument =>
             argument.RefKindKeyword.IsKind(SyntaxKind.None)
-            && argument.Expression.DescendantNodesAndSelf().All(node =>
-                node is LiteralExpressionSyntax
-                || node is IdentifierNameSyntax
-                || node is MemberAccessExpressionSyntax
-                || node is PredefinedTypeSyntax));
+            && argument.NameColon == null
+            && (argument.Expression is LiteralExpressionSyntax
+                || argument.Expression is IdentifierNameSyntax name && locals.Contains(name.Identifier.ValueText)));
+
+    /// <summary>Parameter and local names declared anywhere in the method (never "timing" itself).</summary>
+    private static ISet<string> LocalNames(MethodDeclarationSyntax method)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var parameter in method.ParameterList.Parameters)
+            names.Add(parameter.Identifier.ValueText);
+        foreach (var node in method.Body.DescendantNodes())
+        {
+            switch (node)
+            {
+                case VariableDeclaratorSyntax variable:
+                    names.Add(variable.Identifier.ValueText);
+                    break;
+                case SingleVariableDesignationSyntax designation:
+                    names.Add(designation.Identifier.ValueText);
+                    break;
+                case CatchDeclarationSyntax { Identifier.ValueText.Length: > 0 } caught:
+                    names.Add(caught.Identifier.ValueText);
+                    break;
+                case ForEachStatementSyntax loop:
+                    names.Add(loop.Identifier.ValueText);
+                    break;
+            }
+        }
+        names.Remove(TimingLocal);
+        return names;
+    }
 
     private static void Add(List<string> lines, int depth, string text)
         => lines.Add(new string(' ', depth * 2) + text);
@@ -162,14 +191,16 @@ internal static class SourceGuards
     // ------------------------------------------------------------------ events
 
     /// <summary>
-    /// Every place that raises one of Core's public events itself instead of handing it to the
-    /// SignalDispatcher: <c>E(...)</c>, <c>E.Invoke(...)</c>, <c>E?.Invoke(...)</c>, <c>T.E.Invoke(...)</c>,
-    /// and a manual walk over <c>E.GetInvocationList()</c>. C# only lets the declaring type (and types
-    /// nested in it) touch an event's delegate, so a candidate counts only there, with no receiver,
-    /// <c>this</c> or the declaring type's name as receiver. That keeps a driver method that merely shares
-    /// an event's name (<c>driver.OnRaidEnded()</c>) out.
+    /// Every read of a public Core event's delegate that does not hand it to the SignalDispatcher.
+    /// Allowed are only <c>CoreSignals.&lt;Signal&gt;.Raise(E, ...)</c> with the event as first argument,
+    /// <c>nameof(E)</c>, and <c>E</c> as the left side of an assignment (<c>+=</c>, <c>-=</c>, <c>= null</c>).
+    /// Everything else is a way around the dispatcher: <c>E(...)</c>, <c>E?.Invoke(...)</c>,
+    /// <c>E.GetInvocationList()</c>, <c>var h = E; h(...)</c>, <c>Volatile.Read(ref E)</c>, passing <c>E</c>
+    /// to a helper. C# only lets the declaring type (and types nested in it) read an event's delegate,
+    /// so only uses there count, and only with no receiver, <c>this</c> or the declaring type's name as
+    /// receiver; <c>driver.OnRaidEnded()</c> merely shares a name.
     /// </summary>
-    public static List<string> DirectEventRaises(IEnumerable<(string Path, string Source)> files)
+    public static List<string> EventDelegateUsesOutsideDispatcher(IEnumerable<(string Path, string Source)> files)
     {
         var trees = files.Select(file => (file.Path, Root: Parse(file.Source, file.Path).GetCompilationUnitRoot())).ToList();
 
@@ -197,56 +228,57 @@ internal static class SourceGuards
         var violations = new List<string>();
         foreach (var (path, root) in trees)
         {
-            foreach (var invocation in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            foreach (var name in root.DescendantNodes().OfType<IdentifierNameSyntax>())
             {
-                var (name, qualifier) = RaisedEvent(invocation);
-                if (name == null || !events.TryGetValue(name, out var owners))
+                if (!events.TryGetValue(name.Identifier.ValueText, out var owners))
                     continue;
 
-                var enclosing = invocation.Ancestors().OfType<TypeDeclarationSyntax>().Select(type => type.Identifier.ValueText);
-                if (!enclosing.Any(owners.Contains))
-                    continue;
-                if (qualifier != null && qualifier != "this" && !owners.Contains(qualifier))
+                ExpressionSyntax reference = name;
+                switch (name.Parent)
+                {
+                    case MemberAccessExpressionSyntax access when access.Name == name:
+                        var qualifier = QualifierName(access.Expression);
+                        if (qualifier != "this" && !owners.Contains(qualifier))
+                            continue;                                          // another object's member of that name
+                        reference = access;
+                        break;
+                    case MemberBindingExpressionSyntax:                        // x?.E: another object's member
+                    case QualifiedNameSyntax:                                  // part of a namespace or type name
+                    case NameColonSyntax:                                      // E: named argument
+                        continue;
+                }
+
+                var enclosing = name.Ancestors().OfType<TypeDeclarationSyntax>().Select(type => type.Identifier.ValueText);
+                if (!enclosing.Any(owners.Contains) || IsDispatcherUse(reference))
                     continue;
 
-                var line = invocation.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                violations.Add($"{System.IO.Path.GetFileName(path)}:{line}: {Text(invocation)}");
+                var line = name.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                var statement = name.Ancestors().OfType<StatementSyntax>().FirstOrDefault() ?? (SyntaxNode)reference;
+                violations.Add($"{System.IO.Path.GetFileName(path)}:{line}: {Text(statement)}");
             }
         }
         return violations;
     }
 
-    /// <summary>(event candidate, receiver name or null) for a call that would raise a delegate by that name.</summary>
-    private static (string Name, string Qualifier) RaisedEvent(InvocationExpressionSyntax invocation)
+    private static bool IsDispatcherUse(ExpressionSyntax reference)
     {
-        switch (invocation.Expression)
+        switch (reference.Parent)
         {
-            case IdentifierNameSyntax name:                                    // E(...)
-                return (name.Identifier.ValueText, null);
+            case AssignmentExpressionSyntax assignment when assignment.Left == reference:
+                return true;
 
-            case MemberAccessExpressionSyntax access when RaiseMembers.Contains(access.Name.Identifier.ValueText):
-                return Receiver(access.Expression);                            // E.Invoke(...), T.E.Invoke(...)
-
-            case MemberAccessExpressionSyntax access:                          // T.E(...), this.E(...)
-                return (access.Name.Identifier.ValueText, QualifierName(access.Expression));
-
-            case MemberBindingExpressionSyntax binding when RaiseMembers.Contains(binding.Name.Identifier.ValueText):
-                // E?.Invoke(...): the receiver is the conditional access this call is the tail of.
-                var conditional = invocation.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
-                    .FirstOrDefault(candidate => candidate.WhenNotNull.Span.Contains(invocation.Span));
-                return conditional == null ? (null, null) : Receiver(conditional.Expression);
+            case ArgumentSyntax argument when argument.Parent is ArgumentListSyntax { Parent: InvocationExpressionSyntax call } list:
+                if (call.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" })
+                    return true;
+                return list.Arguments.IndexOf(argument) == 0
+                       && argument.RefKindKeyword.IsKind(SyntaxKind.None)
+                       && call.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Raise" } raise
+                       && RootName(raise.Expression) == "CoreSignals";
 
             default:
-                return (null, null);
+                return false;
         }
     }
-
-    private static (string Name, string Qualifier) Receiver(ExpressionSyntax expression) => expression switch
-    {
-        IdentifierNameSyntax name => (name.Identifier.ValueText, null),
-        MemberAccessExpressionSyntax access => (access.Name.Identifier.ValueText, QualifierName(access.Expression)),
-        _ => (null, null),
-    };
 
     /// <summary>"this", a simple or dotted type name's last part, or a placeholder that matches no type.</summary>
     private static string QualifierName(ExpressionSyntax expression) => expression switch
@@ -255,6 +287,13 @@ internal static class SourceGuards
         IdentifierNameSyntax name => name.Identifier.ValueText,
         MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText,
         _ => "<expression>",
+    };
+
+    private static string RootName(ExpressionSyntax expression) => expression switch
+    {
+        IdentifierNameSyntax name => name.Identifier.ValueText,
+        MemberAccessExpressionSyntax access => RootName(access.Expression),
+        _ => null,
     };
 
     private static string LastName(ExpressionSyntax expression) => expression switch
@@ -268,8 +307,9 @@ internal static class SourceGuards
 
     /// <summary>
     /// Calls of <c>FreecamCompatHelper.EnablePatchesIfPresent</c> and whether each sits directly in the
-    /// block of a try with a catch-all. "Directly": no lambda or local function between the try and the
-    /// call, because those run later, outside the try.
+    /// block of a try whose catch-all swallows the exception. "Directly": no lambda or local function
+    /// between the try and the call, because those run later, outside the try. A catch that throws
+    /// (rethrow or a new exception) guards nothing.
     /// </summary>
     public static (int Guarded, List<string> Unguarded) FreecamEnableSites(IEnumerable<(string Path, string Source)> files)
     {
@@ -306,9 +346,9 @@ internal static class SourceGuards
             switch (ancestor)
             {
                 case TryStatementSyntax attempt when attempt.Block.Span.Contains(node.Span):
-                    if (attempt.Catches.Any(IsCatchAll))
+                    if (attempt.Catches.Any(IsSwallowingCatchAll))
                         return true;
-                    break;                                                       // try/finally only: keep looking outward
+                    break;                                                       // try/finally or a narrow catch: keep looking outward
                 case AnonymousFunctionExpressionSyntax:
                 case LocalFunctionStatementSyntax:
                 case MemberDeclarationSyntax:
@@ -318,14 +358,20 @@ internal static class SourceGuards
         return false;
     }
 
-    private static bool IsCatchAll(CatchClauseSyntax handler)
+    private static bool IsSwallowingCatchAll(CatchClauseSyntax handler)
     {
         if (handler.Filter != null)
             return false;
-        if (handler.Declaration == null)
-            return true;
-        var type = handler.Declaration.Type.ToString();
-        return type == "Exception" || type == "System.Exception";
+        if (handler.Declaration != null)
+        {
+            var type = handler.Declaration.Type.ToString();
+            if (type != "Exception" && type != "System.Exception")
+                return false;
+        }
+
+        // A throw anywhere in the handler's own code (not in a lambda it only creates) lets the failure out.
+        return !handler.Block.DescendantNodes(descendIntoChildren: child => child is not AnonymousFunctionExpressionSyntax && child is not LocalFunctionStatementSyntax)
+            .Any(child => child is ThrowStatementSyntax || child is ThrowExpressionSyntax);
     }
 
     // ------------------------------------------------------------------ shared

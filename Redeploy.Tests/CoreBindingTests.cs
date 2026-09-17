@@ -104,8 +104,13 @@ public class CoreBindingTests
     private static void Invoke(object target, string method)
         => target.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(target, null);
 
+    /// <summary>The query delegates are private to the interop file; a rename there should say so, not throw a NullReferenceException.</summary>
     private static object Field(object target, string name)
-        => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+    {
+        var field = target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.True(field != null, $"LocalBodyTracker has no field {name} any more; the interop file was refactored, update Queries in this test");
+        return field.GetValue(target);
+    }
 
     /// <summary>Field-like events keep their delegate in a private static field of the same name.</summary>
     private static int Subscribers(Type api, string eventName)
