@@ -2,9 +2,11 @@
      isolation, depth, snapshot semantics) and the RunRespawn preflight matrix. Everything
      else in Core is Harmony against Unity/EFT types that cannot load outside the game, so
      it stays in-game (docs/RESPAWN-API.md, section 10) — except the transpiler instruction
-     rewrite in Compat/FindObjectOfTypeRewrite.cs, which is Harmony's CodeInstruction/MethodInfo
-     plumbing against synthetic stand-ins, not against Unity/EFT itself, so HarmonyX below is
-     for that one file only. -->
+     rewrite in Compat/FindObjectOfTypeRewrite.cs and Compat/GenericStaticCallRewrite.cs
+     (Harmony's CodeInstruction/MethodInfo plumbing against synthetic stand-ins, not against
+     Unity/EFT itself, so HarmonyX below is for those two files only) and
+     Compat/ArrayLivenessFilter.cs (plain array logic with an injected predicate, same reason
+     StaleSamplerRegistry and SceneLookupCache are covered here). -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -44,6 +46,8 @@
     <Compile Include="..\Redeploy.Core\Compat\StaleSamplerRegistry.cs" Link="Compat\StaleSamplerRegistry.cs" />
     <Compile Include="..\Redeploy.Core\Compat\SceneLookupCache.cs" Link="Compat\SceneLookupCache.cs" />
     <Compile Include="..\Redeploy.Core\Compat\FindObjectOfTypeRewrite.cs" Link="Compat\FindObjectOfTypeRewrite.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\GenericStaticCallRewrite.cs" Link="Compat\GenericStaticCallRewrite.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\ArrayLivenessFilter.cs" Link="Compat\ArrayLivenessFilter.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
   </ItemGroup>
 

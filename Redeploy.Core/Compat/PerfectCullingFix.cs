@@ -35,6 +35,14 @@ public static class PerfectCullingFix
             return;
         _enabled = true;
 
+        // Unrelated game system (vanilla CameraManager, not the third-party PerfectCulling
+        // sampler this class is named for) but the same cause (respawn recreating the camera) and
+        // the same driver Awake call, so it is enabled from here too — see
+        // Compat/OcclusionCullingFix.cs. Deliberately BEFORE the PerfectCulling type resolution
+        // below: CameraManager exists regardless of whether that third-party plugin is installed,
+        // so this must not share its early return when PerfectCulling is absent.
+        OcclusionCullingFix.EnableOnce();
+
         SamplerPatch.SamplerType = AccessTools.TypeByName("Koenigz.PerfectCulling.EFT.PerfectCullingCrossSceneSampler");
         if (SamplerPatch.SamplerType == null)
         {

@@ -378,6 +378,25 @@ noch ungetestet.
   `CoreVersionTests`-Fehlschlag — widersprüchlich. Richtig: 148/149 vor diesem Review (Treiber-Skew,
   `Redeploy.Client` noch auf 1.0.4 gebaut, derselbe Fall wie bei 1.0.1/1.0.3), 149/150 danach (ein
   Test mehr durch den Arity-Fix, derselbe eine Fehlschlag). Details: Kopf von `docs/RESPAWN-API.md`.
+- Core 1.0.6 (18.09.2026): `CameraManager.UpdateUseOcclusionCulling` gecacht — derselbe Mechanismus
+  wie 1.0.5 für `CullingGridPreProcess`, gemessen als `rewire.camera`s verbleibendes Wachstum
+  (82-86 ms/Respawn, GPU-Raid 18.09. 14:25, RespawnLeakProbe 0.1.3). Neu:
+  `Compat/GenericStaticCallRewrite.cs` (verallgemeinerter, getesteter Transpiler-Kern —
+  Deklarationstyp + Methodenname + generisches Argument, `castclass` jetzt optional; als Sibling,
+  nicht als Umbau von `FindObjectOfTypeRewrite.cs`, das mit seinen Tests unverändert bleibt),
+  `Compat/OcclusionCullingSwitcherCache.cs` (Cache + Aktiv-Filter je Anfrage, Unity-abhängig,
+  ungetestet wie `CullingGridPreProcessCache`), `Compat/ArrayLivenessFilter.cs` (reine
+  Liveness-/Filterlogik, getestet), `Compat/OcclusionCullingFix.cs` (der Transpiler selbst,
+  verdrahtet aus `PerfectCullingFix.EnableOnce()`, **vor** dessen PerfectCulling-Namensauflösung,
+  sonst hätte ein fehlendes Drittanbieter-PerfectCulling `OcclusionCullingFix.EnableOnce()` nie
+  erreicht, obwohl `CameraManager` damit nichts zu tun hat). Details und Begründung (warum
+  `FindObjectsOfType` statt `FindObjectsProxy`, warum der Aktiv-Filter pro Anfrage statt einmal beim
+  Cachen): Kopf von `docs/RESPAWN-API.md`. `Redeploy.Tests`: 171 statt 150 (21 neue Tests), 169
+  grün. 2 Fehlschläge, beide Versions-Skew, keine Regression: `BuiltDriversAreStampedWithTheCoreVersion
+  (Redeploy.Client)` wie gehabt (Client bleibt bewusst ungebaut), plus neu
+  `BuiltCoreCarriesItsOwnVersionLine`, weil `Redeploy.Core/bin/Release` noch die 1.0.5-DLL einer
+  früheren Sitzung trägt und dieser Task laut Vorgabe nur nach `%TEMP%\core-check` baut. Nie im
+  Spiel verifiziert (nur Library-Kompilierprüfung + Tests).
 
 ## Nicht annehmen (Claude Code)
 

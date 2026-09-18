@@ -280,6 +280,45 @@
 >   GPU-Raid ohne Ruckler: 4,04 → 1,99 GB bei der ersten Collection, danach 1,9 bis 2,5 GB.
 > - *Korrektur:* Die Punkte 4 bis 6 der ArenaMode-Migration (Abschnitt 5) waren schon am 12. und 13.09. umgesetzt
 >   (`3a5123c`, `bb82ce8`, `b5011cd`); die „offen"-Vermerke in den Blöcken vom 13. und 14. bis 16.09. waren falsch.
+> - *`rewire.camera`s Rest gemessen und behoben (Core 1.0.6, 18.09.2026):* Nach dem CullingGridPreProcess-Cache
+>   (1.0.5) bleibt `CameraManager.method_2` → `UpdateUseOcclusionCulling`
+>   (`_decompiled/EFT.CameraControl/CameraManager.cs:428-443`) übrig:
+>   `FindObjectsProxy.FindUnityObjectsOfType<OcclusionCullingSwitcher>()` läuft bei jeder
+>   Kamera-Neubindung erneut über jedes MonoBehaviour, 82-86 ms je Respawn und wachsend mit jedem
+>   erzeugten Körper (GPU-Raid 18.09.2026 14:25, RespawnLeakProbe 0.1.3, gegen Core 1.0.5 gemessen).
+>   Vanilla ruft das einmal pro Raid, bei der einmaligen Kamera-Erzeugung; der Respawn erzeugt die
+>   Kamera jedes Mal neu, also zahlt jeder Respawn den vollen Scan. `OcclusionCullingSwitcher` ist wie
+>   `CullingGridPreProcess` gebackener Szeneninhalt (`DisablerCullingObjectBase`, ab Szenenladen
+>   vorhanden, nie mitten im Raid erzeugt) — derselbe Cache-pro-Raid ist also richtig. Neu:
+>   `Compat/GenericStaticCallRewrite.cs` verallgemeinert den reinen Transpiler-Kern von
+>   `FindObjectOfTypeRewrite` auf Deklarationstyp + Methodenname + generisches Argument statt nur
+>   Methodenname + generisches Argument (als *Sibling*, nicht als Umbau: `FindObjectOfTypeRewrite.cs`
+>   und seine Tests bleiben byte-identisch — dessen Test arbeitet bewusst mit einem Stand-in auf einer
+>   fremden Klasse, eine Deklarationstyp-Prüfung dort hätte das gebrochen). `castclass` ist jetzt
+>   optional: hier keine nötig, weil `OcclusionCullingSwitcherCache.Resolve()` schon
+>   `OcclusionCullingSwitcher[]` liefert, genau den Rückgabetyp des ersetzten Aufrufs.
+>   `Compat/OcclusionCullingSwitcherCache.cs` sucht direkt über
+>   `UnityEngine.Object.FindObjectsOfType<OcclusionCullingSwitcher>()` (`FindObjectsProxy` verpackt
+>   denselben Aufruf nur mit einem `string.Format`, dessen Ergebnis nirgends geloggt wird), pro Raid
+>   über `SceneLookupCache` (Schlüssel `GameWorld`-Instanz, wie bei `CullingGridPreProcessCache`), gibt
+>   das gemerkte Array aber bei **jeder** Anfrage frisch auf `gameObject.activeInHierarchy` gefiltert
+>   zurück statt es einmal gefiltert zu cachen: anders als bei `CullingGridPreProcess` kann ein
+>   Switcher deaktiviert werden, ohne zu sterben, und `FindObjectsOfType` schließt inaktive Objekte
+>   aus — ohne den Filter sähe `array.Any(s => s.HasEntered)` ein anderes Set als eine frische Suche.
+>   Reine Filter-/Liveness-Logik in `Compat/ArrayLivenessFilter.cs` (getestet mit synthetischen
+>   Elementen statt Unity-Objekten). Verdrahtet in `PerfectCullingFix.EnableOnce()` (neue
+>   `Compat/OcclusionCullingFix.cs`, eigenes `EnableOnce`; `CameraManager` per `typeof`, weil ein
+>   Kernspieltyp, die Methode trotzdem defensiv per Name aufgelöst) — **vor** der
+>   `PerfectCullingCrossSceneSampler`-Namensauflösung dort, nicht danach: `CameraManager` existiert
+>   unabhängig davon, ob das Drittanbieter-PerfectCulling installiert ist, dessen fehlender Typ
+>   `PerfectCullingFix.EnableOnce()` sonst vor Erreichen dieser Zeile verlassen hätte (bei der
+>   ersten Fassung dieses Commits übersehen, im selben Durchgang korrigiert, bevor er verifiziert
+>   wurde). Nie im Spiel verifiziert (nur
+>   Library-Kompilierprüfung + Tests, 171 statt 150 — 169 grün, 2 Fehlschläge, beide Versions-Skew
+>   derselben Art wie beim Treiber: `BuiltDriversAreStampedWithTheCoreVersion(Redeploy.Client)` wie
+>   gehabt, plus neu `BuiltCoreCarriesItsOwnVersionLine`, weil `Redeploy.Core/bin/Release` noch die
+>   1.0.5-DLL einer früheren Sitzung trägt und dieser Task nur nach `%TEMP%\core-check` baut, nicht
+>   dorthin — keine Regression dieser Änderung).
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
