@@ -212,6 +212,21 @@
 > Spiels samt PerfectCulling-Sampler-Init) und der Rest des Frames. Beides hängt an der Zahl der Leichen, also an
 > der ArenaMode-Aufgabe. Unverändert: `create`, `ownerStart`, `publish`, und der Heap wächst weiter ohne Collection
 > (10,5 GB nach 21 min).
+>
+> **Stand 18.09.2026:**
+> - *ArenaMode gibt fremde Leichen frei* (`2c46c84`, `b4e6ed1`, `f09da9b`, Messung `2cf6ef7`, Stolperdraht-Fix
+>   `d265353`, GPU-Abnahme `1d1622e`): eine Sweep nach dem Ausblenden `BotsController.DestroyInfo`, `Player.Dispose`,
+>   Dead-Body-Record, `GameWorld.DestroyLoot` mit `IsStub`. Gegen den Kontrollraid oben: Steigung 20,6 → 13,2 ms pro
+>   Raidminute, Minute 20 0,73 → 0,58 s (vor Core 1.0.3 waren es 1,58 s), lebende Player-Objekte 415 → etwa 63.
+>   Den Rest tragen die eigenen Leichen des Spielers (eine pro Tod), die ArenaMode bisher absichtlich behält.
+>   User-Entscheidung 18.09.: nur die neueste eigene Leiche bleibt; die Umsetzung liegt bei ArenaMode.
+> - *Heap:* Das Wachstum ohne Collection ist Vanilla-Verhalten. `BaseLocalGame.PrepareSession` schaltet den GC für
+>   den ganzen Raid ab (`InGameMemoryManagement.GCEnabled = false`), sobald der Rechner mindestens
+>   `GigabytesRequiredToDisableGCDuringRaid` GB RAM hat; SPT liefert 25 (`SPT_Data/database/settings.json`), der
+>   GPU-Host hat 31,9 GB. Gesammelt wird erst am Raid-Ende. Der Heap zeigt also die Summe aller Allokationen des
+>   Raids (etwa 7 MB/s in Arena-Deathmatch); wer allokiert, misst ein eigenes Diagnose-Plugin.
+> - *Korrektur:* Die Punkte 4 bis 6 der ArenaMode-Migration (Abschnitt 5) waren schon am 12. und 13.09. umgesetzt
+>   (`3a5123c`, `bb82ce8`, `b5011cd`); die „offen"-Vermerke in den Blöcken vom 13. und 14. bis 16.09. waren falsch.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
@@ -1183,7 +1198,10 @@ Einen Tier für das `OnPlayerRespawned` von Core 0.9 gibt es nicht. 0.9.0 wurde 
 
 **Schichtung:** Core-Events geben das Timing der Engine an (Frame N, Lease noch gehalten). `ArenaEvents` bleibt die eigene, "anforderer-vollständige" Schicht von ArenaMode für das Mode-Framework (N+1 oder später, nach Epoch- und Stand-down-Prüfung und `EndPipelineUse`). Beide werden nicht verschmolzen, und `OnPlayerRespawned` wird nie für Swaps ausgelöst. Grund: `TacticalMode.cs:783-789` wertet im Protected-5v5 jede nicht angeforderte Ersetzung als Fehler.
 
-**Mit Core 1.0 (etwa 1 Tag, Build ohne neue Core-Member):**
+**Mit Core 1.0 (etwa 1 Tag, Build ohne neue Core-Member):** umgesetzt (Stand 18.09.2026, ArenaMode): 1 in
+`3a5123c`, 2 in `668619f` (S0-16), 3 in `bb82ce8` (S0-15), 4 in `3a5123c`/`bb82ce8`, 5 in `bb82ce8` (`OnKitApplied`
+feuert jetzt erst nach einem erfolgreichen Respawn oder Swap und hat weiterhin keinen Abonnenten), 6 in `b5011cd`;
+7 verlangt keine Änderung.
 1. `ArenaEvents.Raise` isoliert jeden Abonnenten; `ArenaMatch.ReportLocalRespawn` (`ArenaMatch.cs:111`) läuft ebenfalls isoliert (S0-1).
 2. `RecoverOldBody` wird idempotent und verträgt eine Preflight-Ablehnung ohne Teardown (S0-16). Die Aufrufstelle bleibt wörtlich, wegen `tools/BleedingCleanupChecks/Verify.ps1:129-130`.
 3. `ArenaRespawnDriver.cs:255` prüft den Body wie `:325-334` (S0-15).

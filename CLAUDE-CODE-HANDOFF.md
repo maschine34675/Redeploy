@@ -187,7 +187,7 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 - [x] Spawn-Schutz + Respawn-Item-Kosten implementiert (Build OK), Ideen aus `_alteSPT3Mods` (PlayerLives/RevivalMod). **Noch nicht im Live-Test bestätigt.**
 - [ ] Nicht übernommen aus alten Mods (bewusst): Critical-State/Downed-Mechanik, `IsAlive=false`-Bot-Ignore-Hack, Renderer-Blinken, Toast-Notifications, Hardcore-Optionen (Kopfschuss/Chance)
 - [ ] Ggf. weitere Edge Cases: mehrfacher Respawn, Mod-Konflikte (SAIN, UIFixes), Scav-Runs
-- [ ] Keine automatisierten Tests im Repo — alles manuell im Spiel
+- [x] Automatisierte Tests: `Redeploy.Tests` (134 Tests, Stand 17.09.2026) und `tools/RespawnInteropChecks`; im Spiel bleibt die Probe (`tools/RespawnApiProbe`)
 
 ## Respawn-Engine: Stufe-0-Härtung und API-Entwurf (12.09.2026)
 
@@ -351,6 +351,11 @@ noch ungetestet.
   gewarnter Notfall), `PerfectCullingFix` nimmt die gesehenen Sampler plus `PerfectCullingCrossSceneSampler.Instance`
   (`Compat/StaleSamplerRegistry.cs`, getestet; KillcamReplay 0.9.10 hat eine geprüfte Kopie). Keine neuen
   `FindObjectOfType`/`FindObjectsOfType` in Pfaden, die pro Respawn laufen: sie wachsen mit jeder Leiche im Raid.
+- Stand 18.09.: ArenaMode gibt fremde Leichen frei (Steigung 20,6 → 13,2 ms pro Raidminute), den Rest tragen die
+  eigenen Leichen; nur die neueste soll bleiben (User-Entscheidung, Umsetzung in ArenaMode). Die ArenaMode-Migration
+  (Abschnitt 5) ist komplett, die „offen"-Vermerke oben sind überholt. Der Heap wächst im Raid ohne Collection, weil
+  EFT den GC ab 25 GB RAM (SPT-Einstellung) für den Raid abschaltet — Vanilla, kein Core-Leck. Details im Kopf von
+  `docs/RESPAWN-API.md`.
 
 ## Nicht annehmen (Claude Code)
 
