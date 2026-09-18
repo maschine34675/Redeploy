@@ -225,6 +225,31 @@
 >   Bezug zum Heap; in den „before"-Zählern steigen pro Respawn `cullingJobs` (+1, der Eintrag der ersetzten
 >   Kamera in `CullingJob.JobParameters` bleibt liegen), `traderHandlers` (+1) und `skillHandlers` (+6), pro
 >   erzeugtem Körper `flareSubscribers`. Welcher davon die Kamera-Erzeugung verteuert, ist nicht gemessen.
+> - *`rewire.camera` gemessen und behoben (Core 1.0.5):* Jeder Respawn bindet die Kamera neu
+>   (`CameraRebindHelper.RebindToPlayer` → `PlayerCameraController.Create`), was einen neuen
+>   `PerfectCullingCrossSceneSampler` erzeugt. Dessen `Start` → `method_0`
+>   (`_decompiled/Koenigz.PerfectCulling.EFT/PerfectCullingCrossSceneSampler.cs:554-594`) macht bei
+>   aktiver Autocull-Karte selbst eine Szenen-Suche —
+>   `UnityEngine.Object.FindObjectOfType<CullingGridPreProcess>()` — über jedes MonoBehaviour, auch
+>   inaktive gepoolte (263.580 auf Labyrinth im GPU-Raid, 32.023 aktiv, wachsend mit jedem
+>   Spieler-Körper): 72 ms am Raidstart, über 110 ms nach ein paar Minuten. Auf Labyrinth liefert die
+>   Suche `null` (kein `CullingGridPreProcess` auf der Karte) — die Regressionsgerade gegen erzeugte
+>   Körper zeigt R² 0,97 bei +0,33 ms je Körper und erklärt damit `rewire.camera` vollständig.
+>   `CullingGridPreProcess` ist gebackener Szeneninhalt: vorhanden oder nicht ab Szenenladen, taucht
+>   nie mitten im Raid auf. Fix: `Compat/SceneLookupCache.cs` (rein, getestet) merkt sich das Ergebnis
+>   pro Raid (Schlüssel `GameWorld`-Instanz) — **einschließlich eines Null-Treffers**, weil eine
+>   Karte ohne die Komponente sonst bei jedem Respawn erneut den vollen Scan zahlt, obwohl das
+>   Ergebnis feststeht. Ein neuer Schlüssel (neuer Raid) sucht immer neu, ein `null`-Schlüssel (noch
+>   kein Raid) cacht nie. `Compat/CullingGridPreProcessCache.cs` verdrahtet den Cache an
+>   `Koenigz.PerfectCulling.EFT.CullingGridPreProcess` (Namensauflösung wie `PerfectCullingFix`).
+>   `Compat/FindObjectOfTypeRewrite.cs` ist ein reiner Transpiler-Kern (rein, getestet mit
+>   synthetischen `CodeInstruction`-Listen): ersetzt genau einen gefundenen
+>   `FindObjectOfType<CullingGridPreProcess>()`-Aufruf durch `call` auf die Cache-Methode plus
+>   `castclass`; bei null oder mehr als einem Treffer bleiben die Instruktionen unverändert (einmalige
+>   Warnung, kein Wurf). Verdrahtet in `PerfectCullingFix.EnableOnce()`, also aktiv, wann immer der
+>   bestehende Sampler-Fix es ist. Hilft nebenbei jedem anderen Mod, das den Sampler neu erzeugt (z. B.
+>   KillcamReplays Replay-Kamera), solange dieser Core installiert ist — der Cache hängt am Raid, nicht
+>   am Aufrufer.
 > - *Heap:* Das Wachstum ohne Collection ist Vanilla-Verhalten. `BaseLocalGame.PrepareSession` schaltet den GC für
 >   den ganzen Raid ab (`InGameMemoryManagement.GCEnabled = false`), sobald der Rechner mindestens
 >   `GigabytesRequiredToDisableGCDuringRaid` GB RAM hat; SPT liefert 25 (`SPT_Data/database/settings.json`), der

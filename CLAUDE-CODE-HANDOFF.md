@@ -187,7 +187,7 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 - [x] Spawn-Schutz + Respawn-Item-Kosten implementiert (Build OK), Ideen aus `_alteSPT3Mods` (PlayerLives/RevivalMod). **Noch nicht im Live-Test bestätigt.**
 - [ ] Nicht übernommen aus alten Mods (bewusst): Critical-State/Downed-Mechanik, `IsAlive=false`-Bot-Ignore-Hack, Renderer-Blinken, Toast-Notifications, Hardcore-Optionen (Kopfschuss/Chance)
 - [ ] Ggf. weitere Edge Cases: mehrfacher Respawn, Mod-Konflikte (SAIN, UIFixes), Scav-Runs
-- [x] Automatisierte Tests: `Redeploy.Tests` (134 Tests, Stand 17.09.2026) und `tools/RespawnInteropChecks`; im Spiel bleibt die Probe (`tools/RespawnApiProbe`)
+- [x] Automatisierte Tests: `Redeploy.Tests` (149 Tests, Stand 18.09.2026) und `tools/RespawnInteropChecks`; im Spiel bleibt die Probe (`tools/RespawnApiProbe`)
 
 ## Respawn-Engine: Stufe-0-Härtung und API-Entwurf (12.09.2026)
 
@@ -356,6 +356,17 @@ noch ungetestet.
   Respawn steigen (`cullingJobs`, Profil-Handler) — Kopf von `docs/RESPAWN-API.md`. Die ArenaMode-Migration
   (Abschnitt 5) ist komplett, die „offen"-Vermerke oben sind überholt. Der Heap wächst im Raid ohne Collection, weil
   EFT den GC ab 25 GB RAM (SPT-Einstellung) für den Raid abschaltet — Vanilla, kein Core-Leck. Details im Kopf von
+  `docs/RESPAWN-API.md`.
+- `rewire.camera` aufgeklärt und behoben (Core 1.0.5, 18.09.2026): Jede Kamera-Neubindung erzeugt einen neuen
+  `PerfectCullingCrossSceneSampler`, dessen `Start` → `method_0` bei aktiver Autocull-Karte selbst eine
+  Szenensuche macht (`FindObjectOfType<CullingGridPreProcess>()`, jedes MonoBehaviour inklusive inaktiver
+  gepoolter — 72 bis 110+ ms, erklärt `rewire.camera` vollständig, R² 0,97). `CullingGridPreProcess` ist
+  gebackener Szeneninhalt (Labyrinth hat keinen → Suche liefert `null`, über den ganzen Raid gültig). Neu:
+  `Compat/SceneLookupCache.cs` (rein, getestet) cacht pro Raid, **inklusive Null-Treffer**;
+  `Compat/CullingGridPreProcessCache.cs` verdrahtet ihn an den per Name aufgelösten Typ;
+  `Compat/FindObjectOfTypeRewrite.cs` ist der reine Transpiler-Kern (rein, getestet mit synthetischen
+  `CodeInstruction`-Listen), verdrahtet in `PerfectCullingFix.EnableOnce()` — aktiv, wann immer der bestehende
+  Sampler-Fix es ist. Nie im Spiel verifiziert (nur Library-Kompilierprüfung + Tests). Details: Kopf von
   `docs/RESPAWN-API.md`.
 
 ## Nicht annehmen (Claude Code)

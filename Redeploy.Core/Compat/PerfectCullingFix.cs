@@ -1,6 +1,7 @@
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -16,6 +17,14 @@ namespace Redeploy.Core.Compat;
 // The stale ones come from a registry of samplers seen starting plus the sampler's static
 // Instance, not from FindObjectsOfType: that walked the whole scene on every respawn and grew
 // with every corpse a long raid keeps (docs/RESPAWN-API.md, "Messraid 17.09.2026").
+//
+// method_0 (called from Start, right before the stale-sampler check above runs) does its own
+// scene search when the map has autoculling: UnityEngine.Object.FindObjectOfType<CullingGridPreProcess>().
+// Measured 18.09.2026: that one call is all of the per-body growth in the camera-recreation step
+// of a respawn (docs/RESPAWN-API.md, "18.09.2026"). SceneSearchPatch below replaces it with a
+// per-raid cache (CullingGridPreProcessCache / SceneLookupCache) the same way SamplerPatch above
+// replaced the stale-sampler scene search with a registry — wired here so it is active whenever
+// this fix is, never separately.
 public static class PerfectCullingFix
 {
     private static bool _enabled;
@@ -38,6 +47,47 @@ public static class PerfectCullingFix
             CoreLog.LogWarning("PerfectCullingCrossSceneSampler.Instance not found — only samplers seen starting are checked");
 
         new SamplerPatch().Enable();
+
+        EnableSceneSearchCacheOnce();
+    }
+
+    /// <summary>
+    /// Resolves method_0 and CullingGridPreProcess by name and, if both exist, patches the scene
+    /// search out of method_0. Missing either one just skips this half of the fix (logged once):
+    /// the sampler still gets its stale-instance cleanup from SamplerPatch, only the scene-search
+    /// caching is lost, same fail-open shape as the rest of this class.
+    /// </summary>
+    private static void EnableSceneSearchCacheOnce()
+    {
+        var method0 = AccessTools.Method(SamplerPatch.SamplerType, "method_0");
+        if (method0 == null)
+        {
+            CoreLog.LogWarning("PerfectCullingCrossSceneSampler.method_0 not found — scene-search cache skipped, "
+                + "the per-respawn scene search stays.");
+            return;
+        }
+
+        var cullingGridPreProcessType = AccessTools.TypeByName("Koenigz.PerfectCulling.EFT.CullingGridPreProcess");
+        if (cullingGridPreProcessType == null)
+        {
+            CoreLog.LogWarning("CullingGridPreProcess type not found — scene-search cache skipped, "
+                + "the per-respawn scene search stays.");
+            return;
+        }
+
+        CullingGridPreProcessCache.SearchType = cullingGridPreProcessType;
+        SceneSearchPatch.Method0 = method0;
+
+        try
+        {
+            new SceneSearchPatch().Enable();
+        }
+        catch (Exception ex)
+        {
+            // Same rule as everywhere else in this file: losing the fast path must never cost
+            // the sampler its Start, so a failed patch just leaves the scene search in place.
+            CoreLog.LogWarning($"Scene-search cache transpiler failed to enable, the per-respawn scene search stays: {ex.Message}");
+        }
     }
 
     private sealed class SamplerPatch : ModulePatch
@@ -73,6 +123,43 @@ public static class PerfectCullingFix
                 // Never cost the sampler its Start: without it the map is not culled at all.
                 CoreLog.LogWarning($"Stale PerfectCulling sampler check failed: {ex.Message}");
             }
+        }
+    }
+
+    private sealed class SceneSearchPatch : ModulePatch
+    {
+        internal static MethodBase Method0;
+
+        private static readonly MethodInfo ResolveMethod =
+            AccessTools.Method(typeof(CullingGridPreProcessCache), nameof(CullingGridPreProcessCache.Resolve));
+
+        protected override MethodBase GetTargetMethod()
+        {
+            return Method0;
+        }
+
+        [PatchTranspiler]
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+
+            try
+            {
+                if (!FindObjectOfTypeRewrite.TryReplace(codes, CullingGridPreProcessCache.SearchType, ResolveMethod))
+                {
+                    CoreLog.LogWarning("Expected exactly 1 FindObjectOfType<CullingGridPreProcess>() call in "
+                        + "PerfectCullingCrossSceneSampler.method_0 — found a different number, instructions left "
+                        + "unchanged, the per-respawn scene search stays.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // A transpiler must never throw: that would break patching method_0 at all,
+                // i.e. cost the sampler its Start. Hand back the instructions untouched instead.
+                CoreLog.LogWarning($"Scene-search cache transpiler failed, left unchanged: {ex.Message}");
+            }
+
+            return codes;
         }
     }
 }
