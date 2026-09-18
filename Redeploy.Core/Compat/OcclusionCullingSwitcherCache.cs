@@ -31,8 +31,10 @@ namespace Redeploy.Core.Compat;
 /// Unlike CullingGridPreProcessCache's target, the remembered result can go stale without any
 /// element being destroyed: a switcher can be deactivated (SetActive(false)) without dying, and
 /// FindObjectsOfType&lt;T&gt;() excludes inactive objects by default, so a fresh search would stop
-/// returning it (and would start returning one reactivated since). The raw search result is cached
-/// exactly as returned; every <see cref="Resolve"/> call re-filters that array down to
+/// returning it (and would start returning one reactivated since). The cached search therefore
+/// includes inactive switchers (review, 18.09.: caching the default search would lose a switcher
+/// that was inactive at that moment for the rest of the raid); every <see cref="Resolve"/> call
+/// re-filters that array down to
 /// gameObject.activeInHierarchy before handing it back (<see cref="ArrayLivenessFilter.Where{T}"/>),
 /// so CameraManager.UpdateUseOcclusionCulling's <c>array.Any(s =&gt; s.HasEntered)</c> always sees
 /// the same set a fresh search would have produced — never a deactivated switcher's stale
@@ -80,7 +82,10 @@ internal static class OcclusionCullingSwitcherCache
         }
     }
 
-    private static object Search() => SearchDirect();
+    // Includes inactive switchers on purpose: Resolve filters to activeInHierarchy on every call,
+    // so a switcher that is inactive now and activated later is still found, exactly as a fresh
+    // FindObjectsOfType (which only skips objects inactive at that moment) would find it.
+    private static object Search() => UnityEngine.Object.FindObjectsOfType<OcclusionCullingSwitcher>(true);
 
     private static OcclusionCullingSwitcher[] SearchDirect() => UnityEngine.Object.FindObjectsOfType<OcclusionCullingSwitcher>();
 

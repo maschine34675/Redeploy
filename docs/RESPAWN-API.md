@@ -305,6 +305,10 @@
 >   zurück statt es einmal gefiltert zu cachen: anders als bei `CullingGridPreProcess` kann ein
 >   Switcher deaktiviert werden, ohne zu sterben, und `FindObjectsOfType` schließt inaktive Objekte
 >   aus — ohne den Filter sähe `array.Any(s => s.HasEntered)` ein anderes Set als eine frische Suche.
+>   Die gecachte Suche schließt inaktive Switcher deshalb **ein** (`FindObjectsOfType<T>(true)`;
+>   Selbst-Review 18.09., nachdem beide Review-Agenten leer zurückkamen): mit der Default-Suche wäre
+>   ein Switcher, der beim ersten Suchlauf inaktiv war und später aktiviert wird, für den Rest des
+>   Raids unsichtbar geblieben; erst der Filter pro Anfrage macht daraus wieder das Vanilla-Set.
 >   Reine Filter-/Liveness-Logik in `Compat/ArrayLivenessFilter.cs` (getestet mit synthetischen
 >   Elementen statt Unity-Objekten). Verdrahtet in `PerfectCullingFix.EnableOnce()` (neue
 >   `Compat/OcclusionCullingFix.cs`, eigenes `EnableOnce`; `CameraManager` per `typeof`, weil ein

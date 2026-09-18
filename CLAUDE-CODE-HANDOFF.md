@@ -384,7 +384,7 @@ noch ungetestet.
   `Compat/GenericStaticCallRewrite.cs` (verallgemeinerter, getesteter Transpiler-Kern —
   Deklarationstyp + Methodenname + generisches Argument, `castclass` jetzt optional; als Sibling,
   nicht als Umbau von `FindObjectOfTypeRewrite.cs`, das mit seinen Tests unverändert bleibt),
-  `Compat/OcclusionCullingSwitcherCache.cs` (Cache + Aktiv-Filter je Anfrage, Unity-abhängig,
+  `Compat/OcclusionCullingSwitcherCache.cs` (Cache inkl. inaktiver Switcher + Aktiv-Filter je Anfrage, Unity-abhängig,
   ungetestet wie `CullingGridPreProcessCache`), `Compat/ArrayLivenessFilter.cs` (reine
   Liveness-/Filterlogik, getestet), `Compat/OcclusionCullingFix.cs` (der Transpiler selbst,
   verdrahtet aus `PerfectCullingFix.EnableOnce()`, **vor** dessen PerfectCulling-Namensauflösung,
