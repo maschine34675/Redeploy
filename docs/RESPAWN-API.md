@@ -250,6 +250,27 @@
 >   bestehende Sampler-Fix es ist. Hilft nebenbei jedem anderen Mod, das den Sampler neu erzeugt (z. B.
 >   KillcamReplays Replay-Kamera), solange dieser Core installiert ist — der Cache hängt am Raid, nicht
 >   am Aufrufer.
+> - *Review zu Core 1.0.5 (18.09.2026):* `IsFindObjectOfTypeCall` prüfte Name, `IsGenericMethod` und
+>   das eine generische Argument, aber nicht die Parameterzahl — ein künftiger `method_0`, der statt
+>   des null-argumentigen `FindObjectOfType<CullingGridPreProcess>()` die Unity-Überladung mit
+>   `bool includeInactive` aufruft (gleicher Name, gleiches generisches Argument), wäre trotzdem als
+>   Treffer durchgegangen; die Ersatzmethode ist aber null-argumentig, die `bool`-Push-Instruktion
+>   bliebe unter dem Rückgabewert auf dem Stack stehen — ein Stack-Shape, den die CLR beim JIT von
+>   `method_0` ablehnt, also bei jeder Kamera-Erzeugung. Heute nicht ausgelöst (die dekompilierte
+>   Quelle nutzt die null-argumentige Überladung), aber eine Lücke im „nicht genau 1 Treffer ⇒
+>   unverändert lassen"-Netz. Fix: `IsFindObjectOfTypeCall` verlangt zusätzlich
+>   `method.GetParameters().Length == 0`; neuer Test `ACallToTheOverloadWithAnArgumentDoesNotCount`
+>   in `Redeploy.Tests/FindObjectOfTypeRewriteTests.cs`.
+>   Zweitens: Das Hochsetzen von `RedeployCoreVersion` auf 1.0.5 lässt `CoreVersionTests.
+>   BuiltDriversAreStampedWithTheCoreVersion(Redeploy.Client)` rot laufen, weil das lokal gebaute
+>   `Redeploy.Client` (17.09., 20:19, Stempel 1.0.4) noch nicht gegen diesen Core neu gebaut ist —
+>   derselbe, bereits bei 1.0.1/1.0.3 dokumentierte Treiber-Skew (siehe „Folgearbeiten zu Stufe 1"
+>   in `CLAUDE-CODE-HANDOFF.md`), keine Regression dieser Änderung. Der Commit zu 1.0.5 hatte das
+>   Ergebnis selbst widersprüchlich als „149/149 grün" bezeichnet und im selben Absatz den erwarteten
+>   Fehlschlag genannt; richtig ist **148 von 149 grün** vor diesem Review, **149 von 150 grün** nach
+>   dem Arity-Fix und seinem Test (ein Test mehr, ein Fehlschlag unverändert). `Redeploy.Client` bleibt
+>   bewusst ungebaut — dieser Task baut/deployt nur `Redeploy.Core -p:SPTModType=Library`, ein
+>   Treiber-Rebuild ist ein eigener, späterer Schritt wie bei den Vorgängerversionen.
 > - *Heap:* Das Wachstum ohne Collection ist Vanilla-Verhalten. `BaseLocalGame.PrepareSession` schaltet den GC für
 >   den ganzen Raid ab (`InGameMemoryManagement.GCEnabled = false`), sobald der Rechner mindestens
 >   `GigabytesRequiredToDisableGCDuringRaid` GB RAM hat; SPT liefert 25 (`SPT_Data/database/settings.json`), der

@@ -1,6 +1,7 @@
 using HarmonyLib;
 using Redeploy.Core.Compat;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -28,6 +29,11 @@ public class FindObjectOfTypeRewriteTests
     {
         // Stand-in for UnityEngine.Object.FindObjectOfType<T>(): same name, one generic argument.
         public static object FindObjectOfType<T>() => null;
+
+        // Stand-in for the other overload Unity ships, UnityEngine.Object.FindObjectOfType<T>(bool
+        // includeInactive): same name, same one-generic-argument shape, but a parameter the
+        // zero-argument replacement call cannot account for.
+        public static object FindObjectOfType<T>(bool includeInactive) => null;
     }
 
     private static class FakeReplacement
@@ -36,12 +42,20 @@ public class FindObjectOfTypeRewriteTests
     }
 
     private static readonly MethodInfo OpenFindObjectOfType =
-        typeof(FakeUnityObject).GetMethod(nameof(FakeUnityObject.FindObjectOfType));
+        typeof(FakeUnityObject).GetMethods()
+            .Single(m => m.Name == nameof(FakeUnityObject.FindObjectOfType) && m.GetParameters().Length == 0);
+
+    private static readonly MethodInfo OpenFindObjectOfTypeIncludingInactive =
+        typeof(FakeUnityObject).GetMethods()
+            .Single(m => m.Name == nameof(FakeUnityObject.FindObjectOfType) && m.GetParameters().Length == 1);
 
     private static readonly MethodInfo Replacement =
         typeof(FakeReplacement).GetMethod(nameof(FakeReplacement.Resolve));
 
     private static MethodInfo FindObjectOfTypeOf<T>() => OpenFindObjectOfType.MakeGenericMethod(typeof(T));
+
+    private static MethodInfo FindObjectOfTypeIncludingInactiveOf<T>() =>
+        OpenFindObjectOfTypeIncludingInactive.MakeGenericMethod(typeof(T));
 
     [Fact]
     public void OneMatchIsReplacedByACallAndACastclass()
@@ -108,6 +122,25 @@ public class FindObjectOfTypeRewriteTests
         var instructions = new List<CodeInstruction>
         {
             new(OpCodes.Call, FindObjectOfTypeOf<OtherType>()),
+        };
+        var original = new List<CodeInstruction>(instructions);
+
+        var replaced = FindObjectOfTypeRewrite.TryReplace(instructions, typeof(TargetType), Replacement);
+
+        Assert.False(replaced);
+        AssertSameShape(original, instructions);
+    }
+
+    [Fact]
+    public void ACallToTheOverloadWithAnArgumentDoesNotCount()
+    {
+        // Same name, same single generic argument as the zero-argument overload this targets —
+        // but the replacement call is zero-argument, so matching this one would strand its bool
+        // argument's push instruction under the replacement's return value (see IsFindObjectOfTypeCall).
+        var instructions = new List<CodeInstruction>
+        {
+            new(OpCodes.Ldc_I4_1),
+            new(OpCodes.Call, FindObjectOfTypeIncludingInactiveOf<TargetType>()),
         };
         var original = new List<CodeInstruction>(instructions);
 

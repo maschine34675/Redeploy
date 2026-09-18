@@ -368,6 +368,16 @@ noch ungetestet.
   `CodeInstruction`-Listen), verdrahtet in `PerfectCullingFix.EnableOnce()` — aktiv, wann immer der bestehende
   Sampler-Fix es ist. Nie im Spiel verifiziert (nur Library-Kompilierprüfung + Tests). Details: Kopf von
   `docs/RESPAWN-API.md`.
+- Review zu 1.0.5 (18.09.2026): `IsFindObjectOfTypeCall` prüfte die Parameterzahl der getroffenen
+  Methode nicht — eine gleichnamige Überladung mit zusätzlichem Argument (z. B. Unitys
+  `FindObjectOfType<T>(bool includeInactive)`) wäre unbemerkt durchgerutscht und hätte einen
+  Stack-Shape-Fehler erzeugt; heute nicht ausgelöst (dekompilierte Quelle nutzt die
+  null-argumentige Überladung), aber eine Lücke im 1-Treffer-Sicherheitsnetz. Gefixt:
+  `method.GetParameters().Length == 0` ergänzt, Test `ACallToTheOverloadWithAnArgumentDoesNotCount`.
+  Außerdem korrigiert: der 1.0.5-Commit nannte „149/149 grün" und im selben Absatz den erwarteten
+  `CoreVersionTests`-Fehlschlag — widersprüchlich. Richtig: 148/149 vor diesem Review (Treiber-Skew,
+  `Redeploy.Client` noch auf 1.0.4 gebaut, derselbe Fall wie bei 1.0.1/1.0.3), 149/150 danach (ein
+  Test mehr durch den Arity-Fix, derselbe eine Fehlschlag). Details: Kopf von `docs/RESPAWN-API.md`.
 
 ## Nicht annehmen (Claude Code)
 

@@ -63,6 +63,16 @@ internal static class FindObjectOfTypeRewrite
         if (method.Name != "FindObjectOfType")
             return false;
 
+        // The replacement is a zero-argument static call (CullingGridPreProcessCache.Resolve()):
+        // it assumes the call it replaces pushed nothing but its own return value. Unity also
+        // ships FindObjectOfType<T>(bool includeInactive), same name and same one-generic-argument
+        // shape — matching that overload here would leave its bool argument's push instruction
+        // stranded under the replacement call's return value, an IL stack shape the CLR verifier
+        // rejects at JIT time. Requiring zero parameters sends that overload down the "not found"
+        // path instead, same as a wrong generic argument.
+        if (method.GetParameters().Length != 0)
+            return false;
+
         var typeArgs = method.GetGenericArguments();
         return typeArgs.Length == 1 && typeArgs[0] == searchType;
     }
