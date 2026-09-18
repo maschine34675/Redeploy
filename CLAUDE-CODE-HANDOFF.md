@@ -395,8 +395,12 @@ noch ungetestet.
   grün. 2 Fehlschläge, beide Versions-Skew, keine Regression: `BuiltDriversAreStampedWithTheCoreVersion
   (Redeploy.Client)` wie gehabt (Client bleibt bewusst ungebaut), plus neu
   `BuiltCoreCarriesItsOwnVersionLine`, weil `Redeploy.Core/bin/Release` noch die 1.0.5-DLL einer
-  früheren Sitzung trägt und dieser Task laut Vorgabe nur nach `%TEMP%\core-check` baut. Nie im
-  Spiel verifiziert (nur Library-Kompilierprüfung + Tests).
+  früheren Sitzung trägt und dieser Task laut Vorgabe nur nach `%TEMP%\core-check` baut.
+  Selbst-Review `3f2125f`: Der Cache sucht jetzt inklusive inaktiver Switcher, sonst wäre ein
+  anfangs inaktiver Switcher für den ganzen Raid verloren gewesen. Gebaut und deployt, 171/171
+  grün. **Im Spiel verifiziert** (GPU-Raid I, 18.09. 14:57): `rewire.camera` 6–11 ms statt
+  94–137 ms, die Core-Pipeline ist flach (0,51 ms/min, R² 0,19; vorher 4,7). Was noch wächst,
+  folgt der allgemeinen Frame-Zeit. Zahlen: Kopf von `docs/RESPAWN-API.md`.
 
 ## Nicht annehmen (Claude Code)
 

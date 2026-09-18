@@ -317,12 +317,18 @@
 >   unabhängig davon, ob das Drittanbieter-PerfectCulling installiert ist, dessen fehlender Typ
 >   `PerfectCullingFix.EnableOnce()` sonst vor Erreichen dieser Zeile verlassen hätte (bei der
 >   ersten Fassung dieses Commits übersehen, im selben Durchgang korrigiert, bevor er verifiziert
->   wurde). Nie im Spiel verifiziert (nur
->   Library-Kompilierprüfung + Tests, 171 statt 150 — 169 grün, 2 Fehlschläge, beide Versions-Skew
->   derselben Art wie beim Treiber: `BuiltDriversAreStampedWithTheCoreVersion(Redeploy.Client)` wie
->   gehabt, plus neu `BuiltCoreCarriesItsOwnVersionLine`, weil `Redeploy.Core/bin/Release` noch die
->   1.0.5-DLL einer früheren Sitzung trägt und dieser Task nur nach `%TEMP%\core-check` baut, nicht
->   dorthin — keine Regression dieser Änderung).
+>   wurde). Nach dem Bau von Core + Client (`3f2125f`) 171/171 grün.
+>   **Im Spiel verifiziert (GPU-Raid I, 18.09.2026 14:57–15:14, Labyrinth DM, 25 Respawns, 236 erzeugte
+>   Körper, RespawnLeakProbe 0.1.3):** „OcclusionCullingSwitcher scene search reused from cache … (0
+>   switcher(s))" ab dem ersten Respawn (Labyrinth hat keine Switcher). `UpdateUseOcclusionCulling`
+>   0,00–0,01 ms (vorher 82–129 ms), `CameraManager.method_2` 1,5–2,2 ms (vorher 85–96 ms),
+>   `rewire.camera` 6–11 ms (Raid H: 94–137 ms), Steigung 0,16 ms/Raidminute (G 5,03, H 3,71). Die
+>   ganze Core-Pipeline liegt bei 48–68 ms (H: 155–183 ms), Steigung 0,51 ms/min bei R² 0,19, also
+>   flach (G/H 4,7). ArenaModes eigene Respawn-Zeit 170–260 ms (H: 280–320 ms). Was noch wächst, ist
+>   `rest` (bis zu den Coroutinen des nächsten Frames, 3,4 ms/min bei R² 0,39). Es folgt der
+>   allgemeinen Frame-Zeit (vor dem Respawn gemessen 21 → 45 ms) und liegt nicht mehr in der
+>   Pipeline. Keine neuen Warnungen: der SAIN-GrenadeController-Fehler „Player Null from ID" kommt
+>   in jedem Raid seit D vor (3–8 Mal), ist also nicht neu.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
