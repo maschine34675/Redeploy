@@ -351,8 +351,9 @@ noch ungetestet.
   gewarnter Notfall), `PerfectCullingFix` nimmt die gesehenen Sampler plus `PerfectCullingCrossSceneSampler.Instance`
   (`Compat/StaleSamplerRegistry.cs`, getestet; KillcamReplay 0.9.10 hat eine geprüfte Kopie). Keine neuen
   `FindObjectOfType`/`FindObjectsOfType` in Pfaden, die pro Respawn laufen: sie wachsen mit jeder Leiche im Raid.
-- Stand 18.09.: ArenaMode gibt fremde Leichen frei (Steigung 20,6 → 13,2 ms pro Raidminute), den Rest tragen die
-  eigenen Leichen; nur die neueste soll bleiben (User-Entscheidung, Umsetzung in ArenaMode). Die ArenaMode-Migration
+- Stand 18.09.: ArenaMode gibt fremde und ältere eigene Leichen frei (nur die neueste bleibt), die Leichenzahl
+  bleibt flach, die Pipeline wächst trotzdem weiter (`rewire.camera`, Frame-Rest). Offene Spur: Zähler, die pro
+  Respawn steigen (`cullingJobs`, Profil-Handler) — Kopf von `docs/RESPAWN-API.md`. Die ArenaMode-Migration
   (Abschnitt 5) ist komplett, die „offen"-Vermerke oben sind überholt. Der Heap wächst im Raid ohne Collection, weil
   EFT den GC ab 25 GB RAM (SPT-Einstellung) für den Raid abschaltet — Vanilla, kein Core-Leck. Details im Kopf von
   `docs/RESPAWN-API.md`.

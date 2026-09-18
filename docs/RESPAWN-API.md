@@ -218,13 +218,20 @@
 >   `d265353`, GPU-Abnahme `1d1622e`): eine Sweep nach dem Ausblenden `BotsController.DestroyInfo`, `Player.Dispose`,
 >   Dead-Body-Record, `GameWorld.DestroyLoot` mit `IsStub`. Gegen den Kontrollraid oben: Steigung 20,6 → 13,2 ms pro
 >   Raidminute, Minute 20 0,73 → 0,58 s (vor Core 1.0.3 waren es 1,58 s), lebende Player-Objekte 415 → etwa 63.
->   Den Rest tragen die eigenen Leichen des Spielers (eine pro Tod), die ArenaMode bisher absichtlich behält.
->   User-Entscheidung 18.09.: nur die neueste eigene Leiche bleibt; die Umsetzung liegt bei ArenaMode.
+>   User-Entscheidung 18.09.: nur die neueste eigene Leiche bleibt (ArenaMode `cddc094`..`233660a`). Der
+>   GPU-Raid darauf (10:22–10:46, 32 Respawns) hält die Leichenzahl bei 12 bis 17, die Pipeline wächst aber
+>   unverändert (bis Minute 16: 14,7 statt 12,8 ms pro Minute, gleiche Werte bei gleicher Raidminute). Die
+>   Leichen tragen den Rest also nicht. Weiter wachsen `rewire.camera` (+6,5 ms/min) und der Frame-Rest, ohne
+>   Bezug zum Heap; in den „before"-Zählern steigen pro Respawn `cullingJobs` (+1, der Eintrag der ersetzten
+>   Kamera in `CullingJob.JobParameters` bleibt liegen), `traderHandlers` (+1) und `skillHandlers` (+6), pro
+>   erzeugtem Körper `flareSubscribers`. Welcher davon die Kamera-Erzeugung verteuert, ist nicht gemessen.
 > - *Heap:* Das Wachstum ohne Collection ist Vanilla-Verhalten. `BaseLocalGame.PrepareSession` schaltet den GC für
 >   den ganzen Raid ab (`InGameMemoryManagement.GCEnabled = false`), sobald der Rechner mindestens
 >   `GigabytesRequiredToDisableGCDuringRaid` GB RAM hat; SPT liefert 25 (`SPT_Data/database/settings.json`), der
 >   GPU-Host hat 31,9 GB. Gesammelt wird erst am Raid-Ende. Der Heap zeigt also die Summe aller Allokationen des
->   Raids (etwa 7 MB/s in Arena-Deathmatch); wer allokiert, misst ein eigenes Diagnose-Plugin.
+>   Raids (etwa 7 MB/s in Arena-Deathmatch, zur Hälfte der Bot-Stack; Diagnose-Plugin `HeapProbe`). ArenaMode
+>   schaltet den GC in Arena-Raids ab `GcHeapThresholdGB` (Standard 4) wieder ein (`c6de76e`, `9218bb7`), im
+>   GPU-Raid ohne Ruckler: 4,04 → 1,99 GB bei der ersten Collection, danach 1,9 bis 2,5 GB.
 > - *Korrektur:* Die Punkte 4 bis 6 der ArenaMode-Migration (Abschnitt 5) waren schon am 12. und 13.09. umgesetzt
 >   (`3a5123c`, `bb82ce8`, `b5011cd`); die „offen"-Vermerke in den Blöcken vom 13. und 14. bis 16.09. waren falsch.
 
