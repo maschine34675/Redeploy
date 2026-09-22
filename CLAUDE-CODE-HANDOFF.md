@@ -291,8 +291,10 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
   Wer `RunRespawn`, `RespawnRequest.Game` oder `RespawnRequest.DeadPlayer` umbenennt, schaltet diesen
   Hold still ab; `tools/HandoffChecks` im KillcamReplay-Repo liest die Member aus dem gebauten Core.
   Redeploy.Client loggt einen vom Raid-Ende abgebrochenen Respawn seitdem als Info (`de7b8f7`).
-- Weiter offen: 8.4, Bindungstest gegen den echten Core, ArenaMode-Migration 4 und 5, die
-  Probe-Szenarien im Spiel.
+- Weiter offen (Stand 13.09., historisch): 8.4, Bindungstest gegen den echten Core,
+  ArenaMode-Migration 4 und 5, die Probe-Szenarien im Spiel. 8.4 und der Bindungstest sind
+  seit 17.09. umgesetzt. Die Probe-Szenarien 3–6 liefen am 21.09. im Spiel; Beleg
+  `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
 
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
 Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
@@ -401,6 +403,14 @@ noch ungetestet.
   grün. **Im Spiel verifiziert** (GPU-Raid I, 18.09. 14:57): `rewire.camera` 6–11 ms statt
   94–137 ms, die Core-Pipeline ist flach (0,51 ms/min, R² 0,19; vorher 4,7). Was noch wächst,
   folgt der allgemeinen Frame-Zeit. Zahlen: Kopf von `docs/RESPAWN-API.md`.
+- **Probe-Szenarien im Spiel (21.09.2026):** Factory Tag, Arena Deathmatch Endless,
+  zuerst Instanz `6941c3bc` (P3/P4/P5, P6 bei 1,53 s), Nachzug Instanz `18450c88`
+  15:13 (P6/F3 bei **0,50 s** über `uibridge_config_set`, UiBridge 0.6.0). Core
+  1.0.6+`3f2125f`, Probe 0.9.0+`33c79a7`. P3/P4/P5 bestanden, P2 bestätigt, P6 Arena
+  beansprucht ohne Redeploy-Prompt, P1 weiter nur teilweise, Hideout-`GameEnd` bleibt
+  aus. Alle Schalter danach aus. Details:
+  `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Offen: Fika, Fail-closed,
+  Pool-Bodies, PitFireTeam, `ReplacementFailed`.
 
 ## Nicht annehmen (Claude Code)
 

@@ -86,3 +86,21 @@ Das Log danach mit `[probe]` filtern. Zeilen von Core stehen unter `Redeploy.Cor
 
 Szenario 3 bis 5 brauchen mindestens einen registrierten Treiber. Ohne ihn lehnt Core jeden Aufruf
 mit `The respawn engine is unavailable` ab, und das ist dann kein Testergebnis.
+
+## Stand 21.09.2026
+
+GPU-Lauf auf Factory Tag (Arena Deathmatch Endless):
+`docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
+
+| Szenario | Ergebnis |
+|---|---|
+| 1 Frühe Bindung | Teilweise (`interopBound=True`, `coreLoadedBeforeBind=True`) |
+| 2 Isolation / Frames | Bestätigt (Swap und Tod) |
+| 3 Reentranz aus `Replaced` | Bestanden |
+| 4 Ablehnung während Pipeline | Bestanden |
+| 5 Ablehnung beim Raid-Ende | Bestanden |
+| 6 Tod nach Raidstart-Swap | Arena beansprucht; Nachzug 15:13 mit Delay **0,50 s** |
+
+Nach beiden Läufen stehen alle Schalter auf aus. `KillAfterRaidStartSwapDelaySeconds`
+ist 0,5. Szenario 6 ist damit im 0,5-s-Fenster belegt (Arena-Claim, kein
+Redeploy-Prompt).

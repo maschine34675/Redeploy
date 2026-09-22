@@ -329,6 +329,18 @@
 >   allgemeinen Frame-Zeit (vor dem Respawn gemessen 21 → 45 ms) und liegt nicht mehr in der
 >   Pipeline. Keine neuen Warnungen: der SAIN-GrenadeController-Fehler „Player Null from ID" kommt
 >   in jedem Raid seit D vor (3–8 Mal), ist also nicht neu.
+>
+> **21.09.2026, Probe-Szenarien im Spiel (GPU, Factory Tag, Arena Deathmatch Endless):**
+> `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Core 1.0.6+`3f2125f`, Probe 0.9.0+`33c79a7`,
+> ArenaMode.Client `be7c49d`. P3/F10, P4/F11 und P5 bestanden (Reentranz aus `Replaced`, Reentranz
+> während der Pipeline, Ablehnung bei `Stopping`; kein `ItemOwners`/`RegisterPlayer`, kein
+> `ReplacementFailed`). P2/F2 bestätigt (`Replaced`+`BodyChanged` gleicher Frame, `MainPlayer` N+1,
+> `AlwaysThrow` isoliert). P6/F3: Arena beansprucht den Tod nach dem Raidstart-Swap, kein
+> Redeploy-Prompt; Nachzug 15:13 mit Delay **0,50 s** (Schalter über `uibridge_config_set`,
+> UiBridge 0.6.0). P1/F1 unverändert nur teilweise (`interopBound=True`,
+> `coreLoadedBeforeBind=True`). F4 Hideout: kein `RaidEnded`/`GameEnd` beim Verlassen. F5: Bots
+> nach dem Respawn in SAIN Combat Layer. Offen bleiben F7 Fika, F8 Cooldown-Race, F9 Fail-closed,
+> F12 Pool-Bodies, F13 PitFireTeam, `ReplacementFailed`.
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
@@ -1441,7 +1453,8 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
      - "`RunRespawn` während laufender Pipeline" (prüft S0-16 im Live-Swap);
      - "Tod kurz nach dem Raidstart-Swap" (offene Frage 3).
 
-   Die Szenarien stehen in Abschnitt 10.
+   Die Szenarien stehen in Abschnitt 10. GPU-Lauf 21.09.2026:
+   `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
 6. **Bestehende Checks** müssen grün bleiben: `ArenaMode.Tests`, `tools/TdmMatchChecks`, `tools/PitFireTeamChecks`, `tools/BleedingCleanupChecks`.
 
 ---
@@ -1481,6 +1494,11 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
 ## 10. Offene Fragen, die ein In-Game-Check klären muss
 
 Alle Punkte laufen über die Probe aus Abschnitt 8.5.
+
+**Stand 21.09.2026** (`docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`): 1 teilweise; 2, 3
+(0,50 s nach dem Raidstart-Swap, Arena beansprucht, kein Redeploy-Prompt), 4
+(Hideout-Zweig), 10 und 11 im Spiel belegt; 5 nur über die Bot-Layer, nicht über
+`PlayerComponent`. Unverändert offen: 4 Narrate, 6 hier nicht wiederholt, 7–9, 12, 13.
 
 1. **Bindung aus einem frühen Awake:** Lädt `Type.GetType(aqn)` Core im Spiel (nativer Mono-Pfad) per `LocalResolve`, bevor irgendein Treiber sein Awake durchlaufen hat? Im CoreCLR-Harness funktionierte es. Wenn nicht, bleibt es beim erneuten Versuch pro `GameWorld`.
 2. **Frame-Abstand:** Wie viele Frames liegen zwischen `Replaced`, der Fortsetzung des Anforderers (N+1 oder N+2), `FinalizeRespawnView` und `EnsureBattleUiReady`? Fällt `Replaced` mit dem Wechsel von `MainPlayer` in denselben Frame, auch mit SAIN, BigBrain und UIFixes, also bleibt die Erzeugung synchron? *Code-Stand 13.09.2026:* Im Vanilla-Pfad ja, `LocalPlayer.Create` ruft `Player.Init(..., async: false)`, dessen `await`s alle hinter `if (async)` stehen; `RunRespawn` erreicht `Replaced` ohne `yield`. Offen bleibt, ob ein Mod diesen Pfad asynchron macht.
