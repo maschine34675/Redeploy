@@ -433,6 +433,10 @@ noch ungetestet.
   Spiel nachgetestet. ArenaMode braucht dafür keinen Neubau: ein gegen 1.0.6 gebautes
   `ArenaMode.Client` lief im Test neben Core 1.0.7 ohne Skew-Warnung. Da `ArenaMode.Client` den Core
   per `ProjectReference` baut, liefert jeder ArenaMode-Build automatisch diesen Stand mit.
+  Installiert ist der Build vom Commit-Stand: Core `1.0.7+50fe0b0`, SHA256
+  `A32326C85C7AD397DA3D2E23BFCB46ADA5375A06987ECCCF8CC804F554BD970D`. Die In-Game-Läufe liefen auf
+  dem Build desselben Quellstands unmittelbar vor dem Commit (SHA256 `F307FB4E…`, Stempel noch
+  `+2dfad3b`); der Commit-Build selbst wurde nicht noch einmal im Spiel gestartet.
 
 ## Nicht annehmen (Claude Code)
 
