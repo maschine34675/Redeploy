@@ -155,6 +155,17 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 - **Fix:** `DynamicMapsCompatHelper.RebindPlayerMarker` (nach Owner-Erstellung, wie Freecam): läuft rein per Reflection zu `DynamicMaps.Plugin.Instance.Map._dynamicMarkerProviders[PlayerMarkerProvider]._playerMarker.Player` durch und setzt die `Player`-Property (private Setter) auf den neuen Player um — Marker-GameObject bleibt erhalten, folgt danach automatisch wieder. No-op ohne DynamicMaps.
 - **Datei:** `CorpseRun.Client/Services/DynamicMapsCompatHelper.cs`
 
+### DoorDash: Sprint-Ramm nach Respawn/Kit-Tausch weg
+
+- **Ursache:** DoorDash (`com.tarkin.doordash`, Upstream 1.2.0) hängt seine Ramm-Komponente `tarkin.doordash.RaycastBreacher` genau einmal pro Raid an den Hauptspieler (`GameWorld.OnGameStarted`-Postfix, `GetOrAddComponent`). Ein Ersatzkörper entsteht später und bekommt keine; ab dem ersten Respawn bzw. ab ArenaModes Raidstart-Tausch rammt der Spieler keine Tür mehr, ohne jede Logzeile. Im Spiel reproduziert am 11.10.2026 mit Core 1.0.6: Körper nach dem Tausch ohne `RaycastBreacher`.
+- **Fix (Core 1.0.7):** `DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer)` in `RunRespawn`. Nimmt die Komponente vom alten Körper (Regel 4.4.2: ein ausgetauschter Körper lebt noch, und bei abgeschaltetem DoorDash läuft dessen Selbstzerstörung „Spieler tot" nie, weil `Update` vorher zurückkehrt) und hängt eine frische an den neuen (`DestroyImmediate` einer mitgebrachten, dann `AddComponent`, nie GetOrAdd). Die Komponente findet ihren Spieler selbst (`GetComponent<Player>()` in `Awake`); von DoorDash wird nichts geschrieben. Auflösung je Aufruf über `Chainloader.PluginInfos[GUID].Instance`, kein Cache. Der ganze Rumpf steht in try/catch: ein Wurf im Rewire-Block ließe den Respawn nach dem Teardown scheitern.
+- **Entscheidung als reine Regel** `DoorDashFollowRule.Decide` (getestet): nicht geladen → nichts tun, nichts loggen; Typ fehlt oder ist kein `MonoBehaviour` → einmalige Warnung; statisches `Plugin.Enabled` vorhanden, aber ungebunden → nicht anhängen (DoorDashs `Start` ist dann vor `InitConfiguration` gescheitert, es hängt selbst nie einen Breacher an, und ein von hier angehängter würde in jedem `Update` werfen); sonst folgen. Fehlt der Schalter ganz (umbenannt), hält das nichts auf.
+- **Warum direkt nach `game.LocalPlayer = newPlayer` und nicht bei den anderen Compat-Helfern:** Ab dieser Zeile stellt ArenaMode einen mitten im Rewire gescheiterten Tausch auf dem **Ersatz**körper wieder her und zerstört den alten (`LiveKitRespawn.RecoverOldBody` → `RecoverReplacementBody`, sobald `game.LocalPlayer` nicht mehr der alte Körper ist). Der erste Entwurf rief den Helfer am Ende des Rewire, mit der Begründung, ein wiederhergestellter alter Körper behalte so seinen Breacher. Das war falsch: Nach dieser Zeile stellt kein Treiber mehr den alten Körper her, der wiederhergestellte Ersatzkörper wäre ohne Breacher geblieben (Review 11.10., drei Prüfer unabhängig, im ArenaMode-Code nachgeprüft). Scheitert schon die Erzeugung, bleibt der alte Körper Spielkörper und behält seinen Breacher, weil der Helfer nie erreicht wird.
+- **Log:** einmal je Spielsitzung Info `DoorDash <Version> detected: its sprint-ram component follows respawned bodies.`, danach je Respawn nur Debug. Kosten `rewire.doorDash` an dieser Stelle: 1,8 ms beim ersten Aufruf, 0,3 ms beim zweiten (je ein Messwert); konstanter Aufwand, kein Szenen-Sweep.
+- **Unter Fika** läuft kein `RunRespawn`, also wechselt kein Körper und der Helfer wird nie erreicht.
+- **Im Spiel belegt** (11.10.2026, SPT-GPU-1, Arena Deathmatch Factory, DoorDash = lokaler Build des Upstream-Tags `v1.2.0`): nach dem Raidstart-Tausch und nach Todes-Respawns genau ein `RaycastBreacher` in der Szene, am aktuellen Körper (`player`-Feld = `MainPlayer`); Sprint-Ramm mit respawntem Körper öffnet eine geschlossene Holztür (`Open`, `IsBroken`, linker Arm 60 → 50 = DoorDashs Ramm-Schaden); zweiter Raid derselben Spielsitzung ebenso; nach Raid-Ende keine Instanz mehr; kein Fehler im Log. **Nicht getestet:** ein von Redeploy.Client selbst getriebener Respawn (gleiche Pipeline, anderer Treiber), ein mitten im Rewire scheiternder Tausch, der offizielle DoorDash-Download.
+- **Dateien:** `Redeploy.Core/Compat/DoorDashCompatHelper.cs`, `Redeploy.Core/Compat/DoorDashFollowRule.cs`, `Redeploy.Tests/DoorDashFollowRuleTests.cs`
+
 ### Halb abgebaute Map (PerfectCulling) — bei Test-Nutzern ohne Killcam/KillcamReplay
 
 - **Ursache:** Der PlayerCameraController-Destroy/Create-Zyklus (unser Respawn) kann einen stale `Koenigz.PerfectCulling.EFT.PerfectCullingCrossSceneSampler` hinterlassen; startet dann ein zweiter Sampler (Stop()-Cleanup/nächster Raid), wirft `method_0` GException8 („Autocull sampler exists") → Teardown bricht ab → nächster Raid mit halb gecullter Map.
@@ -411,6 +422,17 @@ noch ungetestet.
   aus. Alle Schalter danach aus. Details:
   `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Offen: Fika, Fail-closed,
   Pool-Bodies, PitFireTeam, `ReplacementFailed`.
+- Core 1.0.7 (11.10.2026): `DoorDashCompatHelper.FollowBody` — DoorDashs Ramm-Komponente folgt
+  dem Körper bei jedem Respawn und Kit-Tausch (Ursache, Regel, Platzierung und Belege unter
+  „Bekannte Fehler / Fallen → DoorDash"). Neu: `Compat/DoorDashCompatHelper.cs` (Unity-abhängig,
+  ungetestet wie die anderen Compat-Helfer), `Compat/DoorDashFollowRule.cs` (reine Entscheidung,
+  getestet), `CoreLog.LogDebug`. Golden Order: eine Zeile mehr, direkt nach
+  `game.LocalPlayer = newPlayer`. `Redeploy.Tests`: 179 statt 171 (8 neue), 179 grün nach dem
+  Release-Build von Core und `Redeploy.Client` (der Stempel-Test verlangt beide auf 1.0.7).
+  Adversariales Review (drei Prüfer, je ein Widerleger): ein Fund, die Platzierung, behoben und im
+  Spiel nachgetestet. ArenaMode braucht dafür keinen Neubau: ein gegen 1.0.6 gebautes
+  `ArenaMode.Client` lief im Test neben Core 1.0.7 ohne Skew-Warnung. Da `ArenaMode.Client` den Core
+  per `ProjectReference` baut, liefert jeder ArenaMode-Build automatisch diesen Stand mit.
 
 ## Nicht annehmen (Claude Code)
 

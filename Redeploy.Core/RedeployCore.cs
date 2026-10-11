@@ -29,6 +29,7 @@ public static class RedeployCore
 /// <summary>Null-safe logging for Core internals (Init may not have run in exotic setups).</summary>
 internal static class CoreLog
 {
+    public static void LogDebug(string message) => RedeployCore.Log?.LogDebug(message);
     public static void LogInfo(string message) => RedeployCore.Log?.LogInfo(message);
     public static void LogWarning(string message) => RedeployCore.Log?.LogWarning(message);
     public static void LogError(string message) => RedeployCore.Log?.LogError(message);

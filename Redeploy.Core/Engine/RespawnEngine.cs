@@ -255,6 +255,13 @@ public static class RespawnEngine
             game.LocalPlayer = newPlayer;
             timing.Mark("rewire.result");
 
+            // Here, not with the other compat helpers further down: from the line above on, a
+            // driver that recovers a failed rewire recovers onto the replacement and destroys
+            // the old body (ArenaMode's LiveKitRespawn.RecoverOldBody decides by
+            // game.LocalPlayer), so the replacement has to carry the breacher from here.
+            DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer);
+            timing.Mark("rewire.doorDash");
+
             LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
             timing.Mark("rewire.dictionary");
             LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);

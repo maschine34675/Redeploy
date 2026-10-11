@@ -21,6 +21,7 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **Components:** Client **and** server. Both are required — see the warning under Installation.
 - **Dependencies:** None.
 - **Optional integrations**, each installed separately and none of them required:
+  - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
   - **KillcamReplay** — the death replay stays visible behind the respawn prompt.
@@ -105,4 +106,4 @@ Please include the exact Redeploy and SPT versions, what you expected and what h
 Released under the MIT License; see `LICENSE`.
 
 - The spawn protection and the optional respawn cost were inspired by **PlayerLives** and **RevivalMod** (KaiKiNoodles, gitTerebi), which approach the same problem with a downed state instead of a respawn. No code was taken from either mod.
-- Redeploy contains compatibility code for **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **KillcamReplay**. None of these are bundled; they remain the property of their authors.
+- Redeploy contains compatibility code for **DoorDash** (tarkin), **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **KillcamReplay**. None of these are bundled; they remain the property of their authors.

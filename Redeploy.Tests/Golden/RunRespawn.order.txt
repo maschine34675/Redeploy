@@ -63,6 +63,7 @@ try
   var newPlayer = createTask.Result;
   newPlayer.Location = game.Location.Id;
   game.LocalPlayer = newPlayer;
+  DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer);
   LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
   LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
   var bots = LocalGameAccessor.GetBotsController(game);

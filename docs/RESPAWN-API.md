@@ -341,6 +341,20 @@
 > `coreLoadedBeforeBind=True`). F4 Hideout: kein `RaidEnded`/`GameEnd` beim Verlassen. F5: Bots
 > nach dem Respawn in SAIN Combat Layer. Offen bleiben F7 Fika, F8 Cooldown-Race, F9 Fail-closed,
 > F12 Pool-Bodies, F13 PitFireTeam, `ReplacementFailed`.
+>
+> **11.10.2026, Core 1.0.7: DoorDashs Ramm-Komponente folgt dem Körper.** Upstream-DoorDash 1.2.0
+> (ersetzt seit heute den lokalen Fork) hängt `RaycastBreacher` nur einmal bei
+> `GameWorld.OnGameStarted` an; ein Ersatzkörper blieb ohne (im Spiel reproduziert). Neu:
+> `Compat/DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer)`, in `RunRespawn` direkt nach
+> `game.LocalPlayer = newPlayer` — alter Körper `Destroy`, neuer Körper frisch (Regel 4.4.2), Rumpf
+> vollständig in try/catch, Entscheidung als getestete reine Regel (`DoorDashFollowRule`). Die
+> Stelle folgt ArenaModes Recovery: ab dieser Zeile wird ein gescheiterter Rewire auf dem
+> Ersatzkörper wiederhergestellt, also muss der Breacher ab hier dort sitzen. Das ist ein gezielter
+> Compat-Helfer wie Freecam/DynamicMaps, keine Registry für Komponenten pro Body (Abschnitt 9
+> bleibt gültig): unter Fika läuft kein `RunRespawn`, es wechselt also auch kein Körper. Im Spiel
+> belegt (Arena Deathmatch Factory: Raidstart-Tausch, Todes-Respawns, echter Sprint-Ramm, zweiter
+> Raid). Details und offene Punkte: `CLAUDE-CODE-HANDOFF.md`, „DoorDash: Sprint-Ramm nach
+> Respawn/Kit-Tausch weg".
 
 Grundlage sind drei Entwürfe (minimal, lifecycle, consumer) und drei Bewertungen. Jede strittige Stelle habe ich im Code gegengeprüft: Redeploy 0.9.0, ArenaMode 0.1.0, das EFT-Dekompilat unter `_decompiled` und die Fremd-Referenzen unter `_reference`. Diese Fassung ist danach gegen drei Verifikationen revidiert (Fakten, Garantien, Bindung). Das Protokoll der Korrekturen steht am Ende. Alle Pfade sind relativ zu `D:\SPT41\Development`, alle Zeilenangaben beziehen sich auf den heutigen Stand.
 
@@ -1375,7 +1389,7 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
 | Killcam | nicht eingesetzt | Reflection in die privaten Interna von Redeploy.Client; übersieht ArenaMode-Tode | `IsHandlingDeath = IsRespawnPending(deadPlayer) ?? legacy`, das Stop-Handling bleibt; `Replaced` mit dem Toten als altem Body → Abbruch ohne Kamera-Create/Destroy | 0,5 Tage |
 | AutoIFF | eingesetzt | `LocalPlayerWatcher` pollt; Raid-Ende über eine Heuristik aus `UnregisterPlayer` und Status | `BodyChanged` ersetzt den Watcher (gleicher Code); Raid-Ende über `RaidEnded` oder einen Vanilla-`GameEnd`-Postfix | 2 Stunden |
 | CombatLog | eingesetzt | Das Pending-Fatal-Flag schleppt sich ins nächste Leben; das Raid-Ende rastet schon beim ersten Stop-Prefix ein | `DeathClaimed` → `ResolvePendingFatal` + neues Segment; Raid-Ende auf einen `LocalGame`-gefilterten `GameEnd`-Postfix (funktioniert auch ohne Core) | 0,5 Tage |
-| DoorDash (Dritt-Mod, lokaler Fork) | eingesetzt | Pollt, aber der Breacher läuft auf jeder Leiche weiter | `BodyChanged` → `Detach`/`AttachFresh`; `Update` gegen `IsCurrentLocalBody` absichern. Upstream nur, wenn der Autor es will. | 1 Stunde |
+| DoorDash (Dritt-Mod, seit 11.10.2026 Upstream 1.2.0 statt lokalem Fork) | eingesetzt | Upstream hängt den Breacher nur bei `OnGameStarted` an; der Ersatzkörper blieb ohne | **Erledigt in Core 1.0.7** über `DoorDashCompatHelper` (kein Tracker, keine Änderung an DoorDash nötig). Ein `IsCurrentLocalBody`-Gate in `RaycastBreacher.Update` ginge nur upstream. | erledigt |
 | CombatSlide | nicht eingesetzt | `SlideController` bleibt auf der Leiche oder dem Pool-Body | Vanilla reicht: Selbstzerstörung, wenn nicht mehr aktueller Body; optional Tracker | 1 Stunde |
 | BangAndClear | nicht eingesetzt | Beim Swap steuert die Sequenz den alten Body weiter | `Replaced` mit dem Sequenz-Spieler als altem Body → `Fail("replaced")`; vanilla: Identität prüfen | 1 Stunde |
 | BtrTurretControl | nicht eingesetzt | Der Exit läuft erst mit dem neuen Body | `DeathClaimed` → `ExitUnifiedMode(force)` mit dem sterbenden Body; vanilla: `enteredBody` merken | 2 Stunden |
