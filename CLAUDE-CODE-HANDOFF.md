@@ -1,5 +1,13 @@
 # CorpseRun — Claude Code Handoff
 
+> **Historical record, superseded:** CorpseRun was renamed to Redeploy in
+> `cda21a9`. Current development is in `D:\SPT41\Development\Redeploy` on `main`,
+> with private remote <https://github.com/maschine34675/Redeploy-dev>.
+> The old `D:\SPT41\Development\CorpseRun` clone was archived on 2026-10-12.
+> Start with [README.md](README.md) and [repository status](docs/REPOSITORY-STATUS.md).
+> Paths, identifiers, build commands and open items below describe the historical
+> CorpseRun version; do not treat them as current Redeploy instructions.
+
 > **Stand `spt-4.1`-Branch:** SPT 4.1 / EFT 40743, v2.0.0. Membernamen im Code sind
 > die deobfuskierten 4.1-Namen; einzelne historische Abschnitte unten nennen noch
 > 4.0-Dekompilat-Namen (Class633/635/643, method_0/2/7, Bool_2, GClass3746 u. ä.).
