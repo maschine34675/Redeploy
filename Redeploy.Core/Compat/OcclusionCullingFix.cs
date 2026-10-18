@@ -47,11 +47,11 @@ internal static class OcclusionCullingFix
             return;
         }
 
-        Patch.Target = target;
+        RedeployCoreOcclusionCullingPatch.Target = target;
 
         try
         {
-            new Patch().Enable();
+            new RedeployCoreOcclusionCullingPatch().Enable();
         }
         catch (Exception ex)
         {
@@ -62,7 +62,7 @@ internal static class OcclusionCullingFix
         }
     }
 
-    private sealed class Patch : ModulePatch
+    private sealed class RedeployCoreOcclusionCullingPatch : ModulePatch
     {
         internal static MethodBase Target;
 
@@ -80,7 +80,7 @@ internal static class OcclusionCullingFix
             {
                 // castTo: null — OcclusionCullingSwitcherCache.Resolve() already returns
                 // OcclusionCullingSwitcher[], exactly what FindUnityObjectsOfType<OcclusionCullingSwitcher>()
-                // pushed, so nothing needs converting (compare PerfectCullingFix's SceneSearchPatch,
+                // pushed, so nothing needs converting (compare RedeployCorePerfectCullingSceneSearchPatch,
                 // whose replacement returns UnityEngine.Object and does need the cast).
                 if (!GenericStaticCallRewrite.TryReplace(
                         codes, typeof(FindObjectsProxy), "FindUnityObjectsOfType", typeof(OcclusionCullingSwitcher), ResolveMethod, castTo: null))

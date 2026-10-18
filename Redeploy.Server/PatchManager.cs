@@ -11,8 +11,8 @@ public sealed class PatchManager : IOnLoad
 {
     public Task OnLoadAsync(CancellationToken cancellationToken)
     {
-        new PostRaidPatch().Enable();
-        new SetInventoryPatch().Enable();
+        new RedeployPostRaidPatch().Enable();
+        new RedeploySetInventoryPatch().Enable();
         return Task.CompletedTask;
     }
 }

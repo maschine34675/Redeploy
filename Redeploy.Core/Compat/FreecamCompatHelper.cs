@@ -51,12 +51,12 @@ public static class FreecamCompatHelper
         if (_controllerType == null)
             return;
 
-        new ForceFreeCameraOperationPatch().Enable();
-        new ForceFirstPersonOperationPatch().Enable();
+        new RedeployCoreForceFreeCameraOperationPatch().Enable();
+        new RedeployCoreForceFirstPersonOperationPatch().Enable();
         CoreLog.LogDebug("Freecam detected — camera operation patches enabled.");
     }
 
-    private sealed class ForceFreeCameraOperationPatch : ModulePatch
+    private sealed class RedeployCoreForceFreeCameraOperationPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
             => AccessTools.Method(_controllerType, "SetPlayerToFreecamMode");
@@ -119,7 +119,7 @@ public static class FreecamCompatHelper
         }
     }
 
-    private sealed class ForceFirstPersonOperationPatch : ModulePatch
+    private sealed class RedeployCoreForceFirstPersonOperationPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
             => AccessTools.Method(_controllerType, "SetPlayerToFirstPersonMode");

@@ -45,7 +45,7 @@ public class Plugin : BaseUnityPlugin
         RedeployCore.Init(ModLogger);
         Settings.Init(Config);
 
-        RaidStartedPatch.EnablePatch();
+        RedeployRaidStartedPatch.EnablePatch();
         DeathInterception.EnsurePatched();
         DeathInterception.Register(new RedeployDriver());
         PerfectCullingFix.EnableOnce();

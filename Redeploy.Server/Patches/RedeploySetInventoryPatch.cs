@@ -10,7 +10,7 @@ namespace Redeploy.Server.Patches;
 /// SPT's SetInventory removes the old equipment tree but never updates Inventory.Equipment to the client's new root id.
 /// After a respawn equipment swap the stale id breaks profile deserialization at raid end.
 /// </summary>
-public sealed class SetInventoryPatch : AbstractPatch
+public sealed class RedeploySetInventoryPatch : AbstractPatch
 {
     protected override MethodBase GetTargetMethod()
     {

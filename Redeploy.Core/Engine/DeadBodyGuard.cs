@@ -41,7 +41,7 @@ public static class DeadBodyGuard
         // losing the guard costs gear, losing those patches breaks the mod.
         try
         {
-            new SkipOwnBodyPatch().Enable();
+            new RedeployCoreSkipOwnBodyPatch().Enable();
         }
         catch (Exception ex)
         {
@@ -85,7 +85,7 @@ public static class DeadBodyGuard
         }
     }
 
-    private sealed class SkipOwnBodyPatch : ModulePatch
+    private sealed class RedeployCoreSkipOwnBodyPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
             => AccessTools.Method(typeof(DeadBodiesController), nameof(DeadBodiesController.AddBody),

@@ -499,7 +499,7 @@ Keiner dieser Fixes verschiebt eine Anweisung im Rewire (`RespawnEngine.cs:105-2
 - *Relevanz:* Speist `RespawnApi.IsAvailable`, und `IsAvailable == false` bedeutet damit wirklich "Core ist untätig". Nach einem Spiel-Update beansprucht ein halb installierter Hub keinen Tod mehr, und das Awake von ArenaMode läuft durch.
 
 **S0-5 (P1): Owner-Cleanup-Guard an die Instanz binden**
-- *Fix:* `OwnerCleanupHelper` markiert den alten Owner vor `Object.Destroy` (`OwnerCleanupHelper.cs:39`) in einer `ConditionalWeakTable<GamePlayerOwner, object>`. `OwnerCleanupGuardPatch` (`DeathInterception.cs:334`) überspringt markierte Instanzen zusätzlich zu den bestehenden Bedingungen.
+- *Fix:* `OwnerCleanupHelper` markiert den alten Owner vor `Object.Destroy` (`OwnerCleanupHelper.cs:39`) in einer `ConditionalWeakTable<GamePlayerOwner, object>`. `RedeployCoreOwnerCleanupGuardPatch` (`DeathInterception.cs:334`) überspringt markierte Instanzen zusätzlich zu den bestehenden Bedingungen.
 - *Evidenz:*
   - `RespawnEngine.cs:259` löscht `IsPipelineRunning` noch in Frame N. Das `Destroy` wird aber erst am Ende von N wirksam.
   - Danach hängt der Guard nur noch an den Treiber-Flags (`RedeployDriver.cs:83-84`, `ArenaRespawnDriver.cs:409`). Die überleben zufällig bis zur Fortsetzung des Aufrufers, mindestens bis N+1 (Kritiker, Lücke 2).
@@ -559,7 +559,7 @@ Keiner dieser Fixes verschiebt eine Anweisung im Rewire (`RespawnEngine.cs:105-2
 - *Fix:* `RedeployDriver.ShouldIntercept` prüft zusätzlich `game.LocalPlayer != null && game.LocalPlayer.IsYourPlayer` und `game.Status == GameStatus.Started`. Jede verbleibende Früh-Rückkehr in einem bereits beanspruchten `OnPlayerDied` wirft stattdessen, damit Core den Tod wieder freigibt.
 - *Evidenz:*
   - `RespawnService.cs:40-42` kehrt nach dem Claim still zurück.
-  - `RedeployDriver.cs:18-39` spiegelt Hideout (`:35`) sowie Fika und Server-Mod (über `IsInRaid`, `RaidStartedPatch.cs:32-52`) bereits, genau diese eine Prüfung aber nicht.
+  - `RedeployDriver.cs:18-39` spiegelt Hideout (`:35`) sowie Fika und Server-Mod (über `IsInRaid`, `RedeployRaidStartedPatch.cs:32-52`) bereits, genau diese eine Prüfung aber nicht.
   - `DeathInterception.cs:169-181` wertet jede normale Rückkehr als erfolgreichen Claim.
   - Folge: Es erscheint kein Prompt, und der Tod beendet den Raid nicht. Nur MIA-Timer oder Menü-Exit beenden ihn noch; bis dahin ist der Raid blockiert. `Stop` ist dann nicht Killed, `PendingRespawnChoice` ist false, und der Black-Screen wird nicht gehalten.
 - *Relevanz:* `DeathClaimed` und `IsRespawnPending` dürfen keinen Claim ankündigen, der danach still verfällt. Das Werfen funktioniert auch gegen den heutigen Core, weil der CG_Spawn-Prefix bei einem Wurf fail-open ist (`DeathInterception.cs:169-179`).
@@ -580,7 +580,7 @@ Keiner dieser Fixes verschiebt eine Anweisung im Rewire (`RespawnEngine.cs:105-2
 **S0-14 (P2): Freecam-Patches aus Core aktivieren, gekapselt**
 - *Fix:* `FreecamCompatHelper.EnablePatchesIfPresent()` im GameStarted-Reset von Core aufrufen, **in einem eigenen `try/catch`** und unabhängig vom Legacy-Dispatch. Ein Fehler dort darf `OnRaidStarted` nicht verhindern. Die Methode ist bereits idempotent (`FreecamCompatHelper.cs:41-46`).
 - *Evidenz:*
-  - Heute ruft nur `Redeploy.Client/Patches/RaidStartedPatch.cs:30` sie auf. Die Engine bindet den Freecam-Owner aber für jeden Anforderer neu (`RespawnEngine.cs:223`).
+  - Heute ruft nur `Redeploy.Client/Patches/RedeployRaidStartedPatch.cs:30` sie auf. Die Engine bindet den Freecam-Owner aber für jeden Anforderer neu (`RespawnEngine.cs:223`).
   - `EnablePatchesIfPresent` hat kein `try/catch` (`:41-55`), und `ModulePatch.Enable` wirft eine `PatchException`, wenn sich Freecams Zielmethoden ändern. Ungekapselt würde das den Postfix abbrechen, `ArenaSession.OnRaidStarted` und die übrigen Legacy-Handler liefen nie, und die Exception liefe in den Raid-Start-Delegate von `TarkovApplication` (`TarkovApplication.cs:3018`).
 - *Relevanz:* Installationen nur mit ArenaMode bekommen sonst die Owner-Neubindung ohne die zugehörigen Kamera-Patches.
 
@@ -748,7 +748,7 @@ RespawnClaims.Resolve(deadPlayer);
 RespawnApi.PublishReplaced(deadPlayer, newPlayer, reason);                     // :239 (isolated)
 RaiseRespawned(newPlayer);                                                     // :239 legacy, now isolated
 
-// DeathInterception.CgSpawnPatch.Prefix (:135-182)
+// DeathInterception.RedeployCoreCgSpawnPatch.Prefix (:135-182)
 if (__instance is not LocalGame localGame) return true;                        // :137-138
 if (!RespawnApi.IsAvailable) return true;                                      // fail-closed: incomplete patches, no driver, Fika
 var body = localGame.LocalPlayer;
@@ -764,7 +764,7 @@ return false;                                                                  /
 
 // Guard prefixes (InitiateGameStopping, BlackScreenGuard, SessionResultGuard, OwnerCleanupGuard):
 if (!RespawnApi.IsAvailable) return true;                                      // Core idle: block nothing
-// StopPatch: skip the Killed block when !IsAvailable; OnExternalStop may still be delivered.
+// RedeployCoreStopPatch: skip the Killed block when !IsAvailable; OnExternalStop may still be delivered.
 
 // RespawnClaims.IsPending(Player body): live evaluation, no latch that depends on Stop-prefix order
 var game = Singleton<AbstractGame>.Instance as LocalGame;
@@ -830,7 +830,7 @@ Zum GameEnd-Postfix in `RaidLifecycle`: Er deklariert `object __instance` und `T
   - Der alte Owner lebt bis Frame-Ende; sein Cleanup ist durch S0-5 geschützt.
   - Die Fortsetzung des Anforderers kommt frühestens bei N+1: Arena `EndPipelineUse`, `ArenaEvents`, Zerstörung des Alt-Bodys.
   - N+2 `FinalizeRespawnView`, N+3 `EnsureBattleUiReady`.
-  - Solange der Anforderer seine Lease hält, lehnt **nur der anfordernde Treiber** einen Tod des neuen Bodys ab (`ArenaRespawnDriver.cs:43`, `RedeployDriver.cs:29-30`). Jeder Treiber prüft nur sein eigenes Flag. In einem Arena-Raid mit installiertem Redeploy kann Redeploy (Priorität 0) diesen Tod beanspruchen, weil `RaidStartedPatch` kein Arena-Gate hat und `IsInRaid` setzt (`RaidStartedPatch.cs:24-53`). Es folgen `DeathClaimed(newBody, "Redeploy")`, ein Redeploy-Prompt im Arena-Raid und `IsRespawnPending == true`. Ohne Redeploy geht der Tod an vanilla, und Arenas `ShouldBlockDeathScreen` blockiert ihn; das ergibt einen abgeleiteten Soft-Lock. Das Fenster reicht von Frame N bis zur Fortsetzung, in den Logs etwa 0,5 s. Der Raidstart-Swap läuft ohne Schutz (`Protection = null`). Behebung in Stufe 2 (Lease in Core, Raid-Besitz), das tatsächliche Verhalten klärt offene Frage 3.
+  - Solange der Anforderer seine Lease hält, lehnt **nur der anfordernde Treiber** einen Tod des neuen Bodys ab (`ArenaRespawnDriver.cs:43`, `RedeployDriver.cs:29-30`). Jeder Treiber prüft nur sein eigenes Flag. In einem Arena-Raid mit installiertem Redeploy kann Redeploy (Priorität 0) diesen Tod beanspruchen, weil `RedeployRaidStartedPatch` kein Arena-Gate hat und `IsInRaid` setzt (`RedeployRaidStartedPatch.cs:24-53`). Es folgen `DeathClaimed(newBody, "Redeploy")`, ein Redeploy-Prompt im Arena-Raid und `IsRespawnPending == true`. Ohne Redeploy geht der Tod an vanilla, und Arenas `ShouldBlockDeathScreen` blockiert ihn; das ergibt einen abgeleiteten Soft-Lock. Das Fenster reicht von Frame N bis zur Fortsetzung, in den Logs etwa 0,5 s. Der Raidstart-Swap läuft ohne Schutz (`Protection = null`). Behebung in Stufe 2 (Lease in Core, Raid-Besitz), das tatsächliche Verhalten klärt offene Frage 3.
 - **Alter Body:** siehe Taxonomie in 3.4.
 - **Konsumenten:** alle mit Body-Bindung. In der Regel erreichen sie das Event über `BodyChanged`.
 

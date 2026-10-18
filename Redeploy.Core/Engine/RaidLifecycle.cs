@@ -43,7 +43,7 @@ public static class RaidLifecycle
 
         try
         {
-            new GameStartedPatch().Enable();
+            new RedeployCoreGameStartedPatch().Enable();
         }
         catch (Exception ex)
         {
@@ -52,7 +52,7 @@ public static class RaidLifecycle
 
         try
         {
-            new GameEndPatch().Enable();
+            new RedeployCoreGameEndPatch().Enable();
             IsRaidEndPatched = true;
         }
         catch (Exception ex)
@@ -67,7 +67,7 @@ public static class RaidLifecycle
     private static void RaiseRaidStarted(GameWorld world)
         => CoreSignals.Lifecycle.Raise(OnRaidStarted, h => h(world), nameof(OnRaidStarted));
 
-    private sealed class GameStartedPatch : ModulePatch
+    private sealed class RedeployCoreGameStartedPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -104,7 +104,7 @@ public static class RaidLifecycle
         }
     }
 
-    private sealed class GameEndPatch : ModulePatch
+    private sealed class RedeployCoreGameEndPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {

@@ -46,7 +46,7 @@ public class PipelineTimingOptInTests
     private static bool HasUnconditionalRestore(string source)
     {
         var type = CSharpSyntaxTree.ParseText(source).GetRoot().DescendantNodes()
-            .OfType<ClassDeclarationSyntax>().Single(t => t.Identifier.ValueText == "StatisticsRestorePatch");
+            .OfType<ClassDeclarationSyntax>().Single(t => t.Identifier.ValueText == "RedeployCoreStatisticsRestorePatch");
         var method = type.Members.OfType<MethodDeclarationSyntax>().Single(m => m.Identifier.ValueText == "Postfix");
         var calls = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
             .Where(n => n.Expression.ToString() == "RaidVictimsSnapshot.Restore").ToList();

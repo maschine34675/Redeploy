@@ -9,11 +9,11 @@ using UnityEngine;
 
 namespace Redeploy.Patches;
 
-internal sealed class RaidStartedPatch : ModulePatch
+internal sealed class RedeployRaidStartedPatch : ModulePatch
 {
     public static void EnablePatch()
     {
-        new RaidStartedPatch().Enable();
+        new RedeployRaidStartedPatch().Enable();
     }
 
     protected override MethodBase GetTargetMethod()

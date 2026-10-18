@@ -21,8 +21,8 @@ namespace Redeploy.Core.Compat;
 // method_0 (called from Start, right before the stale-sampler check above runs) does its own
 // scene search when the map has autoculling: UnityEngine.Object.FindObjectOfType<CullingGridPreProcess>().
 // Measured 18.09.2026: that one call is all of the per-body growth in the camera-recreation step
-// of a respawn (docs/RESPAWN-API.md, "18.09.2026"). SceneSearchPatch below replaces it with a
-// per-raid cache (CullingGridPreProcessCache / SceneLookupCache) the same way SamplerPatch above
+// of a respawn (docs/RESPAWN-API.md, "18.09.2026"). RedeployCorePerfectCullingSceneSearchPatch below replaces it with a
+// per-raid cache (CullingGridPreProcessCache / SceneLookupCache) the same way RedeployCorePerfectCullingSamplerPatch above
 // replaced the stale-sampler scene search with a registry — wired here so it is active whenever
 // this fix is, never separately.
 public static class PerfectCullingFix
@@ -43,18 +43,18 @@ public static class PerfectCullingFix
         // so this must not share its early return when PerfectCulling is absent.
         OcclusionCullingFix.EnableOnce();
 
-        SamplerPatch.SamplerType = AccessTools.TypeByName("Koenigz.PerfectCulling.EFT.PerfectCullingCrossSceneSampler");
-        if (SamplerPatch.SamplerType == null)
+        RedeployCorePerfectCullingSamplerPatch.SamplerType = AccessTools.TypeByName("Koenigz.PerfectCulling.EFT.PerfectCullingCrossSceneSampler");
+        if (RedeployCorePerfectCullingSamplerPatch.SamplerType == null)
         {
             CoreLog.LogWarning("PerfectCullingCrossSceneSampler type not found — sampler patch skipped");
             return;
         }
 
-        SamplerPatch.InstanceProperty = AccessTools.Property(SamplerPatch.SamplerType, "Instance");
-        if (SamplerPatch.InstanceProperty == null)
+        RedeployCorePerfectCullingSamplerPatch.InstanceProperty = AccessTools.Property(RedeployCorePerfectCullingSamplerPatch.SamplerType, "Instance");
+        if (RedeployCorePerfectCullingSamplerPatch.InstanceProperty == null)
             CoreLog.LogWarning("PerfectCullingCrossSceneSampler.Instance not found — only samplers seen starting are checked");
 
-        new SamplerPatch().Enable();
+        new RedeployCorePerfectCullingSamplerPatch().Enable();
 
         EnableSceneSearchCacheOnce();
     }
@@ -62,12 +62,12 @@ public static class PerfectCullingFix
     /// <summary>
     /// Resolves method_0 and CullingGridPreProcess by name and, if both exist, patches the scene
     /// search out of method_0. Missing either one just skips this half of the fix (logged once):
-    /// the sampler still gets its stale-instance cleanup from SamplerPatch, only the scene-search
+    /// the sampler still gets its stale-instance cleanup from RedeployCorePerfectCullingSamplerPatch, only the scene-search
     /// caching is lost, same fail-open shape as the rest of this class.
     /// </summary>
     private static void EnableSceneSearchCacheOnce()
     {
-        var method0 = AccessTools.Method(SamplerPatch.SamplerType, "method_0");
+        var method0 = AccessTools.Method(RedeployCorePerfectCullingSamplerPatch.SamplerType, "method_0");
         if (method0 == null)
         {
             CoreLog.LogWarning("PerfectCullingCrossSceneSampler.method_0 not found — scene-search cache skipped, "
@@ -84,11 +84,11 @@ public static class PerfectCullingFix
         }
 
         CullingGridPreProcessCache.SearchType = cullingGridPreProcessType;
-        SceneSearchPatch.Method0 = method0;
+        RedeployCorePerfectCullingSceneSearchPatch.Method0 = method0;
 
         try
         {
-            new SceneSearchPatch().Enable();
+            new RedeployCorePerfectCullingSceneSearchPatch().Enable();
         }
         catch (Exception ex)
         {
@@ -98,7 +98,7 @@ public static class PerfectCullingFix
         }
     }
 
-    private sealed class SamplerPatch : ModulePatch
+    private sealed class RedeployCorePerfectCullingSamplerPatch : ModulePatch
     {
         internal static Type SamplerType;
         internal static PropertyInfo InstanceProperty;
@@ -134,7 +134,7 @@ public static class PerfectCullingFix
         }
     }
 
-    private sealed class SceneSearchPatch : ModulePatch
+    private sealed class RedeployCorePerfectCullingSceneSearchPatch : ModulePatch
     {
         internal static MethodBase Method0;
 

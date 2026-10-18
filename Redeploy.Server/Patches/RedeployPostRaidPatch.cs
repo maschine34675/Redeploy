@@ -12,7 +12,7 @@ namespace Redeploy.Server.Patches;
 /// <summary>
 /// Repairs the Inventory.Equipment root id after SPT finishes post-raid PMC handling.
 /// </summary>
-public sealed class PostRaidPatch : AbstractPatch
+public sealed class RedeployPostRaidPatch : AbstractPatch
 {
     protected override MethodBase GetTargetMethod()
     {

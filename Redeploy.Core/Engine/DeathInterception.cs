@@ -127,12 +127,12 @@ public static class DeathInterception
         // caller's Awake (ArenaMode installs dozens more sets after this) nor leave the
         // set half-installed while pretending to work.
         var keepAlive = 0;
-        keepAlive += Install(() => new CgSpawnPatch(), nameof(CgSpawnPatch));
-        keepAlive += Install(() => new InitiateGameStoppingPatch(), nameof(InitiateGameStoppingPatch));
-        keepAlive += Install(() => new StopPatch(), nameof(StopPatch));
-        keepAlive += Install(() => new BlackScreenGuardPatch(), nameof(BlackScreenGuardPatch));
-        keepAlive += Install(() => new SessionResultGuardPatch(), nameof(SessionResultGuardPatch));
-        keepAlive += Install(() => new OwnerCleanupGuardPatch(), nameof(OwnerCleanupGuardPatch));
+        keepAlive += Install(() => new RedeployCoreCgSpawnPatch(), nameof(RedeployCoreCgSpawnPatch));
+        keepAlive += Install(() => new RedeployCoreInitiateGameStoppingPatch(), nameof(RedeployCoreInitiateGameStoppingPatch));
+        keepAlive += Install(() => new RedeployCoreStopPatch(), nameof(RedeployCoreStopPatch));
+        keepAlive += Install(() => new RedeployCoreBlackScreenGuardPatch(), nameof(RedeployCoreBlackScreenGuardPatch));
+        keepAlive += Install(() => new RedeployCoreSessionResultGuardPatch(), nameof(RedeployCoreSessionResultGuardPatch));
+        keepAlive += Install(() => new RedeployCoreOwnerCleanupGuardPatch(), nameof(RedeployCoreOwnerCleanupGuardPatch));
 
         // The GameEnd postfix (drivers' OnRaidEnded, engine reset) lives with its raid-start
         // twin so the two are always paired.
@@ -143,7 +143,7 @@ public static class DeathInterception
             CoreLog.LogError("Death interception is incomplete — Core stands down: no death is claimed, nothing is blocked, RunRespawn is refused.");
 
         // Optional: losing these degrades a respawn, it does not disable the mod.
-        Install(() => new StatisticsRestorePatch(), nameof(StatisticsRestorePatch));
+        Install(() => new RedeployCoreStatisticsRestorePatch(), nameof(RedeployCoreStatisticsRestorePatch));
         DeadBodyGuard.EnsurePatched();
     }
 
@@ -213,7 +213,7 @@ public static class DeathInterception
         return false;
     }
 
-    private sealed class CgSpawnPatch : ModulePatch
+    private sealed class RedeployCoreCgSpawnPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -263,7 +263,7 @@ public static class DeathInterception
         }
     }
 
-    private sealed class InitiateGameStoppingPatch : ModulePatch
+    private sealed class RedeployCoreInitiateGameStoppingPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -283,7 +283,7 @@ public static class DeathInterception
         }
     }
 
-    private sealed class StopPatch : ModulePatch
+    private sealed class RedeployCoreStopPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -328,7 +328,7 @@ public static class DeathInterception
         }
     }
 
-    private sealed class BlackScreenGuardPatch : ModulePatch
+    private sealed class RedeployCoreBlackScreenGuardPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
             => typeof(PreloaderUI).GetMethod(nameof(PreloaderUI.StartBlackScreenShow));
@@ -347,7 +347,7 @@ public static class DeathInterception
         }
     }
 
-    private sealed class SessionResultGuardPatch : ModulePatch
+    private sealed class RedeployCoreSessionResultGuardPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
@@ -383,7 +383,7 @@ public static class DeathInterception
     /// During the respawn pipeline, skip GamePlayerOwner.CleanupOnDestroy so deferred
     /// Destroy does not null MyPlayer or start CloseBattleUi after the new owner exists.
     /// </summary>
-    private sealed class OwnerCleanupGuardPatch : ModulePatch
+    private sealed class RedeployCoreOwnerCleanupGuardPatch : ModulePatch
     {
         private static readonly FieldInfo OwnerDisposableField =
             AccessTools.Field(typeof(PlayerOwner), "OnDestroyCompositeDisposable");
@@ -420,7 +420,7 @@ public static class DeathInterception
     /// A new statistics session on respawn clears EftStats.Victims; restore the
     /// pre-respawn kill list snapshotted by the pipeline.
     /// </summary>
-    private sealed class StatisticsRestorePatch : ModulePatch
+    private sealed class RedeployCoreStatisticsRestorePatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
