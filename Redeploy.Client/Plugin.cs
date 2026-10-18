@@ -19,7 +19,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.maschine.Redeploy";
     public const string PluginName = "maschine-Redeploy";
-    public const string PluginVersion = "0.9.0";
+    public const string PluginVersion = "1.0.0";
 
     public static ManualLogSource ModLogger { get; private set; }
 

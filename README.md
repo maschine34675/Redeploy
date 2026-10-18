@@ -20,7 +20,7 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** Redeploy Client/Server are currently `0.9.0`; the included Core is `1.0.8`. Core has its own version and is a library, not a separate BepInEx plugin.
+- **Version lines:** Redeploy Client/Server are currently `1.0.0`; the included Core is `1.0.8`. Core has its own version and is a library, not a separate BepInEx plugin.
 - **Optional integrations**, each installed separately and none of them required:
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
