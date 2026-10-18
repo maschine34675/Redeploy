@@ -237,9 +237,9 @@ Dies kann dem normalen Tod-Verhalten entsprechen und wird daher nicht als eindeu
 
 ## P3 – Härtung und Wartbarkeit
 
-### 15. Der `RedeployPostRaidPatch`-Prefix ist auf SPT 4.0.13 wirkungslos
+### 15. Der `PostRaidPatch`-Prefix ist auf SPT 4.0.13 wirkungslos
 
-**Betroffene Stelle:** `CorpseRun.Server/Patches/RedeployPostRaidPatch.cs:37-45`
+**Betroffene Stelle:** `CorpseRun.Server/Patches/PostRaidPatch.cs:37-45`
 
 Der Prefix prüft `request.Results.Result == SURVIVED && isDead`.
 
