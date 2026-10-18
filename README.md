@@ -18,28 +18,29 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 ## Requirements and compatibility
 
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
-- **Components:** Client **and** server. Both are required — see the warning under Installation.
-- **Dependencies:** None.
+- **Components:** Client, shared Core library, and server. All three are required.
+- **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
 - **Optional integrations**, each installed separately and none of them required:
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
-  - **KillcamReplay** — the death replay stays visible behind the respawn prompt.
+  - **Killcam** (formerly KillcamReplay) — the death replay stays visible behind the respawn prompt.
 - **Confirmed incompatibility: Fika.** A replacement character cannot be synchronised to other co-op clients, so Redeploy disables itself when Fika is installed and says so at raid start.
 
 ## Installation
 
 1. Extract the release ZIP into your SPT installation directory.
-2. Verify that both files exist:
+2. Verify that all three files exist:
    - `BepInEx/plugins/maschine-Redeploy.Client.dll`
+   - `BepInEx/plugins/maschine-Redeploy.Core.dll`
    - `SPT_Runtime/user/mods/Redeploy/maschine-Redeploy.Server.dll`
 3. Start the SPT server once and confirm that `Redeploy` appears among the loaded mods.
 
-Both components belong to the same installation. Installing only the client DLL would corrupt your profile at the end of a raid, so in that case Redeploy refuses to do anything and shows a warning when a raid starts.
+The client, Core library and server belong to the same installation. The client requires Core to load. Without the server component, Redeploy refuses to respawn and shows a warning at raid start to protect the profile.
 
 ## Updating
 
-Overwrite both files with the new versions. Your configuration file is kept.
+Overwrite all three files with the supplied versions. Your configuration file is kept. Keep only one copy of Redeploy.Core when another mod also ships it.
 
 If you ran an early internal build, delete these leftovers first — otherwise an obsolete copy of the mod loads alongside the current one:
 
@@ -112,4 +113,4 @@ Please include the exact Redeploy and SPT versions, what you expected and what h
 Released under the MIT License; see `LICENSE`.
 
 - The spawn protection and the optional respawn cost were inspired by **PlayerLives** and **RevivalMod** (KaiKiNoodles, gitTerebi), which approach the same problem with a downed state instead of a respawn. No code was taken from either mod.
-- Redeploy contains compatibility code for **DoorDash** (tarkin), **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **KillcamReplay**. None of these are bundled; they remain the property of their authors.
+- Redeploy contains compatibility code for **DoorDash** (tarkin), **DynamicMaps** (mpstark), **Freecam** (Terkoiz) and **Killcam**. None of these are bundled; they remain the property of their authors.
