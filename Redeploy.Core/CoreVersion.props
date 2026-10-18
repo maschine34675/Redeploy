@@ -8,7 +8,7 @@
      never ship a Core older than the newest one published. -->
 <Project>
   <PropertyGroup>
-    <RedeployCoreVersion>1.0.7</RedeployCoreVersion>
+    <RedeployCoreVersion>1.0.8</RedeployCoreVersion>
     <RedeployCoreBuiltAgainstKey>RedeployCoreBuiltAgainst</RedeployCoreBuiltAgainstKey>
   </PropertyGroup>
 </Project>

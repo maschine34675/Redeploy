@@ -46,6 +46,12 @@ public sealed class RespawnRequest
 
     /// <summary>Spawn protection after the respawn. Null = none.</summary>
     public SpawnProtectionOptions Protection;
+
+    /// <summary>
+    /// Collect detailed pipeline timings/state counters and measure the following frames.
+    /// Off by default; this affects diagnostics only, never the respawn's behavior.
+    /// </summary>
+    public bool EnablePipelineTiming;
 }
 
 public sealed class SpawnProtectionOptions
@@ -127,7 +133,7 @@ public static class RespawnEngine
 
         var game = request.Game;
         // Measurement only: every timing statement is inert, which the golden order proves (docs/RESPAWN-API.md 8.4).
-        var timing = RespawnPipelineTiming.Begin(game);
+        var timing = RespawnPipelineTiming.Begin(game, request);
         Task<LocalPlayer> createTask = null;
         LocalPlayer deadPlayer = null;
         EftGamePlayerOwner oldOwner;

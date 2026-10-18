@@ -18,7 +18,9 @@ namespace Redeploy.Core.Engine;
 /// <summary>
 /// Measures one RunRespawn, because the pipeline gets slower with every respawn of a raid
 /// (ArenaMode LONG-RAID-REVIEW-2026-09-16.md: 0.50 s to 1.02 s over 26 respawns) and the cause is
-/// to be measured, not guessed. Writes one Info line per pipeline:
+/// to be measured, not guessed. Only runs when the request explicitly opts in; otherwise no
+/// clocks, reflection/state counters or following-frame coroutine are used. Writes one Info line
+/// per measured pipeline:
 ///
 ///   Respawn pipeline #7 (death, replaced) on factory4_day: 812.4 ms in 0 frame(s) | teardown 3.1 (owner 2.8) | ... || restore 4.1 ms (212 victims) | before (read in 0.3 ms): frame 16.9 ms, heap 1843 MB, ...
 ///
@@ -46,8 +48,10 @@ internal sealed class RespawnPipelineTiming
     private static readonly RespawnPipelineTiming Disabled = new RespawnPipelineTiming();
 
     private static int _respawnsThisRaid;
-    private static long _restoreTicks;
-    private static int _restoredVictims = -1;
+    private static RespawnPipelineTiming _active;
+
+    private long _restoreTicks;
+    private int _restoredVictims = -1;
 
     private readonly PipelineStages _stages;
     private readonly int _index;
@@ -82,14 +86,19 @@ internal sealed class RespawnPipelineTiming
     internal static void ResetForRaidBoundary()
     {
         _respawnsThisRaid = 0;
+        _active = null;
     }
 
     /// <summary>Starts the clock for one pipeline. Never throws; a failure only disables this measurement.</summary>
-    public static RespawnPipelineTiming Begin(LocalGame game)
+    public static RespawnPipelineTiming Begin(LocalGame game, RespawnRequest request)
     {
+        _active = null;
+        if (request?.EnablePipelineTiming != true)
+            return Disabled;
+
         try
         {
-            return new RespawnPipelineTiming(game);
+            return _active = new RespawnPipelineTiming(game);
         }
         catch (Exception ex)
         {
@@ -120,10 +129,26 @@ internal sealed class RespawnPipelineTiming
     /// creation abandoned after the 30 s timeout keeps running and may still restore later, inside
     /// whichever pipeline runs then; the abandoned one has already logged "failed-create-timeout".
     /// </summary>
-    internal static void RecordVictimsRestore(long ticks, int victims)
+    internal static long StartVictimsRestore()
     {
-        _restoreTicks += ticks;
-        _restoredVictims = victims;
+        return _active != null ? Stopwatch.GetTimestamp() : 0;
+    }
+
+    internal static void RecordVictimsRestore(long started, Profile profile)
+    {
+        var active = _active;
+        if (active == null || started == 0)
+            return;
+
+        try
+        {
+            active._restoreTicks += Stopwatch.GetTimestamp() - started;
+            active._restoredVictims = profile?.EftStats?.Victims?.Count ?? -1;
+        }
+        catch (Exception)
+        {
+            // Diagnostic reads must not interfere with the already completed restore.
+        }
     }
 
     /// <summary>
@@ -135,6 +160,8 @@ internal sealed class RespawnPipelineTiming
         if (_finished)
             return;
         _finished = true;
+        if (ReferenceEquals(_active, this))
+            _active = null;
 
         try
         {

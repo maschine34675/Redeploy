@@ -110,6 +110,7 @@ public class ApiContractTests
         var consumers = new[]
         {
             Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-ArenaMode.Client.dll"),
+            Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-ArenaMode", "maschine-ArenaMode.Client.dll"),
             Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-Redeploy.Client.dll"),
         }.Where(File.Exists).ToList();
         Skip.If(consumers.Count == 0, "no compiled consumer installed next to the game");
@@ -194,6 +195,7 @@ public class ApiContractTests
         var consumers = new[]
         {
             Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-ArenaMode.Client.dll"),
+            Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-ArenaMode", "maschine-ArenaMode.Client.dll"),
             Path.Combine(InstallRoot, "BepInEx", "plugins", "maschine-Redeploy.Client.dll"),
         }.Where(File.Exists).ToList();
         Skip.If(consumers.Count == 0, "no compiled consumer installed next to the game");

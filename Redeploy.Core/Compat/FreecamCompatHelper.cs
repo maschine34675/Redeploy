@@ -53,7 +53,7 @@ public static class FreecamCompatHelper
 
         new ForceFreeCameraOperationPatch().Enable();
         new ForceFirstPersonOperationPatch().Enable();
-        CoreLog.LogInfo("Freecam detected — camera operation patches enabled.");
+        CoreLog.LogDebug("Freecam detected — camera operation patches enabled.");
     }
 
     private sealed class ForceFreeCameraOperationPatch : ModulePatch
@@ -97,7 +97,7 @@ public static class FreecamCompatHelper
 
             if (!scriptDead && !wrongCamera)
             {
-                CoreLog.LogInfo(
+                CoreLog.LogDebug(
                     $"Freecam script ok: enabled={script.isActiveAndEnabled}, cam={camera.gameObject.GetInstanceID()}");
                 return;
             }
@@ -144,7 +144,7 @@ public static class FreecamCompatHelper
             var controller = Singleton<PlayerCameraController>.Instance;
             var before = CameraOperationField?.GetValue(controller)?.GetType().Name ?? "null";
             controller.InitiateOperation<TOperation>();
-            CoreLog.LogInfo(
+            CoreLog.LogDebug(
                 $"Freecam {label}: op {before} -> {typeof(TOperation).Name}, playerPOV={controller.Player?.PointOfView}");
         }
         catch (Exception ex)
@@ -174,7 +174,7 @@ public static class FreecamCompatHelper
 
             _controlsToggledField?.SetValue(instance, false);
             _ownerField.SetValue(instance, newOwner);
-            CoreLog.LogInfo("Freecam compat: rebound cached GamePlayerOwner and reset freecam state.");
+            CoreLog.LogDebug("Freecam compat: rebound cached GamePlayerOwner and reset freecam state.");
         }
         catch (Exception ex)
         {

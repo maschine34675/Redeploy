@@ -1,0 +1,156 @@
+// Instrumented external game boundaries, not a copy of the collector implementation.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using Redeploy.Core.Engine;
+
+public static class Spy
+{
+    public static int Reads, Reflections, Scheduled, Infos, Warnings;
+    public static bool ThrowOnClock;
+    public static readonly List<string> Lines = new List<string>();
+    public static void Reset() { Reads = Reflections = Scheduled = Infos = Warnings = 0; Lines.Clear(); ThrowOnClock = false; }
+    public static void Require(bool ok, string why) { if (!ok) throw new Exception(why); }
+}
+public static class TimingProbe
+{
+    public static void Run()
+    {
+        RespawnPipelineTiming.ResetForRaidBoundary();
+        Spy.Reset();
+        var game = new EFT.LocalGame();
+        var request = new RespawnRequest();
+        Spy.Require(!request.EnablePipelineTiming, "new requests must default off");
+        var off = RespawnPipelineTiming.Begin(game, request);
+        off.Mark("create");
+        var stamp = RespawnPipelineTiming.StartVictimsRestore();
+        Spy.Require(stamp == 0, "disabled restore must not start a clock");
+        RespawnPipelineTiming.RecordVictimsRestore(stamp, new EFT.Profile());
+        off.Finish("replaced", "swap", game);
+        Spy.Require(Spy.Reads == 0 && Spy.Reflections == 0 && Spy.Scheduled == 0 && Spy.Infos == 0 && Spy.Warnings == 0,
+            "disabled collector touched external state, reflected, logged or scheduled work");
+
+        request.EnablePipelineTiming = true;
+        var on = RespawnPipelineTiming.Begin(game, request);
+        Spy.Require(Spy.Reads > 0 && Spy.Reflections > 0, "enabled state probe did not run");
+        stamp = RespawnPipelineTiming.StartVictimsRestore();
+        Spy.Require(stamp != 0, "enabled restore clock did not start");
+        RespawnPipelineTiming.RecordVictimsRestore(stamp, new EFT.Profile());
+        on.Mark("create");
+        on.Finish("replaced", "death", game);
+        Spy.Require(Spy.Scheduled == 1 && Spy.Infos == 2 && Spy.Warnings == 0, "opt-in must collect both lines and exactly one coroutine");
+        Spy.Require(Spy.Lines[0].Contains("Respawn pipeline #1") && Spy.Lines[0].Contains("3 victims"), "enabled state/restore details absent");
+        on.Finish("replaced", "death", game);
+        Spy.Require(Spy.Scheduled == 1 && Spy.Infos == 2, "Finish must be idempotent");
+
+        Spy.Reset();
+        request.EnablePipelineTiming = false;
+        off = RespawnPipelineTiming.Begin(game, request);
+        off.Mark("rewire");
+        RespawnPipelineTiming.RecordVictimsRestore(1, new EFT.Profile());
+        off.Finish("replaced", "death", game);
+        Spy.Require(RespawnPipelineTiming.StartVictimsRestore() == 0 && Spy.Reads == 0 && Spy.Infos == 0 && Spy.Scheduled == 0,
+            "later disabled request inherited previous collection");
+
+        Spy.Reset();
+        request.EnablePipelineTiming = true;
+        on = RespawnPipelineTiming.Begin(game, request);
+        RespawnPipelineTiming.ResetForRaidBoundary();
+        Spy.Require(RespawnPipelineTiming.StartVictimsRestore() == 0, "raid boundary retained active restore timing");
+        Spy.Reset();
+        Spy.ThrowOnClock = true;
+        var failed = RespawnPipelineTiming.Begin(game, request);
+        failed.Mark("failed");
+        failed.Finish("replaced", "swap", game);
+        Spy.Require(Spy.Warnings == 1 && Spy.Infos == 0 && Spy.Scheduled == 0
+            && RespawnPipelineTiming.StartVictimsRestore() == 0, "probe failure escaped or left collection active");
+    }
+}
+namespace UnityEngine
+{
+    public static class Time
+    {
+        public static int frameCount { get { Spy.Reads++; if (Spy.ThrowOnClock) throw new Exception("synthetic clock failure"); return 3; } }
+        public static float unscaledDeltaTime { get { Spy.Reads++; return .02f; } }
+    }
+}
+namespace Comfort.Common
+{
+    public static class Singleton<T> where T : new()
+    {
+        public static bool Instantiated { get { Spy.Reads++; return true; } }
+        public static T Instance { get { Spy.Reads++; return new T(); } }
+    }
+}
+namespace HarmonyLib
+{
+    public static class AccessTools
+    {
+        public static FieldInfo Field(Type type, string name) { Spy.Reflections++; return type.GetField(name); }
+    }
+}
+namespace EFT
+{
+    public class LocalPlayer { }
+    public class LocalGame
+    {
+        public Location Location { get { Spy.Reads++; return new Location(); } }
+        public Profile Profile { get { Spy.Reads++; return new Profile(); } }
+        public void StartCoroutine(IEnumerator routine) { Spy.Scheduled++; while (routine.MoveNext()) { } }
+    }
+    public class Location { public string Id => "test-map"; }
+    public class Profile
+    {
+        public Action OnTraderStandingChanged;
+        public SkillManager Skills => new SkillManager();
+        public Stats EftStats { get { Spy.Reads++; return new Stats(); } }
+    }
+    public class Stats { public List<object> Victims = new List<object> { new object(), new object(), new object() }; }
+    public class SkillManager
+    {
+        public Action OnSkillLevelChanged, OnSkillExperienceChanged, WeaponMastered, OnMasteringExperienceChanged;
+        public ProbabilityBuff ImmunityAvoidPoisonChance = new ProbabilityBuff(), ImmunityAvoidMiscEffectsChance = new ProbabilityBuff();
+        public class ProbabilityBuff { public Action _onResult; }
+    }
+    public class GameWorld { public List<object> AllAlivePlayersList = new List<object>(); }
+    public class BotsController { public Spawner BotSpawner = new Spawner(); }
+    public class Spawner { public DeadBodies _deadBodiesController = new DeadBodies(); }
+    public class DeadBodies { public int BodiesCount => 4; }
+}
+namespace EFT.EnvironmentEffect
+{
+    public class EnvironmentManager { public static EnvironmentManager Instance = new EnvironmentManager(); public Action _onPlayerEnvironmentChanged; }
+}
+namespace EFT.GlobalEvents
+{
+    public class FlareShootZoneEvent { }
+    public class GlobalEventsController
+    {
+        public static GlobalEventsController Instance = new GlobalEventsController();
+        public Dictionary<Type, List<object>> _eventsSubscribes = new Dictionary<Type, List<object>>();
+    }
+}
+public class CullingManager
+{
+    public static CullingManager Instance = new CullingManager();
+    public Hashtable _cameras = new Hashtable();
+    public static class CullingJob { public static List<object> JobParameters = new List<object>(); }
+}
+namespace Redeploy.Core.GameAccess
+{
+    public static class LocalGameAccessor
+    {
+        public static EFT.BotsController GetBotsController(EFT.LocalGame game) { Spy.Reads++; return new EFT.BotsController(); }
+    }
+}
+namespace Redeploy.Core.Spawning { public interface ISpawnSelector { } }
+namespace Redeploy.Core.Engine { public class SpawnProtectionOptions { } }
+namespace Redeploy.Core
+{
+    public static class CoreLog
+    {
+        public static void LogInfo(string message) { Spy.Infos++; Spy.Lines.Add(message); }
+        public static void LogWarning(string message) { Spy.Warnings++; Spy.Lines.Add(message); }
+    }
+}

@@ -96,7 +96,9 @@ public class CoreVersionTests
     [InlineData("ArenaMode", "ArenaMode.Client", "maschine-ArenaMode.Client.dll", false)]
     public void BuiltDriversAreStampedWithTheCoreVersion(string repo, string project, string fileName, bool sameRepo)
     {
-        var projectBin = Path.Combine(RepoRoot, "..", repo, project, "bin");
+        var projectBin = sameRepo
+            ? Path.Combine(RepoRoot, project, "bin")
+            : Path.Combine(RepoRoot, "..", repo, project, "bin");
         var built = FirstBuilt(projectBin, fileName);
         Skip.If(built == null, $"{fileName} is not built next to this repo");
 

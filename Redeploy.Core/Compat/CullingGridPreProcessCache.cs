@@ -50,7 +50,7 @@ internal static class CullingGridPreProcessCache
             if (Cache.LastResolveWasCacheHit && !_loggedCacheHit)
             {
                 _loggedCacheHit = true;
-                CoreLog.LogInfo(
+                CoreLog.LogDebug(
                     "CullingGridPreProcess scene search reused from cache instead of searching the "
                     + $"scene again (cached result: {(result == null ? "null" : "found")}).");
             }

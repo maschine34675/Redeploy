@@ -95,7 +95,7 @@ internal static class CullingCameraGuard
             foreach (var entry in doomed)
                 (entry.Value as IDisposable)?.Dispose();
 
-            CoreLog.LogInfo($"Culling: evicted {doomed.Count} replaced camera(s), {cameras.Count} still registered.");
+            CoreLog.LogDebug($"Culling: evicted {doomed.Count} replaced camera(s), {cameras.Count} still registered.");
             RepairStuckIndices(manager);
         }
         catch (Exception ex)

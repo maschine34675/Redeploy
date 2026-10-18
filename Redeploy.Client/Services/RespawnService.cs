@@ -195,6 +195,7 @@ public static class RespawnService
             OnBeforeProfileMutation = ConsumeRespawnItem,
             EquipmentStrategy = (profile, dead) => EquipmentSurgeon.ReplaceEquipment(profile, dead),
             HealthPercent = Settings.RespawnHealthPercent.Value,
+            EnablePipelineTiming = Settings.EnablePipelineTiming.Value,
             Protection = new SpawnProtectionOptions
             {
                 DurationSeconds = Settings.SpawnProtectionSeconds.Value,

@@ -66,7 +66,7 @@ internal static class OcclusionCullingSwitcherCache
             if (Cache.LastResolveWasCacheHit && !_loggedCacheHit)
             {
                 _loggedCacheHit = true;
-                CoreLog.LogInfo(
+                CoreLog.LogDebug(
                     "OcclusionCullingSwitcher scene search reused from cache instead of searching the "
                     + $"scene again ({result.Length} switcher(s)).");
             }

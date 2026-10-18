@@ -122,7 +122,7 @@ public static class PerfectCullingFix
                 var current = InstanceProperty?.GetValue(null, null);
                 foreach (UnityEngine.Object stale in Started.TakeStale(__instance, current))
                 {
-                    CoreLog.LogWarning($"Destroying stale PerfectCulling sampler '{stale.name}'.");
+                    CoreLog.LogDebug($"Destroying stale PerfectCulling sampler '{stale.name}'.");
                     UnityEngine.Object.DestroyImmediate(stale);
                 }
             }

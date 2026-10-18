@@ -131,6 +131,18 @@
 >   der ArenaMode-Migration, die Probe-Szenarien 3 bis 6 im Spiel, und das Wachstum der Pipeline-Zeit pro
 >   Respawn aus ArenaModes `LONG-RAID-REVIEW-2026-09-16.md` (0,50 s → 1,02 s über 26 Respawns, ungeklärt).
 >
+> **18.10.2026 / Core 1.0.8:** Die folgenden Messungen sind jetzt **opt-in pro Anfrage**:
+> `RespawnRequest.EnablePipelineTiming = true`. Das additive Feld ist standardmäßig false;
+> `RespawnApi.ApiVersion` und dessen eingefrorene v1-Oberfläche bleiben unverändert. Alte
+> Consumer laufen ohne Feldzuweisung weiter, mit abgeschalteter Messung. Neue Consumer müssen
+> mindestens Core 1.0.8 mitliefern (Build-Stamp beachten). Redeploy bietet dafür
+> `Diagnostics/EnablePipelineTiming`; andere Treiber entscheiden unabhängig. Ausgeschaltet:
+> keine Zustands-/Reflection-/GC-Abfragen, keine Statistik-Restore-Messung und keine zusätzlich
+> geplante Folgeframe-Coroutine. Die Statistik-Wiederherstellung selbst bleibt unbedingt aktiv.
+> Respawn-Nummern zählen jetzt nur gemessene Anfragen. Ein Golden-Order-Vergleich schützt weiterhin
+> die eigentlichen Pipeline-Schritte; `PipelineTimingOptInTests` führt den Produktionscollector
+> mit instrumentierten Spielgrenzen aus und erkennt absichtlich eingeschleuste Kosten im Off-Pfad.
+>
 > **17.09.2026:** 8.4 und der Bindungstest sind umgesetzt (Abschnitt 8, Punkte 2 und 4). **Core 1.0.2 misst die
 > Pipeline** (`Engine/RespawnPipelineTiming.cs`, reine Buchhaltung in `Engine/PipelineStages.cs`, getestet):
 > - Pro Respawn eine Info-Zeile `Respawn pipeline #N (<reason>, <outcome>) on <map>: <gesamt> ms in <frames>

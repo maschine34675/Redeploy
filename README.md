@@ -71,8 +71,14 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or edit `B
 | `CorpseSpawnDistanceMeters` | `20` | Preferred distance from your body for *Respawn near corpse*; closer spots (half of it, 3 m) are tried when it does not work out. |
 | `SpawnProtectionSeconds` | `10` | Invulnerability after respawning; `0` disables it. |
 | `RequiredRespawnItem` | `None` | Item that must be carried and is consumed to respawn. |
+| `Diagnostics/EnablePipelineTiming` | `false` | Opt-in technical respawn measurements. Reads extra state counters and measures the following frames; leave off during normal play. |
 
 `RequiredRespawnItem` accepts a defibrillator, a medkit (Grizzly, Salewa, IFAK, AFAK, CMS, Surv12, car first aid kit) or a stimulant (adrenaline, Propital). If the chosen item is not in your inventory when you die, the respawn buttons are hidden and only ending the raid remains.
+
+The timing switch applies to Redeploy's own respawns. Other Core consumers choose
+independently for each request. Successful camera/marker/freecam setup is logged at
+Debug; actual failures and unexpected repairs retain their warnings. A global
+BepInEx `LogLevels=All` setting still writes Debug messages.
 
 ## Known limitations
 

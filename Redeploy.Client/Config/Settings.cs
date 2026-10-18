@@ -11,6 +11,7 @@ public static class Settings
     public static ConfigEntry<float> CorpseSpawnDistanceMeters { get; private set; }
     public static ConfigEntry<float> SpawnProtectionSeconds { get; private set; }
     public static ConfigEntry<string> RequiredRespawnItem { get; private set; }
+    public static ConfigEntry<bool> EnablePipelineTiming { get; private set; }
 
     private static readonly (string Name, string TemplateId)[] RespawnItems =
     {
@@ -29,6 +30,12 @@ public static class Settings
 
     public static void Init(ConfigFile config)
     {
+        EnablePipelineTiming = config.Bind(
+            "Diagnostics",
+            "EnablePipelineTiming",
+            false,
+            "Collect detailed respawn timing, state counters and following-frame measurements. Enable only when diagnosing slow respawns; this adds measurement work and technical log output.");
+
         Enabled = config.Bind(
             "General",
             "Enabled",

@@ -51,7 +51,7 @@ public static class DynamicMapsCompatHelper
                 return;
 
             _markerPlayerProperty.SetValue(marker, newPlayer, null);
-            CoreLog.LogInfo("DynamicMaps compat: rebound own-position marker to new player.");
+            CoreLog.LogDebug("DynamicMaps compat: rebound own-position marker to new player.");
         }
         catch (Exception ex)
         {
