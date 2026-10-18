@@ -1,0 +1,4 @@
+# LICENSE is compared with ArenaMode's LICENSE when ArenaMode packages the shared Core
+# (ArenaMode tools/Write-ArenaAssets.ps1). Pin it to LF so core.autocrlf=true cannot
+# check it out with CRLF in a fresh clone or worktree.
+LICENSE text eol=lf
