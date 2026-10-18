@@ -48,7 +48,7 @@
 | Equipment / Profil | `Services/RespawnEquipmentHelper.cs` |
 | Stats | `Services/RespawnStatisticsHelper.cs`, `Patches/RespawnStatisticsPatch.cs` |
 | UI | `UI/RespawnPromptPanel.cs`, `Services/RaidUiHelper.cs`, `DeathEffectsHelper.cs` |
-| Patches | `BlockDeathRaidEndPatch.cs`, `BlackScreenPatch.cs`, `SessionResultPatch.cs`, `RespawnOwnerCleanupPatch.cs`, `RedeployRaidStartedPatch.cs` |
+| Patches | `BlockDeathRaidEndPatch.cs`, `BlackScreenPatch.cs`, `SessionResultPatch.cs`, `RespawnOwnerCleanupPatch.cs`, `RaidStartedPatch.cs` |
 
 ### Server (`CorpseRun.Server/`)
 
@@ -56,7 +56,7 @@
 |---------|---------|
 | Einstieg | `ModMetadata.cs`, `PatchManager.cs` |
 | Inventory-Fix | `Helpers/InventoryEquipmentFixHelper.cs` |
-| Patches | `RedeploySetInventoryPatch.cs` (Post-`InRaidHelper.SetInventory`), `RedeployPostRaidPatch.cs` (Post-`HandlePostRaidPmc`) |
+| Patches | `SetInventoryPatch.cs` (Post-`InRaidHelper.SetInventory`), `PostRaidPatch.cs` (Post-`HandlePostRaidPmc`) |
 
 ### Build / Deploy
 
@@ -124,7 +124,7 @@ Nach Equipment-Swap bereinigen: `FastAccess`/`FastPanel`, `FavoriteItemsStorage`
 
 ### Client ohne Server-Mod → Profil-Korruption
 
-- **Schutz:** Server registriert `/corpserun/ping` (`CorpseRunRouter`, StaticRouter); Client prüft einmalig lazy (`ServerModCheck.IsServerModAvailable`, gecacht). Fehlt der Server-Mod: `OnPlayerDied` lässt den Tod normal durchlaufen (kein Respawn-Angebot), `RedeployRaidStartedPatch` zeigt rote Notification beim Raid-Start.
+- **Schutz:** Server registriert `/corpserun/ping` (`CorpseRunRouter`, StaticRouter); Client prüft einmalig lazy (`ServerModCheck.IsServerModAvailable`, gecacht). Fehlt der Server-Mod: `OnPlayerDied` lässt den Tod normal durchlaufen (kein Respawn-Angebot), `RaidStartedPatch` zeigt rote Notification beim Raid-Start.
 - **Profil-Reparatur nach Korruption:** siehe `KeyNotFoundException`-Abschnitt; Skript-Weg: `Inventory.equipment` auf das Item mit `_tpl == 55d7217a4bdc2d86028b456d` (ohne `parentId`) setzen; Backup nach `user/profiles/backups/`.
 
 ### Server-Mod „wirkt nicht“
