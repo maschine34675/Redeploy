@@ -970,17 +970,14 @@ Core rollt nichts zurück. Für jeden Konsumenten gilt dieselbe Regel: gecachte 
 - Eine Fähigkeit gilt als vorhanden, wenn das Member existiert: `GetEvent`/`GetProperty` plus `Delegate.CreateDelegate(..., throwOnBindFailure: false)`.
 - `ApiVersion` ist nur eine Mindestprüfung. Kein `Supports(string)`: UIFixes zeigt, dass eine bestandene Versionsprüfung trotz fehlenden Members zu NREs führt (`MultiSelectInterop.cs:120-140`).
 
-**Kompilierte Konsumenten (ArenaMode, Redeploy.Client)**
-- Sie referenzieren Core weiter mit `Private=false`.
-- In 1.0 benutzen beide **kein** neues Core-Member. Deshalb laufen sie auch gegen einen älteren Core, dann eben ohne die Fixes.
-- Spätere Nutzung neuer Member gehört in `[MethodImpl(MethodImplOptions.NoInlining)]`-Bridges in eigenen Klassen. Core-Typen oder neue Interfaces dürfen nie in Klassen auftauchen, die immer geladen werden, auch nicht in deren vom Compiler erzeugten Closure-Klassen. Beispiel: Beide Treiber instanziieren ihre Treiberklasse direkt im Awake (Redeploy `Plugin.cs:31`, ArenaMode `Plugin.cs:53`). Ein neues Interface darauf gäbe gegen einen alten Core eine `TypeLoadException`.
-- Bestehende Signaturen bleiben. `RaidLifecycle.EnsurePatched()` behält `void`. Ein `bool`-Rückgabewert würde alte ArenaMode-Binaries (`ArenaSession.cs:92`, `ArenaMedicalPatches.cs:46`, `ArenaSpectatorService.cs:186`) mit `MissingMethodException` brechen. `RespawnEngine.RaidIsTearingDown` ist heute `private` (`:262`); `internal` zu machen ist binärsicher.
-
-**Treiber-Check (Skew-Erkennung)**
-- `ApiVersion` ändert sich bei Fix-Releases nicht. Ein Downgrade von Core 1.0.1 auf 1.0.0 ist darüber also unsichtbar, und Last-install-wins-Downgrades bleiben über jedes ältere, noch herunterladbare Zip erreichbar.
-- Beide Treiber vergleichen deshalb im Awake `RedeployCore.Version` mit der Core-Version, gegen die sie gebaut wurden (eine beim Build erzeugte Konstante). `RedeployCore.Version` ist eine Laufzeit-Property, die die installierte Assembly-Version liest (`RedeployCore.cs:15`), und existiert seit 0.9. Der Aufruf ist also auch gegen jeden älteren Core sicher.
-- Ist die Version niedriger, loggen die Treiber eine Warnung ("installiertes maschine-Redeploy.Core ist älter als erwartet: neuestes Redeploy/ArenaMode neu installieren") und tragen den Befund nach dem LateToTheParty-Muster in `Chainloader.DependencyErrors` ein (`ExternalModHandler.cs:46`).
-- `ApiVersion` lesen sie zusätzlich per Reflection, sobald sie neue Member **brauchen**. Erst dann deaktiviert sich ein Treiber.
+**Kompilierte Konsumenten und Mindestversion (Stand 18.10.2026)**
+- Beide referenzieren Core weiterhin mit `Private=false` und liefern dieselbe flache Bibliothek mit. Keine eigene Plugin-GUID, keine Abhängigkeit vom jeweils anderen vollständigen Mod.
+- `CoreVersion.props` stempelt `RedeployCoreBuiltAgainst` in beide Clients. Dieser Wert ist die Mindestversion (aktuell 1.0.8), nicht nur ein Warnschwellwert.
+- `Awake` prüft über `drivers/CoreVersionGate.cs` die bereits geladene Assembly-Identität bzw. lädt ausschließlich deren Namen. Ein neueres Exemplar auf der Festplatte überschreibt nicht die Version des laufenden Prozesses.
+- Fehlender, unlesbarer, unbekannter oder älterer Core sowie ein fehlender/ungültiger Build-Stempel führen zu Error + `Chainloader.DependencyErrors`, deaktiviertem Plugin und sofortiger Rückkehr. Core-Init, Settings, Hooks und Komponenten starten dann nicht.
+- Erst nach Zulassung wird `InitializeRuntime` mit `NoInlining` aufgerufen. Arena schützt zusätzlich Start, Update und OnDestroy durch den Runtime-Startzustand und eigene nicht einbettbare Methoden. Kein Core-Typ gehört in die ungeschützten Einstiegsmethoden.
+- Gleiche und neuere Assembly-Versionen bleiben erlaubt. Das ersetzt keine binär kompatiblen APIs; öffentliche Core-Signaturen und bestehende API-Versionen bleiben stabil.
+- Tests: `CoreVersionTests`, `CoreBootstrapTests` (reale Einstiegsmethoden mit instrumentierten Runtime-Grenzen), binäre IL-Prüfung und separat dokumentierter nativer Starttest. Ältere Warn-only-Beschreibungen und Messungen in diesem Dokument sind historische Stände.
 
 **Paketierung (Soll-Zustand)**
 - Genau eine flache Datei, `BepInEx/plugins/maschine-Redeploy.Core.dll`, byte-identisch im Redeploy- und im ArenaMode-Zip. Es gewinnt die zuletzt entpackte.
@@ -1351,7 +1348,7 @@ feuert jetzt erst nach einem erfolgreichen Respawn oder Swap und hat weiterhin k
    - "internes Mode-Framework von ArenaMode; Drittmods nutzen `Redeploy.Core.Api.RespawnApi`";
    - die Zusammenfassung von `OnPlayerRespawned` korrigieren: "nur nach Todes-Respawns, frühestens einen Frame nach der Engine; nie für Swaps".
 5. `OnKitApplied` nach einem erfolgreichen Respawn verschieben oder löschen. Es hat keine Abonnenten.
-6. Im Awake `RedeployCore.Version` gegen die Build-Konstante prüfen und bei zu altem Core warnen (3.9).
+6. Im Awake die Core-Assembly-Version vor allen Runtime-Aufrufen prüfen und bei fehlender/zu alter Version geschlossen abbrechen (3.9).
 7. An `RaidLifecycle` ändert sich für ArenaMode nichts. Die Legacy-Events bleiben ungefiltert, abgesehen von Narrate-Start und Hideout-Ende (S0-7). Die Reihenfolge "`ResetSession` der Treiber vor den `ArenaSession`/`ArenaMatchService`-Handlern" bleibt erhalten, weil es nur noch einen Postfix gibt, obwohl ArenaMode `RaidLifecycle` zuerst scharf schaltet (`Plugin.cs:39` vor `:52`).
 
 **Abbildung für die Doku:**

@@ -44,7 +44,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Replace the Client and Server together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. A Core-version warning means you should check the versions supplied by both mods.
+Close the game and server before replacing files, then restart both. Replace the Client and Server together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Both clients require Core **1.0.8 or newer** for this build. A missing, unreadable or older Core disables the affected client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 

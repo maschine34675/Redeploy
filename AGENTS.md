@@ -292,8 +292,9 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
   jeder Core-Änderung, auf die sich ein Treiber verlassen kann, dort erhöhen.
 - **Treiber-Check** `drivers/CoreVersionGate.cs`, in Redeploy.Client und ArenaMode.Client verlinkt;
   beide csproj importieren `CoreVersion.props` und stempeln `RedeployCoreBuiltAgainst`. Älterer Core
-  ⇒ Warnung + `Chainloader.DependencyErrors` (SPT-Toast „plugin failed to load", der Treiber läuft
-  trotzdem). Die Datei darf keine Core-Typen benutzen. Tests: `CoreVersionTests` (Vergleich, Props,
+  ⇒ seit 18.10.2026 Startabbruch + Error + `Chainloader.DependencyErrors`, noch vor Core-Init,
+  Einstellungen oder Hooks. Unbekannte/fehlende Versionen werden ebenfalls abgelehnt. JIT-Grenze
+  `InitializeRuntime` bleibt `NoInlining`; Arena schützt auch Start/Update/OnDestroy. Die Datei darf keine Core-Typen benutzen. Tests: `CoreVersionTests` (Vergleich, Props,
   Version des gebauten Core, Stempel der gebauten Treiber inklusive ArenaMode).
 - **Probe** `tools/RespawnApiProbe` (Anleitung im README dort). Ein normaler Build deployt nichts,
   auch nicht Core (`AdditionalProperties="SPTModType=Library"` an der Referenz); deployen mit

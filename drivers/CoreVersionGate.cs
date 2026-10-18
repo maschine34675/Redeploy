@@ -1,6 +1,6 @@
 // Shared source for the compiled Core drivers (Redeploy.Client, ArenaMode.Client); each links
-// it into its own assembly. It must stay free of Core types: it runs in Awake against
-// whatever maschine-Redeploy.Core.dll is installed, including one older than this build.
+// it into its own assembly. Keep this free of Core types: it runs BEFORE any
+// Core-dependent method is compiled or any hooks/components are initialized.
 // C# 7.3, no Unity or BepInEx types, so Redeploy.Tests can compile it as is.
 using System;
 using System.Reflection;
@@ -30,24 +30,70 @@ namespace Redeploy.Drivers
         }
 
         /// <summary>
-        /// The warning to log when the installed Core is older than the build-time one; null when
-        /// it is the same or newer, or when either version is unknown (the check fails open: a
-        /// missing stamp must never keep a driver from loading).
+        /// A blocking startup error, or null for a Core at least as new as the
+        /// build-time minimum. Unknown versions are not a safe admission.
         /// </summary>
         internal static string Evaluate(string pluginName, Version installedCore, string builtAgainst)
         {
             Version expected;
-            if (installedCore == null || string.IsNullOrEmpty(builtAgainst) || !Version.TryParse(builtAgainst, out expected))
-                return null;
+            if (string.IsNullOrEmpty(builtAgainst) || !Version.TryParse(builtAgainst, out expected))
+                return Disabled(pluginName, "the required Redeploy.Core version could not be determined");
+            if (installedCore == null)
+                return Disabled(pluginName, "Redeploy.Core is missing or its version could not be determined (requires at least " + expected + ")");
 
             if (Normalize(installedCore) >= Normalize(expected))
                 return null;
 
-            return pluginName + ": the installed maschine-Redeploy.Core " + installedCore
-                   + " is older than the " + expected + " this build expects. Nothing failed to load: respawns keep"
-                   + " running on the old Core, without its fixes. Another mod's zip probably overwrote"
-                   + " BepInEx/plugins/maschine-Redeploy.Core.dll; reinstall the latest Redeploy or ArenaMode.";
+            return Disabled(pluginName, "installed Redeploy.Core " + installedCore
+                + " is older than the required minimum " + expected);
         }
+
+        internal static string Check(string pluginName, Assembly driverAssembly)
+        {
+            try { return Check(pluginName, ReadBuiltAgainst(driverAssembly), ResolveCoreIdentity); }
+            catch (Exception ex)
+            {
+                return Disabled(pluginName, "the Core requirement could not be read (" + ex.GetType().Name + ")");
+            }
+        }
+
+        internal static string Check(string pluginName, string builtAgainst, Func<AssemblyName> resolveCore)
+        {
+            Version required;
+            if (!Version.TryParse(builtAgainst, out required))
+                return Evaluate(pluginName, null, builtAgainst);
+            try
+            {
+                AssemblyName core = resolveCore();
+                if (core == null || core.Name != "maschine-Redeploy.Core")
+                    return Disabled(pluginName, "the resolved assembly is not Redeploy.Core");
+                return Evaluate(pluginName, core.Version, builtAgainst);
+            }
+            catch (Exception ex)
+            {
+                return Disabled(pluginName, "Redeploy.Core could not be loaded (requires at least "
+                    + required + "; " + ex.GetType().Name + ")");
+            }
+        }
+
+        private static AssemblyName ResolveCoreIdentity()
+        {
+            // The loaded assembly wins over a newer file copied over it mid-game.
+            AssemblyName found = null;
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                AssemblyName identity = assembly.GetName();
+                if (identity.Name != "maschine-Redeploy.Core") continue;
+                if (found != null) throw new InvalidOperationException("Multiple loaded Core assemblies");
+                found = identity;
+            }
+            return found ?? Assembly.Load(new AssemblyName("maschine-Redeploy.Core")).GetName();
+        }
+
+        private static string Disabled(string pluginName, string reason)
+            => pluginName + ": disabled because " + reason
+                + ". Install the matching maschine-Redeploy.Core.dll in BepInEx/plugins, keep only one copy,"
+                + " and restart the game. No respawn hooks from this mod were initialized.";
 
         // "1.0.0" parses with Revision -1 and an assembly version reads "1.0.0.0": compare all four parts.
         private static Version Normalize(Version version)

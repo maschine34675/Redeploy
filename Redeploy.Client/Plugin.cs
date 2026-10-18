@@ -10,6 +10,7 @@ using Redeploy.Patches;
 using Redeploy.Services;
 using Redeploy.UI;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Redeploy;
 
@@ -26,8 +27,22 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         ModLogger = base.Logger;
+        string error = CoreVersionGate.Check(PluginName, typeof(Plugin).Assembly);
+        if (error != null)
+        {
+            ModLogger.LogError(error);
+            Chainloader.DependencyErrors.Add(error);
+            enabled = false;
+            return;
+        }
+        InitializeRuntime();
+    }
+
+    // Awake must remain loadable without resolving Core types or members.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InitializeRuntime()
+    {
         RedeployCore.Init(ModLogger);
-        WarnIfCoreIsOlderThanBuild();
         Settings.Init(Config);
 
         RaidStartedPatch.EnablePatch();
@@ -40,27 +55,4 @@ public class Plugin : BaseUnityPlugin
         ModLogger.LogInfo($"{PluginName} {PluginVersion} loaded (Core {RedeployCore.Version})");
     }
 
-    /// <summary>
-    /// A Core older than this build still runs the driver, degraded to its fixes; the
-    /// finding goes to the log and to Chainloader.DependencyErrors, which SPT reports
-    /// after loading (docs/RESPAWN-API.md 3.9). RedeployCore.Version exists since Core
-    /// 0.9, so reading it is safe against any Core this driver can meet.
-    /// </summary>
-    private static void WarnIfCoreIsOlderThanBuild()
-    {
-        try
-        {
-            var warning = CoreVersionGate.Evaluate(
-                PluginName, RedeployCore.Version, CoreVersionGate.ReadBuiltAgainst(typeof(Plugin).Assembly));
-            if (warning == null)
-                return;
-
-            ModLogger.LogWarning(warning);
-            Chainloader.DependencyErrors.Add(warning);
-        }
-        catch (Exception ex)
-        {
-            ModLogger.LogWarning($"Core version check skipped: {ex.Message}");
-        }
-    }
 }

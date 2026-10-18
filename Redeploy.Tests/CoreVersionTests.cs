@@ -31,7 +31,8 @@ public class CoreVersionTests
         Assert.NotNull(warning);
         Assert.StartsWith("maschine-Test: ", warning);
         Assert.Contains(installed, warning);
-        Assert.Contains("reinstall the latest Redeploy or ArenaMode", warning);
+        Assert.Contains("disabled", warning);
+        Assert.Contains("keep only one copy", warning);
     }
 
     [Theory]
@@ -47,12 +48,31 @@ public class CoreVersionTests
     [InlineData("")]
     [InlineData("not-a-version")]
     [InlineData("1")]
-    public void AMissingOrBrokenStampFailsOpen(string builtAgainst)
-        => Assert.Null(CoreVersionGate.Evaluate("maschine-Test", new Version(0, 1, 0, 0), builtAgainst));
+    public void AMissingOrBrokenStampFailsClosed(string builtAgainst)
+        => Assert.Contains("disabled", CoreVersionGate.Evaluate("maschine-Test", new Version(0, 1, 0, 0), builtAgainst));
 
     [Fact]
-    public void AnUnknownInstalledCoreFailsOpen()
-        => Assert.Null(CoreVersionGate.Evaluate("maschine-Test", null, "1.0.0"));
+    public void AnUnknownInstalledCoreFailsClosed()
+        => Assert.Contains("disabled", CoreVersionGate.Evaluate("maschine-Test", null, "1.0.0"));
+
+    [Fact]
+    public void MissingUnloadableOrWrongAssemblyFailsClosed()
+    {
+        Assert.Contains("disabled", CoreVersionGate.Check("test", "1.0.8", () => throw new FileNotFoundException()));
+        Assert.Contains("disabled", CoreVersionGate.Check("test", "1.0.8", () => throw new BadImageFormatException()));
+        Assert.Contains("disabled", CoreVersionGate.Check("test", "1.0.8", () => null));
+        Assert.Contains("disabled", CoreVersionGate.Check("test", "1.0.8", () => new AssemblyName("Foreign, Version=9.0.0.0")));
+        Assert.Null(CoreVersionGate.Check("test", "1.0.8", () => new AssemblyName("maschine-Redeploy.Core, Version=1.0.8.0")));
+        Assert.Null(CoreVersionGate.Check("test", "1.0.8", () => new AssemblyName("maschine-Redeploy.Core, Version=2.0.0.0")));
+    }
+
+    [Fact]
+    public void MissingStampNeverResolvesCore()
+    {
+        bool resolved = false;
+        Assert.Contains("disabled", CoreVersionGate.Check("test", null, () => { resolved = true; return null; }));
+        Assert.False(resolved);
+    }
 
     [Fact]
     public void TheStampIsReadFromAssemblyMetadata()
@@ -88,7 +108,7 @@ public class CoreVersionTests
     /// <summary>
     /// Redeploy.Client lives in this repo and is rebuilt with every Core bump: its stamp must equal
     /// CoreVersion.props. ArenaMode has its own release cadence: a build stamped with an older Core
-    /// is fine against a newer one (the gate only warns about an older installed Core), so its
+    /// is fine against a newer one (the gate rejects an older installed Core), so its
     /// stamp only has to exist and must not be newer than this repo's Core.
     /// </summary>
     [SkippableTheory]
@@ -105,7 +125,7 @@ public class CoreVersionTests
         var stamp = ReadAssemblyMetadata(built, CoreVersionGate.BuiltAgainstKey);
         var core = ReadCoreVersionProps()["RedeployCoreVersion"];
 
-        Assert.True(stamp != null, $"{fileName} has no {CoreVersionGate.BuiltAgainstKey} stamp; its Awake skew check would never fire");
+        Assert.True(stamp != null, $"{fileName} has no {CoreVersionGate.BuiltAgainstKey} stamp; its Awake minimum-version check would reject startup");
         if (sameRepo)
         {
             Assert.Equal(core, stamp);
@@ -114,7 +134,7 @@ public class CoreVersionTests
         {
             Assert.True(Version.TryParse(stamp, out var stamped), $"{fileName} stamp '{stamp}' is not a version");
             Assert.True(stamped <= Version.Parse(core),
-                $"{fileName} is stamped {stamp}, newer than this repo's Core {core}: it would warn against the Core built here");
+                $"{fileName} is stamped {stamp}, newer than this repo's Core {core}: it would reject the Core built here");
         }
     }
 
