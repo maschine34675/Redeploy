@@ -49,6 +49,14 @@ internal sealed class RedeployRaidStartedPatch : ModulePatch
             return;
         }
 
+        var compatibilityFailure = BodyReplacementCompatibility.GetRejectionReason();
+        if (compatibilityFailure != null)
+        {
+            NotificationManager.DisplayMessageNotification(
+                "Redeploy respawn unavailable: " + compatibilityFailure,
+                ENotificationDurationType.Long, ENotificationIconType.Alert, Color.red);
+            // The raid itself remains ordinary. The driver checks again before claiming a death.
+        }
         RespawnSessionState.OnRaidStarted();
     }
 }

@@ -1,6 +1,7 @@
 using EFT;
 using Redeploy.Config;
 using Redeploy.Core.Engine;
+using Redeploy.Core.Compat;
 
 namespace Redeploy.Services;
 
@@ -15,7 +16,7 @@ internal sealed class RedeployDriver : IDeathInterceptionDriver
 
     public int Priority => 0;
 
-    private static bool ShouldIntercept(LocalGame game)
+    private static bool ShouldIntercept(LocalGame game, bool refreshCompatibility = false)
     {
         if (!Settings.Enabled.Value)
             return false;
@@ -44,10 +45,12 @@ internal sealed class RedeployDriver : IDeathInterceptionDriver
         if (game.Status != GameStatus.Started)
             return false;
 
-        return true;
+        // Verify at death admission, not in repeatedly polled UI/death-screen predicates.
+        return (refreshCompatibility ? BodyReplacementCompatibility.GetRejectionReason()
+            : BodyReplacementCompatibility.CachedRejectionReason) == null;
     }
 
-    public bool WantsToHandleDeath(LocalGame game) => ShouldIntercept(game);
+    public bool WantsToHandleDeath(LocalGame game) => ShouldIntercept(game, refreshCompatibility: true);
 
     public void OnPlayerDied(LocalGame game) => RespawnService.OnPlayerDied(game);
 

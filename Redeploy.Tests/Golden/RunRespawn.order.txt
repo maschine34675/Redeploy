@@ -7,6 +7,16 @@ if (refusal != null)
   CoreLog.LogWarning($"Respawn refused before any teardown: {refusal.Message}");
   onFailure?.Invoke(refusal);
   yield break;
+Exception compatibilityFailure = null;
+try
+  BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer);
+catch (Exception ex)
+  BodyReplacementCompatibility.CancelPreparation();
+  compatibilityFailure = ex;
+if (compatibilityFailure != null)
+  CoreLog.LogWarning($"Respawn compatibility refused before any teardown: {compatibilityFailure.Message}");
+  onFailure?.Invoke(compatibilityFailure);
+  yield break;
 RespawnEngineState.LastRespawnedPlayer = null;
 RespawnEngineState.IsPipelineRunning = true;
 var game = request.Game;
@@ -39,6 +49,7 @@ catch (Exception ex)
 if (pipelineFailure != null)
   yield return null;
   RespawnEngineState.IsPipelineRunning = false;
+  BodyReplacementCompatibility.EndAttempt();
   PublishFailure(game, deadPlayer, RespawnApi.StagePrepare);
   onFailure(pipelineFailure);
   yield break;
@@ -47,6 +58,7 @@ while (!createTask.IsCompleted)
   if (Time.realtimeSinceStartup > creationDeadline)
     yield return null;
     RespawnEngineState.IsPipelineRunning = false;
+    BodyReplacementCompatibility.EndAttempt();
     PublishFailure(game, deadPlayer, RespawnApi.StageCreate);
     onFailure(new TimeoutException("Replacement player creation timed out after 30s."));
     yield break;
@@ -54,6 +66,7 @@ while (!createTask.IsCompleted)
 if (RaidIsTearingDown(game))
   yield return null;
   RespawnEngineState.IsPipelineRunning = false;
+  BodyReplacementCompatibility.EndAttempt();
   PublishFailure(game, deadPlayer, RespawnApi.StageRaidEnding);
   onFailure(new OperationCanceledException("Raid ended during respawn — pipeline aborted."));
   yield break;
@@ -61,6 +74,7 @@ try
   if (createTask.IsFaulted)
     throw createTask.Exception?.InnerException ?? createTask.Exception;
   var newPlayer = createTask.Result;
+  BodyReplacementCompatibility.ValidateCreated(newPlayer);
   newPlayer.Location = game.Location.Id;
   game.LocalPlayer = newPlayer;
   DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer);
@@ -102,8 +116,10 @@ catch (Exception ex)
 if (pipelineFailure != null)
   yield return null;
   RespawnEngineState.IsPipelineRunning = false;
+  BodyReplacementCompatibility.EndAttempt();
   if (!replacedPublished)
     PublishFailure(game, deadPlayer, createTask?.IsFaulted == true ? RespawnApi.StageCreate : RespawnApi.StageRewire);
   onFailure(pipelineFailure);
   yield break;
 RespawnEngineState.IsPipelineRunning = false;
+BodyReplacementCompatibility.EndAttempt();

@@ -14,11 +14,13 @@ public class CoreBootstrapTests
     [SkippableTheory]
     [InlineData(false, "missing", false)]
     [InlineData(false, "1.0.7.0", false)]
-    [InlineData(false, "1.0.8.0", true)]
+    [InlineData(false, "1.0.8.0", false)]
+    [InlineData(false, "1.0.9.0", true)]
     [InlineData(false, "2.0.0.0", true)]
     [InlineData(true, "missing", false)]
     [InlineData(true, "1.0.7.0", false)]
-    [InlineData(true, "1.0.8.0", true)]
+    [InlineData(true, "1.0.8.0", false)]
+    [InlineData(true, "1.0.9.0", true)]
     [InlineData(true, "2.0.0.0", true)]
     public void RealEntryPointsAdmitOnlySupportedCore(bool arena, string installed, bool accepted)
         => Probe(arena, installed, accepted);
@@ -75,15 +77,16 @@ public class CoreBootstrapTests
         string fixture = """
             using System; using System.Reflection; using System.Runtime.CompilerServices;
             using BepInEx; using BepInEx.Logging; using BepInEx.Bootstrap; using Redeploy.Drivers;
-            [assembly: AssemblyMetadata("RedeployCoreBuiltAgainst", "1.0.8")]
+            [assembly: AssemblyMetadata("RedeployCoreBuiltAgainst", "1.0.9")]
             namespace BepInEx { public class BaseUnityPlugin { public bool enabled = true; public ManualLogSource Logger = new(); } }
             namespace BepInEx.Logging { public class ManualLogSource { public void LogError(string value) { Boundary.Errors++; } } }
             namespace BepInEx.Bootstrap { public static class Chainloader { public static System.Collections.Generic.List<string> DependencyErrors = new(); } }
             public static class Boundary {
-                public static int Calls, Errors; public static string Installed;
+                public static int Calls, Errors, Notices; public static string Installed;
                 public static AssemblyName Resolve() => Installed == "missing" ? throw new System.IO.FileNotFoundException()
                     : new AssemblyName("maschine-Redeploy.Core, Version=" + Installed);
             }
+            public static class ArenaCoreUnavailableMenu { public static void Enable() { Boundary.Notices++; } }
             """;
         // Keep Plugin in its original namespace, but no unused game imports.
         string pluginSource = fixture + "\nnamespace " + (arena ? "ArenaMode" : "Redeploy") + " { " + plugin.ToFullString() + " }";
@@ -104,6 +107,7 @@ public class CoreBootstrapTests
             type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(instance, null);
         Assert.Equal(accepted ? (arena ? 4 : 1) : 0, (int)boundary.GetField("Calls").GetValue(null));
         Assert.Equal(accepted ? 0 : 1, (int)boundary.GetField("Errors").GetValue(null));
+        Assert.Equal(arena && !accepted ? 1 : 0, (int)boundary.GetField("Notices").GetValue(null));
         Assert.Equal(accepted, (bool)type.GetField("enabled").GetValue(instance));
         var errors = (System.Collections.IList)assembly.GetType("BepInEx.Bootstrap.Chainloader").GetField("DependencyErrors").GetValue(null);
         Assert.Equal(accepted ? 0 : 1, errors.Count);

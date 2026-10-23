@@ -24,7 +24,8 @@ public class CoreBindingTests
     [SkippableFact]
     public void TheUnchangedInteropFileBindsToTheBuiltCoreAndLetsGoAgain()
     {
-        var install = Path.GetFullPath(Path.Combine(ApiContractTests.RepoRoot, "..", ".."));
+        var install = Path.GetFullPath(Environment.GetEnvironmentVariable("REDEPLOY_TEST_SPT_ROOT")
+            ?? Path.Combine(ApiContractTests.RepoRoot, "..", ".."));
         var managed = Path.Combine(install, "EscapeFromTarkov_Data", "Managed");
         var core = new[] { "Release", "Debug" }
             .Select(configuration => Path.Combine(ApiContractTests.RepoRoot, "Redeploy.Core", "bin", configuration, CoreAssemblyName + ".dll"))

@@ -128,6 +128,25 @@ public static class RespawnEngine
             yield break;
         }
 
+        Exception compatibilityFailure = null;
+        try
+        {
+            // All optional integrations validate/adopt the old body before irreversible teardown.
+            // This also supports standalone Redeploy, whose initial player was never intercepted.
+            BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer);
+        }
+        catch (Exception ex)
+        {
+            BodyReplacementCompatibility.CancelPreparation();
+            compatibilityFailure = ex;
+        }
+        if (compatibilityFailure != null)
+        {
+            CoreLog.LogWarning($"Respawn compatibility refused before any teardown: {compatibilityFailure.Message}");
+            onFailure?.Invoke(compatibilityFailure);
+            yield break;
+        }
+
         RespawnEngineState.LastRespawnedPlayer = null;
         RespawnEngineState.IsPipelineRunning = true;
 
@@ -215,6 +234,7 @@ public static class RespawnEngine
             // be skipped (pre-Core builds cleared their flag one frame later too).
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            BodyReplacementCompatibility.EndAttempt();
             PublishFailure(game, deadPlayer, RespawnApi.StagePrepare);
             onFailure(pipelineFailure);
             yield break;
@@ -228,6 +248,7 @@ public static class RespawnEngine
                 timing.Finish("failed-create-timeout", reason, null);
                 yield return null;
                 RespawnEngineState.IsPipelineRunning = false;
+                BodyReplacementCompatibility.EndAttempt();
                 PublishFailure(game, deadPlayer, RespawnApi.StageCreate);
                 onFailure(new TimeoutException("Replacement player creation timed out after 30s."));
                 yield break;
@@ -246,6 +267,7 @@ public static class RespawnEngine
             timing.Finish("aborted-raid-ending", reason, null);
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            BodyReplacementCompatibility.EndAttempt();
             PublishFailure(game, deadPlayer, RespawnApi.StageRaidEnding);
             onFailure(new OperationCanceledException("Raid ended during respawn — pipeline aborted."));
             yield break;
@@ -257,6 +279,7 @@ public static class RespawnEngine
                 throw createTask.Exception?.InnerException ?? createTask.Exception;
 
             var newPlayer = createTask.Result;
+            BodyReplacementCompatibility.ValidateCreated(newPlayer);
             newPlayer.Location = game.Location.Id;
             game.LocalPlayer = newPlayer;
             timing.Mark("rewire.result");
@@ -353,6 +376,7 @@ public static class RespawnEngine
             timing.Finish("failed-rewire", reason, null);
             yield return null;
             RespawnEngineState.IsPipelineRunning = false;
+            BodyReplacementCompatibility.EndAttempt();
             // Exactly one public outcome per pipeline: a throw after Replaced still reaches
             // onFailure, but it is not a second event.
             if (!replacedPublished)
@@ -363,6 +387,7 @@ public static class RespawnEngine
 
         timing.Finish("replaced", reason, game);
         RespawnEngineState.IsPipelineRunning = false;
+        BodyReplacementCompatibility.EndAttempt();
     }
 
     /// <summary>

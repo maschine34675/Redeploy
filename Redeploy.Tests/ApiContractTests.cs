@@ -21,7 +21,9 @@ public class ApiContractTests
     private const BindingFlags Declared = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
     internal static readonly string RepoRoot = FindRepoRoot();
-    private static readonly string InstallRoot = Path.GetFullPath(Path.Combine(RepoRoot, "..", ".."));
+    // Isolated worktrees need not sit directly under the game installation.
+    private static readonly string InstallRoot = Path.GetFullPath(
+        Environment.GetEnvironmentVariable("REDEPLOY_TEST_SPT_ROOT") ?? Path.Combine(RepoRoot, "..", ".."));
     private static readonly string BaselinePath = Path.Combine(RepoRoot, "Redeploy.Core", "Api", "api-v1.baseline.txt");
     private static readonly string InteropPath = Path.Combine(RepoRoot, "interop", "RedeployRespawnInterop.cs");
 
