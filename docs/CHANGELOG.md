@@ -1,0 +1,66 @@
+# Changelog
+
+Notable changes since **v1.0.0**, reconstructed from Git history and published
+release notes. Release dates are GitHub publication dates. Unreleased covers
+changes merged through
+[`85be3fb`](https://github.com/maschine34675/Redeploy/commit/85be3fb)
+on 2026-10-23; these changes are not part of the published 1.0.0 download.
+
+Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
+The Client/Server version remains 1.0.0 in the development tree, while Core has
+advanced from the published package's 1.0.8 to 1.0.9.
+
+## [Unreleased]
+
+### Shared body-replacement compatibility — Core 1.0.9
+
+- Moved general body-replacement fixes for **Recoil Rework Legacy 2.0.0+,
+  Continuous Load Ammo 1.2.0+ and Continuous Healing 1.6.3+** from ArenaMode
+  into Redeploy.Core. Standalone Redeploy now uses the same integrations without
+  requiring ArenaMode. All three mods remain optional.
+- **Recoil Rework Legacy:** transfer recoil/camera component ownership to the
+  replacement character, refresh its equipped-weapon cache and prevent retired
+  components from interfering with the new body.
+- **Continuous Load Ammo:** rebind the loading controller after replacement and
+  isolate old disposal, movement restrictions and delayed completion from the
+  new character's inventory and loading operation.
+- **Continuous Healing:** prevent callbacks from the retired body from starting
+  or cancelling healing on its successor, while retaining the mod's behavior
+  on the current living player. Unrelated ordinary bots remain unchanged.
+- Validate optional-mod compatibility before tearing down the old player.
+  Standalone Redeploy shows a raid-start notice if respawning is unavailable;
+  failed admission leaves normal death handling in place. Newer mod versions
+  still need the expected APIs and produce an unverified-version warning.
+- Reject conflicting older ArenaMode adapters before installing duplicate hooks.
+  Update ArenaMode and its matching Core together when using these integrations.
+- Raised this build's minimum Core requirement to **1.0.9**. The existing
+  `RespawnApi` version 1 observer contract and event sequence remain unchanged.
+
+### Verification
+
+- Added shared lifecycle and optional-mod regression checks, including failed
+  preparation/recovery and delayed callbacks from retired bodies.
+- Recorded bounded native tests for standalone respawns, corpse-weapon recovery,
+  shooting, continuous healing and magazine unloading, plus Arena Deathmatch
+  replacements and solo Zombie wave refills. These do not establish every
+  asynchronous race, PitFireTeam behavior, or future mod-version compatibility.
+
+See [shared compatibility and verification boundaries](BODY-REPLACEMENT-COMPAT-20261023.md)
+for the tested builds, scenarios and remaining limits.
+
+## [1.0.0] - 2026-10-19
+
+Baseline for this changelog: the currently published `v1.0.0` tag at
+[`d1d7240`](https://github.com/maschine34675/Redeploy/commit/d1d7240),
+with **Client/Server 1.0.0 and Core 1.0.8**. Its archive was refreshed on
+2026-10-19 without changing the Client/Server version; earlier same-version
+archives are not reconstructed here.
+
+The respawn choices, corpse-gear recovery, retained equipment, protection/cost
+settings and existing Killcam, DoorDash, DynamicMaps and Freecam integrations
+already belong to this baseline. See its
+[README](https://github.com/maschine34675/Redeploy/blob/v1.0.0/README.md)
+for the features and limitations at release.
+
+[Unreleased]: https://github.com/maschine34675/Redeploy/compare/v1.0.0...85be3fb
+[1.0.0]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.0

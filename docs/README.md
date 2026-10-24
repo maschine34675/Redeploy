@@ -4,6 +4,7 @@ Start with the [project README](../README.md) for installation, settings, update
 
 | Document | Scope |
 | --- | --- |
+| [Changelog](CHANGELOG.md) | Changes since 1.0.0, with unreleased work and the separate Core version line. |
 | [Respawn API](RESPAWN-API.md) | Core's observer contract, design decisions, implementation history and verification notes. German; dated status entries supersede earlier proposals. |
 | [Shared body compatibility](BODY-REPLACEMENT-COMPAT-20261023.md) | Core 1.0.9: Recoil Rework Legacy, Continuous Load Ammo and Continuous Healing, exact ownership and migration test boundaries. |
 | [Native probe instructions](../tools/RespawnApiProbe/README.md) | Developer-only in-game checks. The probe is not included in normal installation. |

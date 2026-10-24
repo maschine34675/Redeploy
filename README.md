@@ -4,6 +4,9 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
+See the [changelog](docs/CHANGELOG.md) for changes since 1.0.0, including
+unreleased development changes and the separate Core version line.
+
 ## Features
 
 - **Choose what happens when you die.** A prompt offers a respawn near your corpse, a respawn at a regular player spawn, or ending the raid as usual.
@@ -20,7 +23,7 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** Redeploy Client/Server are currently `1.0.0`; the included Core is `1.0.9`. Core has its own version and is a library, not a separate BepInEx plugin.
+- **Version lines:** This development tree has Client/Server `1.0.0` and Core `1.0.9`; the published `v1.0.0` package contains Core `1.0.8`. Core has its own version and is a library, not a separate BepInEx plugin.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -31,7 +34,7 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
   - **Killcam** (formerly KillcamReplay) — the death replay stays visible behind the respawn prompt. A chosen respawn waits for the replay to release the camera; Space skips the replay.
 - **Fika is deliberately unsupported.** Redeploy disables respawning when `com.fika.core` is loaded and warns at raid start. Its replacement-character flow has no co-op synchronisation.
 
-The three body-replacement integrations above are shared with ArenaMode from Core 1.0.9. Their migration is covered by offline lifecycle checks; native standalone acceptance is still required. Newer mod versions require matching APIs and log an unverified-version warning. An invalid contract refuses respawn before teardown, with a notice at raid start; ordinary spawning and mod settings remain unchanged. See [shared compatibility and test boundaries](docs/BODY-REPLACEMENT-COMPAT-20261023.md).
+The three body-replacement integrations above are shared with ArenaMode from Core 1.0.9. Their migration is covered by offline lifecycle checks and bounded native tests with standalone Redeploy and ArenaMode on 2026-10-23; pending-operation races and PitFireTeam were not established by those native runs. Newer mod versions require matching APIs and log an unverified-version warning. An invalid contract refuses respawn before teardown, with a notice at raid start; ordinary spawning and mod settings remain unchanged. See [shared compatibility and test boundaries](docs/BODY-REPLACEMENT-COMPAT-20261023.md).
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
