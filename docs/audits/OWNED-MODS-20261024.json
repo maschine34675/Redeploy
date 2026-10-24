@@ -1,0 +1,518 @@
+{
+  "date": "2026-10-24",
+  "scope": "Published owned SPT mods against Redeploy body replacement",
+  "method": "Static inspection only; no native acceptance. Tag and embedded build commit may differ from actual release source.",
+  "mods": [
+    {
+      "mod": "Airburst",
+      "release": "v1.1.2",
+      "tagCommit": "715b5566da0e409e9a70e4be37936ca16322ecb2",
+      "releaseUrl": "https://github.com/maschine34675/Airburst/releases/tag/v1.1.2",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-Airburst.Client.dll",
+          "version": "1.1.2",
+          "sha256": "540bba09ffc90487cf30ac8cf0ab435d3777b4ba835922bd33ec3d47fc295012"
+        },
+        {
+          "file": "maschine-Airburst.Client.Fika.dll",
+          "version": "1.1.2",
+          "sha256": "a5d38153ed43fad22cc7335e726a8d79c8f3b2cd3e8a71e1211a0c2c02fa62fa"
+        },
+        {
+          "file": "maschine-Airburst.Server.dll",
+          "version": "1.1.2.0",
+          "sha256": "62a8685124e85fa330efcd83503a9f6dab98985fc41efffd541efcf46175b43a"
+        }
+      ]
+    },
+    {
+      "mod": "ArenaMapPort",
+      "release": "v0.2.3",
+      "tagCommit": "cd13ab0cf0ac0b5e716168300254d28a9911242a",
+      "releaseUrl": "https://github.com/maschine34675/ArenaMapPort/releases/tag/v0.2.3",
+      "evidence": "published source only; external map package not downloaded",
+      "dlls": []
+    },
+    {
+      "mod": "ArenaMode",
+      "release": "v0.1.3",
+      "tagCommit": "c5cee4240c1ad72c939b740ce6685c9968b8c7f3",
+      "releaseUrl": "https://github.com/maschine34675/ArenaMode/releases/tag/v0.1.3",
+      "evidence": "published source, release DLL metadata, Arena legacy-adapter type inspection",
+      "dlls": [
+        {
+          "file": "maschine-Redeploy.Core.dll",
+          "version": "1.0.8.0",
+          "sha256": "ecc86f4ceaf82661f1cb2e832149369d4c03d462704a9d935ed8dd907daeb251"
+        },
+        {
+          "file": "maschine-ArenaMode.BigBrainCompat.dll",
+          "version": "0.1.3.0",
+          "sha256": "4092fbda366ca05044dd846f66ab89bd0bc4c79cdcd425ebbf7953ab340e328a"
+        },
+        {
+          "file": "maschine-ArenaMode.Client.dll",
+          "version": "0.1.3.0",
+          "sha256": "c7f8005e7371b5e9e7a6433cddb2815ad35362808f04068e304cf81910ae24e9"
+        },
+        {
+          "file": "maschine-ArenaMode.Server.dll",
+          "version": "0.1.3.0",
+          "sha256": "27d169e2a2eeaa8644ff22b5690f5fd487fa211fc97253439efca43b0bcc3cc2"
+        }
+      ]
+    },
+    {
+      "mod": "AutoCorpseSearch",
+      "release": "v2.2.0",
+      "tagCommit": "c3c49046b871ea872436d8dc9885dd4de11d1f93",
+      "releaseUrl": "https://github.com/maschine34675/AutoCorpseSearch/releases/tag/v2.2.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-AutoCorpseSearch.dll",
+          "version": "2.2.0",
+          "sha256": "fa806fa7bc6993d032d762835cbcf447c75e0b9559b2d57dca2dbd6baaa61f35"
+        }
+      ]
+    },
+    {
+      "mod": "AutoIFF",
+      "release": "v2.1.1",
+      "tagCommit": "65beb8644020f5512ab9f3fa55f6eb5eda2b9613",
+      "releaseUrl": "https://github.com/maschine34675/AutoIFF/releases/tag/v2.1.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-AutoIFF.dll",
+          "version": "2.1.1",
+          "sha256": "f69b0e9e046c69762b7c295a967c135f2d4420f7b7f9067c498bd0c4a270b781"
+        }
+      ]
+    },
+    {
+      "mod": "CombatLog",
+      "release": "v1.0.0",
+      "tagCommit": "25032cf3047c5ab5feb1c1e7002a4c6bacbbff02",
+      "releaseUrl": "https://github.com/maschine34675/CombatLog/releases/tag/v1.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-CombatLog.dll",
+          "version": "1.0.0",
+          "productVersion": "1.0.0",
+          "sha256": "20383fe71ddbf4d7b3f8c8881030016e35f13af36dbd77a45af1eafcce24bc8a"
+        }
+      ]
+    },
+    {
+      "mod": "CraftQueue",
+      "release": "v2.4.2",
+      "tagCommit": "ce2a90fd63cd56cfa0bce55cabc11981cdf28d34",
+      "releaseUrl": "https://github.com/maschine34675/CraftQueue/releases/tag/v2.4.2",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-CraftQueue.Client.dll",
+          "version": "2.4.2.0",
+          "sha256": "8e2618cdff30a240071580129dfcd1fd25b1ee0be3b562a2d0d8e4713e81601c"
+        },
+        {
+          "file": "maschine-CraftQueue.Server.dll",
+          "version": "2.4.2.0",
+          "sha256": "f57e7004dc389c59588bd6e64c436a29ca754adc0a1cecd47675b38f6b42bfe3"
+        }
+      ]
+    },
+    {
+      "mod": "DefaultAutoFireMode",
+      "release": "v2.0.0",
+      "tagCommit": "49f46e58f9b35caae2e33f21c54d9268838b4cbf",
+      "releaseUrl": "https://github.com/maschine34675/DefaultAutoFireMode/releases/tag/v2.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-DefaultAutoFireMode.dll",
+          "version": "2.0.0",
+          "sha256": "b8987625a1fb468e34a1c33ed13d380aadad76f4fdc55fcbf5decda0af736fbc"
+        }
+      ]
+    },
+    {
+      "mod": "DualSideDoorBreach",
+      "release": "v2.0.2",
+      "tagCommit": "08e7a0e206dfeb59c78b3440a265bde381f0cd5b",
+      "releaseUrl": "https://github.com/maschine34675/DualSideDoorBreach/releases/tag/v2.0.2",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-DualSideDoorBreach.dll",
+          "version": "2.0.2",
+          "sha256": "918220f58874ba2d1ec6b467269641b03b251d580b2648d4a1ca17ecb35d4679"
+        }
+      ]
+    },
+    {
+      "mod": "EasyMounting",
+      "release": "v2.0.1",
+      "tagCommit": "661891886b813c42a7cdfcfdfb73b80d26594c02",
+      "releaseUrl": "https://github.com/maschine34675/EasyMounting/releases/tag/v2.0.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-EasyMounting.Client.dll",
+          "version": "2.0.1",
+          "sha256": "b7d78223564b30dd38651ca29b436c3c1e55e5ef4d7e6c0ba5a4d49067b7b147"
+        },
+        {
+          "file": "maschine-EasyMounting.dll",
+          "version": "2.0.1.0",
+          "sha256": "a5d990607efbd6bc3264d1ecc3afb72c72e9cbd062e91f0f2f26ce981683e49d"
+        }
+      ]
+    },
+    {
+      "mod": "Killcam",
+      "release": "v1.0.1",
+      "tagCommit": "17e19cbde878c3156225a715abf44e4a64af6215",
+      "releaseUrl": "https://github.com/maschine34675/Killcam/releases/tag/v1.0.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-Killcam.dll",
+          "version": "1.0.1.0",
+          "productVersion": "1.0.1+17e19cbde878c3156225a715abf44e4a64af6215",
+          "sha256": "1bcc745e01c208162b3684e15feeaff330a29495dc528f0e0d8ffe22e38198da"
+        }
+      ]
+    },
+    {
+      "mod": "LinkedSearchInStash",
+      "release": "v.2.0.1",
+      "tagCommit": "62969363ac83592c6c6b32048ba00095c1b49ac1",
+      "releaseUrl": "https://github.com/maschine34675/LinkedSearchInStash/releases/tag/v.2.0.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-LinkedSearchInStash.dll",
+          "version": "2.0.1.0",
+          "sha256": "a8d10a8bc3574ea1228779cdf5ac2bc9bcca9c54dfdaa6d90a25a032360eab5d"
+        }
+      ]
+    },
+    {
+      "mod": "LowAmmoCue",
+      "release": "v1.0.0",
+      "tagCommit": "782b2b0d74bad732aa1f04e84574e7fa32f3d560",
+      "releaseUrl": "https://github.com/maschine34675/LowAmmoCue/releases/tag/v1.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-LowAmmoCue.dll",
+          "version": "1.0.0",
+          "productVersion": "1.0.0+7c7c7646110d5faa954e67e46c5a8211a5de8b04",
+          "sha256": "5236e2abdd48c550c5ea34d7efe4fad77f071bc4ad6502f9186a1f9592daca82"
+        }
+      ]
+    },
+    {
+      "mod": "ModProfiler",
+      "release": "v1.4.0",
+      "tagCommit": "cb94c317b8e69f12ae47c4046f138d134c240c3b",
+      "releaseUrl": "https://github.com/maschine34675/ModProfiler/releases/tag/v1.4.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-ModProfiler.dll",
+          "version": "1.4.0",
+          "productVersion": "1.4.0+1abc1261d0f1f1b5ec45c8829d184c4496c03b82",
+          "sha256": "443566ca0e4ab7d8d10fffc4cd57688c667688aac58998678675fc5efb3ce456"
+        }
+      ]
+    },
+    {
+      "mod": "MoreQuickSlots",
+      "release": "v2.0.0",
+      "tagCommit": "252f778a99beea146cf900a788da28050f21875e",
+      "releaseUrl": "https://github.com/maschine34675/MoreQuickSlots/releases/tag/v2.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-MoreQuickSlots.dll",
+          "version": "2.0.0",
+          "sha256": "a2f7800c97f7ac214ce54a7b12d375f505b81fbe24ee970ec349fed10b414833"
+        }
+      ]
+    },
+    {
+      "mod": "NotificationFilter",
+      "release": "v2.0.0",
+      "tagCommit": "df486cb5c7c0b8efcb8ae81e603a2a1b9589743c",
+      "releaseUrl": "https://github.com/maschine34675/NotificationFilter/releases/tag/v2.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-NotificationFilter.dll",
+          "version": "2.0.0.0",
+          "sha256": "ee7688453b8395c059c4b87b1c86f796d2613d19823d5fca992a582d0883f2f3"
+        }
+      ]
+    },
+    {
+      "mod": "QuestMarkers",
+      "release": "v1.4.0",
+      "tagCommit": "4d3810e7255f2c9b9b546a86969a406ff266f8b6",
+      "releaseUrl": "https://github.com/maschine34675/QuestMarkers/releases/tag/v1.4.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-QuestMarkers.dll",
+          "version": "1.4.0",
+          "productVersion": "1.4.0+550a3b08507b37503e406d45fa1f344a01c05b75",
+          "sha256": "5f308be6a829c43498927d7b818248d244ace4beb653d693f2477e055b52fef2"
+        }
+      ]
+    },
+    {
+      "mod": "RaidMenuCleanupFix",
+      "release": "v2.0.0",
+      "tagCommit": "62a5643aa84c82f6076efab9e4a8b9f07d02df73",
+      "releaseUrl": "https://github.com/maschine34675/RaidMenuCleanupFix/releases/tag/v2.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-RaidMenuCleanupFix.dll",
+          "version": "2.0.0.0",
+          "sha256": "7b0b11ec8a9cbe6dbacbebc6e4a167fe14ecbe79d8f14ec1fe87dc1b1a6b3c1a"
+        }
+      ]
+    },
+    {
+      "mod": "RaidReviewOverlay",
+      "release": "v1.0.2",
+      "tagCommit": "af4c5418159ca34ba9d22f6467fc904a5c1115fc",
+      "releaseUrl": "https://github.com/maschine34675/RaidReviewOverlay/releases/tag/v1.0.2",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-RaidReviewOverlay.dll",
+          "version": "1.0.2",
+          "productVersion": "1.0.2+af4c5418159ca34ba9d22f6467fc904a5c1115fc",
+          "sha256": "c4b829bf3d6c894fa1a46237220625a7009e67fce203567d3904bd31fd18b909"
+        }
+      ]
+    },
+    {
+      "mod": "ReceiveAllChats",
+      "release": "v2.0.1",
+      "tagCommit": "f2334f46337b2f851afe3191a49a559c39f4d388",
+      "releaseUrl": "https://github.com/maschine34675/ReceiveAllChats/releases/tag/v2.0.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-ReceiveAllChats.dll",
+          "version": "2.0.1.0",
+          "sha256": "27142714a838f3072daca7693a9f23a5f43f535acb16162e9874c933540d35c6"
+        },
+        {
+          "file": "maschine-ReceiveAllChats.Server.dll",
+          "version": "2.0.1.0",
+          "sha256": "cc00395867aeab738e3fe8cf8af8abd7b57fb3f74b4eac77e93b1ed280f2404a"
+        }
+      ]
+    },
+    {
+      "mod": "Redeploy",
+      "release": "v1.0.0",
+      "tagCommit": "d1d7240a5959cb193efe5da4c31bf44d99f8fe2e",
+      "releaseUrl": "https://github.com/maschine34675/Redeploy/releases/tag/v1.0.0",
+      "evidence": "published source, release DLL metadata, Arena legacy-adapter type inspection",
+      "dlls": [
+        {
+          "file": "maschine-Redeploy.Client.dll",
+          "version": "1.0.0.0",
+          "sha256": "2e26d72d3d7692c04cf76d98bca16278788efe317f7c4db84a6079d83c4fa3b8"
+        },
+        {
+          "file": "maschine-Redeploy.Core.dll",
+          "version": "1.0.8.0",
+          "sha256": "ecc86f4ceaf82661f1cb2e832149369d4c03d462704a9d935ed8dd907daeb251"
+        },
+        {
+          "file": "maschine-Redeploy.Server.dll",
+          "version": "1.0.0.0",
+          "sha256": "b3ac4906130284b097107f1c058e820876257de65ddaa0e15d649320e9dbae70"
+        }
+      ]
+    },
+    {
+      "mod": "ScopeRangefinder",
+      "release": "v3.5.0",
+      "tagCommit": "e1c8f6d371002f89992dd08707d5a4a81fb099ca",
+      "releaseUrl": "https://github.com/maschine34675/ScopeRangefinder/releases/tag/v3.5.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-ScopeRangefinder.dll",
+          "version": "3.5.0",
+          "productVersion": "3.5.0+4664755e30153b1283c134188bc315f5a600d928",
+          "sha256": "05f2f81edc80e748debe79db27fefd1358ffd6242fd8d08e4af0fff7f0ae258c"
+        }
+      ]
+    },
+    {
+      "mod": "StashFilter",
+      "release": "v1.0.0",
+      "tagCommit": "4dc50d69c3937406da80058204c733da15d14723",
+      "releaseUrl": "https://github.com/maschine34675/StashFilter/releases/tag/v1.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-StashFilter.dll",
+          "version": "1.0.0.0",
+          "sha256": "62789877f82081f204d70415b743a8f2f7958c993f4aa75f466d62057b01c399"
+        }
+      ]
+    },
+    {
+      "mod": "TraderSearch",
+      "release": "v2.1.0",
+      "tagCommit": "d9f6e7e85c6fbae46472f400f5a17813240b5e3c",
+      "releaseUrl": "https://github.com/maschine34675/TraderSearch/releases/tag/v2.1.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-TraderSearch.dll",
+          "version": "2.1.0.0",
+          "sha256": "8a039e665b53ab54037f0ca66a28a99b7713d586b54b0bbaeca2e5a9e3ba3e30"
+        }
+      ]
+    },
+    {
+      "mod": "UnloadAllMagazines",
+      "release": "v2.2.1",
+      "tagCommit": "050c7247c136df3f10344cbf0b14a6c5d2ab8dd6",
+      "releaseUrl": "https://github.com/maschine34675/UnloadAllMagazines/releases/tag/v2.2.1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-UnloadAllMagazines.dll",
+          "version": "2.2.1",
+          "sha256": "9d3c571b332621a6673ad41f3d09cbf6c21bb0edf5f3dd50323b3cf4a573d2d0"
+        }
+      ]
+    },
+    {
+      "mod": "WeaponBuilderSearch",
+      "release": "v2.0.0",
+      "tagCommit": "103db3c63b6e924098e0d9a12a8346b12f1b8c67",
+      "releaseUrl": "https://github.com/maschine34675/WeaponBuilderSearch/releases/tag/v2.0.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-WeaponBuilderSearch.dll",
+          "version": "2.0.0.0",
+          "sha256": "2f331cd4f37d4a3fdfa91df0a397a5cc6518ce817a0cfc4661b21798bc70c609"
+        }
+      ]
+    },
+    {
+      "mod": "WebOverlay",
+      "release": "v1.11.0",
+      "tagCommit": "5f3539b540be0c30391503850f417113b5f733f1",
+      "releaseUrl": "https://github.com/maschine34675/WebOverlay/releases/tag/v1.11.0",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "Anvil-WebOverlay.dll",
+          "version": "1.11.0",
+          "productVersion": "1.11.0",
+          "sha256": "6b4e8c7f19f8a92e284f6e9537a005b6ec13ce5c69556c7f7dcb7a52049b8327"
+        },
+        {
+          "file": "WebView2Loader.dll",
+          "version": "1.0.3485.44",
+          "productVersion": "1.0.3485.44",
+          "sha256": "4cd3ffd5f52122432b6537b360c2317f96650928c927bb3caa59d5807da573a9"
+        },
+        {
+          "file": "Anvil-WebOverlay.dll",
+          "version": "1.11.0",
+          "productVersion": "1.11.0",
+          "sha256": "6b4e8c7f19f8a92e284f6e9537a005b6ec13ce5c69556c7f7dcb7a52049b8327"
+        },
+        {
+          "file": "WebView2Loader.dll",
+          "version": "1.0.3485.44",
+          "productVersion": "1.0.3485.44",
+          "sha256": "4cd3ffd5f52122432b6537b360c2317f96650928c927bb3caa59d5807da573a9"
+        }
+      ]
+    }
+  ],
+  "betaPackages": [
+    {
+      "mod": "BangAndClear",
+      "zip": "BangAndClear-0.9.2-9882bbc.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/maschine34675/spt-beta-hub/main/downloads/BangAndClear-0.9.2-9882bbc.zip",
+      "zipSha256": "3294a4f258a9c61f687fcb1408111752df5771716bd96b06366a4c8ef45eb66f",
+      "evidence": "SPT 4.0; not admitted to SPT 4.1 compatibility assessment",
+      "dlls": [
+        {
+          "file": "maschine-BangAndClear.dll",
+          "version": "0.9.2.0",
+          "sha256": "24e8e22fadcbee25e85e83cf414acb2d410973d484ea18737a0ab26c3fda7380"
+        }
+      ]
+    },
+    {
+      "mod": "BtrTurretControl",
+      "zip": "BtrTurretControl-1.0.0-37e08ef.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/maschine34675/spt-beta-hub/main/downloads/BtrTurretControl-1.0.0-37e08ef.zip",
+      "zipSha256": "9787acb43a6f0e3c08c9b092dbf654667386cf9613e728dd07924432a8f16ac6",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-BtrTurretControl.dll",
+          "version": "1.0.0.0",
+          "sha256": "de0343734384c15e36e71f3b2b33e53405ad7a948224f0d456a817d1898080d6"
+        }
+      ]
+    },
+    {
+      "mod": "ClusterGrenade",
+      "zip": "ClusterGrenade-2.6.0-c0f3830.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/maschine34675/spt-beta-hub/main/downloads/ClusterGrenade-2.6.0-c0f3830.zip",
+      "zipSha256": "8a35fecac5b18014dccb8b88ac7fe837e66e9bc9822ad0736892c2a523b11fd7",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-ClusterGrenade.Client.dll",
+          "version": "2.6.0.0",
+          "sha256": "c87aed48790029bb4d66355bd36f10839ba9a6c797dd53a8dc2601cf820ca70a"
+        },
+        {
+          "file": "maschine-ClusterGrenade.Server.dll",
+          "version": "2.6.0.0",
+          "sha256": "2d9295788be8caf965729ee7a34526f70bd860bdefef32cfb34a056a0e5c76fa"
+        }
+      ]
+    },
+    {
+      "mod": "SurroundAudio",
+      "zip": "SurroundAudio-1.0.0-f693bc7.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/maschine34675/spt-beta-hub/main/downloads/SurroundAudio-1.0.0-f693bc7.zip",
+      "zipSha256": "31ef35ed18801ce80bd88bccc7185474028c899d1dec297b94e4ad1d7b7d9cb1",
+      "evidence": "release DLL decompilation",
+      "dlls": [
+        {
+          "file": "maschine-SurroundAudio.dll",
+          "version": "1.0.0.0",
+          "sha256": "d0aac22d61e828ae7df7de26aa566f31029501df619903d2c0cad472e740d02b"
+        }
+      ]
+    }
+  ]
+}
