@@ -4,8 +4,8 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-See the [changelog](docs/CHANGELOG.md) for changes since 1.0.0, including
-unreleased development changes and the separate Core version line.
+See the [changelog](docs/CHANGELOG.md) for changes since 1.0.0 and the separate
+Core version line.
 
 ## Features
 
@@ -23,7 +23,7 @@ unreleased development changes and the separate Core version line.
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** This development tree has Client/Server `1.0.0` and Core `1.0.9`; the published `v1.0.0` package contains Core `1.0.8`. Core has its own version and is a library, not a separate BepInEx plugin.
+- **Version lines:** This release contains Client/Server `1.0.1` and Core `1.0.10`. Core has its own version and is a library, not a separate BepInEx plugin.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -37,6 +37,8 @@ unreleased development changes and the separate Core version line.
 The three body-replacement integrations above are shared with ArenaMode from Core 1.0.9. Their migration is covered by offline lifecycle checks and bounded native tests with standalone Redeploy and ArenaMode on 2026-10-23; pending-operation races and PitFireTeam were not established by those native runs. Newer mod versions require matching APIs and log an unverified-version warning. An invalid contract refuses respawn before teardown, with a notice at raid start; ordinary spawning and mod settings remain unchanged. See [shared compatibility and test boundaries](docs/BODY-REPLACEMENT-COMPAT-20261023.md).
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
+
+**ArenaMode 0.1.3 compatibility:** that release still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. This combination requires an Arena build that delegates these adapters to Core; the migration is currently on Arena's main branch. Standalone Redeploy does not require ArenaMode.
 
 ## Installation
 
@@ -52,7 +54,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Replace the Client and Server together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Both clients require Core **1.0.9 or newer** for this build. A missing, unreadable or older Core disables the affected client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Close the game and server before replacing files, then restart both. Replace the Client and Server together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.0.1 requires Core **1.0.10 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 
@@ -162,7 +164,7 @@ Some contract checks inspect previously built DLLs and installed consumers; miss
 
 ## Support
 
-Report problems at <https://github.com/maschine34675/Redeploy-dev/issues> if you have access to the current private development repository; otherwise use the channel where the build was provided.
+Report problems at <https://github.com/maschine34675/Redeploy/issues> or through the channel where the build was provided.
 
 Please include the exact Redeploy and SPT versions, what you expected and what happened instead, short reproduction steps, and for the affected raid both `BepInEx/LogOutput.log` and the server console output. For a respawn in an odd place, the lines starting with `Respawn position` in `LogOutput.log` name the map, the corpse and the chosen position, and why nearby spots were rejected. Also list the other mods you have installed, especially any that affect the camera, the player character or the end-of-raid screen.
 
