@@ -7,7 +7,20 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.1 contains Client/Server 1.0.1 and Core 1.0.10; release 1.0.0
 contains Core 1.0.8.
 
-## Unreleased — Core 1.0.12
+## Unreleased — Core 1.0.13
+
+- Accurate Circular Radar 1.3.4+: preserve its HUD and tracker subscriptions
+  through body/camera replacement, update player/camera references and protect
+  the owned world from its missing-HUD destruction fallback.
+- Simple Crosshair 1.4.0+: preserve the current overlay, detach exact old-body
+  callbacks and prevent a retired body's unregister from destroying the new HUD.
+- Shared optional integrations for standalone Redeploy and ArenaMode; foreign
+  settings and ordinary unowned raids remain unchanged. Client/Server version
+  numbers and public API version 1 are unchanged.
+
+See [implementation and verification](HUD-COMPAT-20261025.md).
+
+### Earlier development changes — Core 1.0.12
 
 - Magazine Check Interrupt 1.1.1+: retire the old body's floating magazine panel
   before the replacement uses its new camera. Fence delayed display callbacks

@@ -53,6 +53,8 @@
     <Compile Include="..\Redeploy.Core\Compat\FovFixScope.cs" Link="Compat\FovFixScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\ManimalAmmoScope.cs" Link="Compat\ManimalAmmoScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\MagazineCheckScope.cs" Link="Compat\MagazineCheckScope.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\SimpleCrosshair\SimpleCrosshairScope.cs" Link="Compat\SimpleCrosshairScope.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\Radar\RadarScope.cs" Link="Compat\RadarScope.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
   </ItemGroup>
 

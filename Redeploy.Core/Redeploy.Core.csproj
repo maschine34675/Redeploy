@@ -29,6 +29,7 @@
     <Reference Include="Sirenix.Serialization" />
     <Reference Include="UnityEngine.AIModule" />
     <Reference Include="UnityEngine.TextRenderingModule" />
+    <Reference Include="UnityEngine.UIModule" />
     <Reference Include="UnityEngine" />
     <Reference Include="UnityEngine.CoreModule" />
     <Reference Include="UnityEngine.IMGUIModule" />

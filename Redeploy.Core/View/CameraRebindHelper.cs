@@ -2,6 +2,7 @@ using Comfort.Common;
 using EFT;
 using EFT.CameraControl;
 using HarmonyLib;
+using Redeploy.Core.Compat;
 using System;
 using System.Reflection;
 using UnityEngine;
@@ -41,8 +42,13 @@ public static class CameraRebindHelper
             if (existing.Player == newPlayer)
             {
                 EnsureCameraActive(newPlayer);
+                RadarCompat.AfterCameraChange(newPlayer);
                 return;
             }
+
+            // Keep the exact owned radar HUD and its tracker subscriptions alive before
+            // the old camera or compass presentation can be destroyed.
+            RadarCompat.BeforeCameraChange(newPlayer);
 
             // DestroyImmediate so OnDestroy's teardown (singleton release, VisorSwitcher.Deinit,
             // audio listener reset, EffectsController unbind) hits the OLD registration now.
@@ -59,6 +65,10 @@ public static class CameraRebindHelper
         // the culling registry would keep referencing forever.
         var replacedCamera = CameraManager.Instance != null ? CameraManager.Instance.Camera : null;
 
+        // Also covers recovery without an existing PlayerCameraController. The adapter
+        // is idempotent and inert for worlds/bodies Core never adopted.
+        RadarCompat.BeforeCameraChange(newPlayer);
+
         PlayerCameraController.Create(newPlayer);
 
         if (!ReferenceEquals(CameraManager.Instance?.Camera, replacedCamera))
@@ -67,6 +77,7 @@ public static class CameraRebindHelper
         RepairSharedCameraState();
         SyncVisionEffects();
         EnsureCameraActive(newPlayer);
+        RadarCompat.AfterCameraChange(newPlayer);
 
         if (Singleton<BetterAudio>.Instantiated)
             Singleton<BetterAudio>.Instance.SetProtagonist(newPlayer);

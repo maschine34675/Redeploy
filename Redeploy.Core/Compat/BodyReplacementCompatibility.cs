@@ -71,9 +71,11 @@ public static class BodyReplacementCompatibility
         var fov = FovFixCompat.GetRejectionReason();
         var manimal = ManimalAmmoCompat.GetRejectionReason();
         var magazineCheck = MagazineCheckCompat.GetRejectionReason();
+        var crosshair = SimpleCrosshairCompat.GetRejectionReason();
+        var radar = RadarCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -114,7 +116,9 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(ContinuousHealingContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(FovFixContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ManimalAmmoContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(MagazineCheckContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(MagazineCheckContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(SimpleCrosshairContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(RadarContract.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody)
     {
@@ -129,12 +133,15 @@ public static class BodyReplacementCompatibility
         FovFixCompat.Prepare(game, oldBody);
         ManimalAmmoCompat.Prepare(game, oldBody);
         MagazineCheckCompat.Prepare(game, oldBody);
+        SimpleCrosshairCompat.Prepare(game, oldBody);
+        RadarCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
         RecoilLegacyCompat.CompletePreparation();
         FovFixCompat.CompletePreparation();
         MagazineCheckCompat.CompletePreparation();
+        SimpleCrosshairCompat.CompletePreparation();
     }
 
     internal static void ValidateCreated(LocalPlayer body)
@@ -161,6 +168,8 @@ public static class BodyReplacementCompatibility
         FovFixCompat.AbortPreparation();
         ManimalAmmoCompat.AbortPreparation();
         MagazineCheckCompat.AbortPreparation();
+        SimpleCrosshairCompat.AbortPreparation();
+        RadarCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -176,6 +185,8 @@ public static class BodyReplacementCompatibility
             FovFixCompat.Tick();
             ManimalAmmoCompat.Tick();
             MagazineCheckCompat.Tick();
+            SimpleCrosshairCompat.Tick();
+            RadarCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -204,6 +215,8 @@ public static class BodyReplacementCompatibility
         FovFixCompat.RetireWorld(world);
         ManimalAmmoCompat.RetireWorld(world);
         MagazineCheckCompat.RetireWorld(world);
+        SimpleCrosshairCompat.RetireWorld(world);
+        RadarCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();

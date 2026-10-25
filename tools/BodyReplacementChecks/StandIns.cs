@@ -154,8 +154,8 @@ namespace Redeploy.Core.Compat
     }
     internal static class Probes
     {
-        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck];
+        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar];
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -165,6 +165,25 @@ namespace Redeploy.Core.Compat
     internal static class FovFixContract { internal const string PluginGuid = "fixture.fov"; }
     internal static class ManimalAmmoContract { internal const string PluginGuid = "fixture.manimal"; }
     internal static class MagazineCheckContract { internal const string PluginGuid = "fixture.magazineCheck"; }
+    internal static class SimpleCrosshairContract { internal const string PluginGuid = "fixture.crosshair"; }
+    internal static class RadarContract { internal const string PluginGuid = "fixture.radar"; }
+    internal static class SimpleCrosshairCompat
+    {
+        internal static string GetRejectionReason() => Probes.Crosshair.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Crosshair.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Crosshair.Abort();
+        internal static void CompletePreparation() => Probes.Crosshair.Complete();
+        internal static void Tick() => Probes.Crosshair.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Crosshair.Retired.Add(world);
+    }
+    internal static class RadarCompat
+    {
+        internal static string GetRejectionReason() => Probes.Radar.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Radar.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Radar.Abort();
+        internal static void Tick() => Probes.Radar.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Radar.Retired.Add(world);
+    }
     internal static class MagazineCheckCompat
     {
         internal static string GetRejectionReason() => Probes.MagazineCheck.GetRejectionReason();
