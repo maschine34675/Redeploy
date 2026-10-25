@@ -7,6 +7,18 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.1 contains Client/Server 1.0.1 and Core 1.0.10; release 1.0.0
 contains Core 1.0.8.
 
+## Unreleased — Core 1.0.11
+
+- Fontaine FOV Fix 4.1.0+: refresh camera/weapon ownership after replacement and
+  fence callbacks from the retired body.
+- Manimal Ammo Loading Animations 2.0.0+: retire per-body loading sessions and
+  prevent delayed animation work from returning to an old character.
+- Both integrations live in the shared Core for ArenaMode and standalone
+  Redeploy. The foreign mods remain optional; the public API remains version 1.
+  Client/Server release versions are unchanged.
+
+See [implementation and verification](FOV-MANIMAL-COMPAT-20261025.md).
+
 ## [1.0.1] - 2026-10-24
 
 ### Shared body-replacement compatibility — Core 1.0.10

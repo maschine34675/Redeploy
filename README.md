@@ -36,6 +36,12 @@ Core version line.
 
 The three body-replacement integrations above are shared with ArenaMode from Core 1.0.9. Their migration is covered by offline lifecycle checks and bounded native tests with standalone Redeploy and ArenaMode on 2026-10-23; pending-operation races and PitFireTeam were not established by those native runs. Newer mod versions require matching APIs and log an unverified-version warning. An invalid contract refuses respawn before teardown, with a notice at raid start; ordinary spawning and mod settings remain unchanged. See [shared compatibility and test boundaries](docs/BODY-REPLACEMENT-COMPAT-20261023.md).
 
+**Development Core 1.0.11:** adds optional body-replacement support for Fontaine
+FOV Fix 4.1.0+ and Manimal Ammo Loading Animations 2.0.0+. The fixes are shared
+with ArenaMode; no Arena plugin is needed by standalone Redeploy. See
+[implementation and verification boundaries](docs/FOV-MANIMAL-COMPAT-20261025.md).
+These additions are not part of the published Redeploy 1.0.1 package described above.
+
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
 **ArenaMode 0.1.3 compatibility:** that release still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. This combination requires an Arena build that delegates these adapters to Core; the migration is currently on Arena's main branch. Standalone Redeploy does not require ArenaMode.
