@@ -307,7 +307,7 @@ internal static class MagazineCheckCompat
         {
             foreach (var retired in Scope.RetireWorld(world))
             {
-                try { Cleanup(retired); }
+                try { Cleanup(retired, worldEnding: true); }
                 catch (Exception ex)
                 {
                     // Refusing an ambiguously reparented old panel must not stop
@@ -318,7 +318,7 @@ internal static class MagazineCheckCompat
         }
         finally { ClearRetiredCompletions(); }
     }
-    private static void Cleanup(MagazineCheckScope.Panel entry)
+    private static void Cleanup(MagazineCheckScope.Panel entry, bool worldEnding = false)
     {
         if (entry?.Owned != true || !entry.Retired || _contract == null) return;
         var panel = entry.Instance as MonoBehaviour;
@@ -330,7 +330,17 @@ internal static class MagazineCheckCompat
             if (ReferenceEquals(_contract.Instance.GetValue(null), panel)) _contract.Instance.SetValue(null, null);
             return;
         }
-        if (!ParentMatches(panel, entry.Body as Player))
+        var owner = entry.Body as Player;
+        if (worldEnding && !ReferenceEquals(owner, null) && owner == null)
+        {
+            // Native GameEnd returns pooled players before Core's end callback.
+            // The Player component may already be destroyed while this child UI
+            // still exists. Keep the same non-destructive behavior as a refused
+            // cleanup, but this known teardown order is only a developer detail.
+            CoreLog.LogDebug("Magazine Check Interrupt: panel owner already disposed during world teardown; leaving UI to native cleanup.");
+            return;
+        }
+        if (!ParentMatches(panel, owner))
             throw new InvalidOperationException("Refusing to destroy a magazine check panel with a changed parent");
         if (ReferenceEquals(_contract.Instance.GetValue(null), panel)) _contract.Instance.SetValue(null, null);
         panel.gameObject.SetActive(false);
