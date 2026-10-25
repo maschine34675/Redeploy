@@ -42,6 +42,12 @@ with ArenaMode; no Arena plugin is needed by standalone Redeploy. See
 [implementation and verification boundaries](docs/FOV-MANIMAL-COMPAT-20261025.md).
 These additions are not part of the published Redeploy 1.0.1 package described above.
 
+**Development Core 1.0.12:** additionally retires Magazine Check Interrupt 1.1.1+'s
+floating magazine panel when its owning body/camera is replaced. Late hide
+callbacks cannot hide the successor's display. This is an optional shared Core
+integration; ordinary bodies are not adopted. See
+[implementation and test boundaries](docs/MAGCHECK-COMPAT-20261025.md).
+
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
 **ArenaMode 0.1.3 compatibility:** that release still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. This combination requires an Arena build that delegates these adapters to Core; the migration is currently on Arena's main branch. Standalone Redeploy does not require ArenaMode.

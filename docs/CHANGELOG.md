@@ -7,7 +7,18 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.1 contains Client/Server 1.0.1 and Core 1.0.10; release 1.0.0
 contains Core 1.0.8.
 
-## Unreleased — Core 1.0.11
+## Unreleased — Core 1.0.12
+
+- Magazine Check Interrupt 1.1.1+: retire the old body's floating magazine panel
+  before the replacement uses its new camera. Fence delayed display callbacks
+  by physical owner and display generation; complete owned callbacks on the
+  game thread. No changes to the mod's settings or ordinary raid bodies.
+- Shared by ArenaMode and standalone Redeploy. Client/Server versions and
+  public API version 1 remain unchanged.
+
+See [implementation and verification](MAGCHECK-COMPAT-20261025.md).
+
+### Earlier development changes — Core 1.0.11
 
 - Fontaine FOV Fix 4.1.0+: refresh camera/weapon ownership after replacement and
   fence callbacks from the retired body.
