@@ -105,6 +105,11 @@ code and offline composition checks cover both callers, while this native result
 is specifically Arena. Compass presentation, PFT and long-session performance
 remain outside the bounded test. Radar colors still express factions/roles.
 
-Detailed screenshots, object-identity queries and logs are in the Arena task's
-ignored `artifacts/compat-hud/host/` directory; the tracked Arena companion report
+Detailed screenshots, object-identity queries and logs are in ArenaMode's
+ignored `artifacts/archived-worktrees/compat-hud-20261025/artifacts/compat-hud/host/`
+directory; the tracked Arena companion report
 is `docs/HUD-MOD-COMPAT-20261025.md`.
+
+Core's own exact candidate builds, tests and peer reviews are retained under
+`artifacts/archived-worktrees/compat-hud-20261025/`. See
+[worktree cleanup](WORKTREE-CLEANUP-20261025.md) for the verified archives.
