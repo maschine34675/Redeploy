@@ -78,5 +78,33 @@ living kit swap: after the new player was active, there were zero HaloRadar and
 zero SimpleCrosshairComponent instances. A screenshot independently confirmed
 both overlays were absent. The unsafe Radar enable toggle was not exercised.
 
-Candidate native acceptance is recorded after the completed test run; this
-baseline alone is not evidence that Core 1.0.13 fixes the released packages.
+## Native candidate acceptance
+
+SPT-GPU-2 loaded **1.0.13+d49426a**, MVID
+`8293a5b4-edc9-43e1-baeb-df2ef805de6f`, SHA-256
+`E14797ECF44B72A93290921989CBD85AE9CFFB08F7AC2C40016791F21F9A2566`.
+The candidate matched its disk file; the ordinary installation intentionally
+retained 1.0.12 until the isolated test ended. Arena client was 0.2.1+0ab7c44.
+
+Two Factory Deathmatch raids verified the living kit replacement, two death
+respawns and a new world. Exactly one Radar and one dynamic Crosshair remained
+after each replacement, with references equal to the new physical player and
+native camera. Radar disabled across one death could be re-enabled successfully.
+The first raid's exit left zero HUD components; the second created fresh ones
+with correct references and initial contacts. Current Crosshair events each had
+one Crosshair handler, with native handlers preserved. No adapter/foreign HUD
+exception appeared in the reviewed client/server log window.
+
+Better BepInEx 1.0.0 was also present: closing its visible X after a death restored
+movement/fire, and closing it above Inventory preserved the underlying inventory
+lock until Tab closed Inventory. Core needs no adapter for that menu.
+
+No standalone Redeploy raid was performed in this matrix: an ordinary raid was
+not used as a substitute for a confirmed non-persistent practice mode. The shared
+code and offline composition checks cover both callers, while this native result
+is specifically Arena. Compass presentation, PFT and long-session performance
+remain outside the bounded test. Radar colors still express factions/roles.
+
+Detailed screenshots, object-identity queries and logs are in the Arena task's
+ignored `artifacts/compat-hud/host/` directory; the tracked Arena companion report
+is `docs/HUD-MOD-COMPAT-20261025.md`.
