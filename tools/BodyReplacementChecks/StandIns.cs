@@ -154,8 +154,8 @@ namespace Redeploy.Core.Compat
     }
     internal static class Probes
     {
-        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal];
+        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck];
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -164,6 +164,16 @@ namespace Redeploy.Core.Compat
     internal static class ContinuousHealingContract { internal const string PluginGuid = "fixture.healing"; }
     internal static class FovFixContract { internal const string PluginGuid = "fixture.fov"; }
     internal static class ManimalAmmoContract { internal const string PluginGuid = "fixture.manimal"; }
+    internal static class MagazineCheckContract { internal const string PluginGuid = "fixture.magazineCheck"; }
+    internal static class MagazineCheckCompat
+    {
+        internal static string GetRejectionReason() => Probes.MagazineCheck.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.MagazineCheck.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.MagazineCheck.Abort();
+        internal static void CompletePreparation() => Probes.MagazineCheck.Complete();
+        internal static void Tick() => Probes.MagazineCheck.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.MagazineCheck.Retired.Add(world);
+    }
     internal static class FovFixCompat
     {
         internal static string GetRejectionReason() => Probes.Fov.GetRejectionReason();

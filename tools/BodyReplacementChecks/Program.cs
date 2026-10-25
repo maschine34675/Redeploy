@@ -283,13 +283,13 @@ internal static class Program
 
     private static void PrepareOrder()
     {
-        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid })
+        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid, MagazineCheckContract.PluginGuid })
         {
             ResetFixture();
             Install(guid);
             var raid = NewRaid();
             var replacement = Replace(raid);
-            Check(string.Join(",", Probes.Trace.Take(12)) == "recoil.check,ammo.check,healing.check,fov.check,manimal.check,recoil.prepare,ammo.prepare,healing.prepare,fov.prepare,manimal.prepare,recoil.complete,fov.complete", "Admission/adoption/complete order changed");
+            Check(string.Join(",", Probes.Trace.Take(15)) == "recoil.check,ammo.check,healing.check,fov.check,manimal.check,magazineCheck.check,recoil.prepare,ammo.prepare,healing.prepare,fov.prepare,manimal.prepare,magazineCheck.prepare,recoil.complete,fov.complete,magazineCheck.complete", "Admission/adoption/complete order changed");
             Check(GameObject.Adds == 1 && raid.World.gameObject.GetComponent<BodyReplacementCompatPump>() != null, "Each optional family must get one world pump");
             Same(raid.World, raid.World.gameObject.GetComponent<BodyReplacementCompatPump>().World, "Pump must carry its exact world");
             Replace(raid, replacement);
@@ -307,12 +307,12 @@ internal static class Program
             fault.ThrowPrepare = true;
             Throws(() => BodyReplacementCompatibility.Prepare(raid.Game, raid.Body), fault.Name + " prepare fault");
             Check(BodyReplacementContext.IsCreating && BodyReplacementContext.OwnsBody(raid.Body), "Prepare fault must be cancellable while provisional context exists");
-            Check(GameObject.Adds == 0 && Probes.Recoil.Completions == 0 && Probes.Fov.Completions == 0, "Faulting preparation must not complete or create pump");
+            Check(GameObject.Adds == 0 && Probes.All.All(p => p.Completions == 0), "Faulting preparation must not complete or create pump");
             BodyReplacementCompatibility.CancelPreparation();
             Check(!BodyReplacementContext.OwnsBody(raid.Body), "Cancellation leaked first provisional body lease");
             Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null, "Cancellation left an active attempt");
             Same(null, BodyReplacementContext.CurrentWorld, "Cancellation leaked first provisional world");
-            Check(Probes.Recoil.Aborts == 1 && Probes.Ammo.Aborts == 1 && Probes.Fov.Aborts == 1 && Probes.Manimal.Aborts == 1, "Cancellation must abort every provisional adapter state");
+            Check(Probes.Recoil.Aborts == 1 && Probes.Ammo.Aborts == 1 && Probes.Fov.Aborts == 1 && Probes.Manimal.Aborts == 1 && Probes.MagazineCheck.Aborts == 1, "Cancellation must abort every provisional adapter state");
             BodyReplacementCompatibility.ValidateCreated(null);
         }
     }
@@ -438,6 +438,7 @@ internal static class Program
         Same(null, BodyReplacementContext.CurrentWorld, "Destroyed current world retained context");
         Same(null, BodyReplacementContext.CurrentGame, "Destroyed current world retained game");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], raid.World), "Disposal did not retire exact recoil world");
+        Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], raid.World), "Disposal did not retire exact magazine-check world");
         Check(Probes.All.All(p => p.Ticks == 2), "Disposal must flush controller cleanup immediately");
         Check(BodyReplacementContext.OwnsBody(replacement), "World retirement removed delayed-body fence");
         raid.World.gameObject.Invoke<BodyReplacementCompatPump>("Update");
@@ -457,6 +458,7 @@ internal static class Program
         Same(current.World, BodyReplacementContext.CurrentWorld, "Late old pump cleared new world's context");
         Check(BodyReplacementContext.IsCreating, "Late old pump ended new attempt");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], old.World), "Late disposal retired wrong recoil world");
+        Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], old.World), "Late disposal retired wrong magazine-check world");
         Check(Probes.All.All(p => p.Ticks == 0), "Late disposal flushed new controller state");
         var next = Candidate(current);
         current.World.MainPlayer = next;
@@ -477,6 +479,7 @@ internal static class Program
         RaidLifecycle.RaiseStarted(ordinary.World);
         Same(null, BodyReplacementContext.CurrentWorld, "Missed-end fallback retained previous world");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], old.World), "Missed-end fallback retired wrong world");
+        Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], old.World), "Missed-end fallback retired wrong magazine-check world");
         Check(Probes.All.All(p => p.Ticks == 1), "Missed-end fallback skipped adapter cleanup");
         Check(!BodyReplacementContext.OwnsBody(ordinary.Body), "Ordinary second raid inherited body ownership");
         Check(ordinary.World.gameObject.GetComponent<BodyReplacementCompatPump>() == null, "Ordinary second raid received pump");

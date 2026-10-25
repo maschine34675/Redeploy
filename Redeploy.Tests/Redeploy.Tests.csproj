@@ -52,6 +52,7 @@
     <Compile Include="..\Redeploy.Core\Compat\DoorDashFollowRule.cs" Link="Compat\DoorDashFollowRule.cs" />
     <Compile Include="..\Redeploy.Core\Compat\FovFixScope.cs" Link="Compat\FovFixScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\ManimalAmmoScope.cs" Link="Compat\ManimalAmmoScope.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\MagazineCheckScope.cs" Link="Compat\MagazineCheckScope.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
   </ItemGroup>
 
