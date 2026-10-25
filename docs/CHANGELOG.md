@@ -7,6 +7,17 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
 contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
+## Unreleased — Core 1.0.14
+
+- ImpactCue 2.0.3+: bind telemetry and weapon/health caches to the confirmed
+  replacement body without clearing the raid's combat history. Late callbacks
+  from a retired body cannot take the HUD back.
+- Enemy Markers 1.4.0+: preserve existing bot markers, bind their billboards to
+  the replacement camera, and exclude the local replacement from new markers.
+- Both integrations belong to Core and apply to standalone Redeploy and Arena.
+  Ordinary raids without a Core replacement retain the foreign mods' behavior.
+  The public RespawnApi version remains 1.
+
 ## [1.0.2]
 
 Client/Server version **1.0.2**, bundled and minimum Core version **1.0.13**.

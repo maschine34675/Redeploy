@@ -7,6 +7,9 @@
 - Local `origin` fetch/push URL: `https://github.com/maschine34675/Redeploy.git`.
 - Published release: Client/Server 1.0.2 and shared Core 1.0.13; see
   [final package verification](RELEASE-1.0.2.md#final-package-verification).
+- Current development uses Core 1.0.14 for ImpactCue and Enemy Markers body and
+  camera handover. Client/Server remain 1.0.2; no replacement release is implied.
+  See [implementation and native verification](ITEMS-HUD-COMPAT-20261025.md).
 - Compatibility worktrees have been consolidated; the retained archives and
   their verification are recorded in [worktree cleanup](WORKTREE-CLEANUP-20261025.md).
 

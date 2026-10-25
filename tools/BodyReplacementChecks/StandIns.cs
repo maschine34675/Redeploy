@@ -154,8 +154,8 @@ namespace Redeploy.Core.Compat
     }
     internal static class Probes
     {
-        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar];
+        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers];
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -166,6 +166,24 @@ namespace Redeploy.Core.Compat
     internal static class ManimalAmmoContract { internal const string PluginGuid = "fixture.manimal"; }
     internal static class MagazineCheckContract { internal const string PluginGuid = "fixture.magazineCheck"; }
     internal static class SimpleCrosshairContract { internal const string PluginGuid = "fixture.crosshair"; }
+    internal static class ImpactCueContract { internal const string PluginGuid = "fixture.ImpactCue"; }
+    internal static class ImpactCueCompat
+    {
+        internal static string GetRejectionReason() => Probes.ImpactCue.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.ImpactCue.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.ImpactCue.Abort();
+        internal static void Tick() => Probes.ImpactCue.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.ImpactCue.Retired.Add(world);
+    }
+    internal static class EnemyMarkersContract { internal const string PluginGuid = "fixture.EnemyMarkers"; }
+    internal static class EnemyMarkersCompat
+    {
+        internal static string GetRejectionReason() => Probes.EnemyMarkers.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.EnemyMarkers.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.EnemyMarkers.Abort();
+        internal static void Tick() => Probes.EnemyMarkers.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.EnemyMarkers.Retired.Add(world);
+    }
     internal static class RadarContract { internal const string PluginGuid = "fixture.radar"; }
     internal static class SimpleCrosshairCompat
     {

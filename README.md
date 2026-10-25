@@ -24,6 +24,7 @@ Core version line.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
 - **Version lines:** This release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
+  The current development source builds Core `1.0.14`; its rebuilt clients require that minimum. The published 1.0.2 package is unchanged.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -33,6 +34,8 @@ Core version line.
   - **Magazine Check Interrupt 1.1.1+** — retires the old body's floating magazine panel; delayed hide callbacks cannot hide its successor's display.
   - **Accurate Circular Radar 1.3.4+** — preserves the radar through camera replacement and rebinds it to the current player. Radar colors retain the mod's faction/role meaning, not team hostility.
   - **Simple Crosshair 1.4.0+** — preserves the overlay and binds its callbacks to the replacement body and camera.
+  - **ImpactCue 2.0.3+** (development Core 1.0.14) — rebinds health/weapon telemetry while retaining the raid's combat history.
+  - **Enemy Markers 1.4.0+** (development Core 1.0.14) — preserves bot markers, updates their camera and excludes the local replacement body.
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.

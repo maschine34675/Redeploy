@@ -55,6 +55,8 @@
     <Compile Include="..\Redeploy.Core\Compat\MagazineCheckScope.cs" Link="Compat\MagazineCheckScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\SimpleCrosshair\SimpleCrosshairScope.cs" Link="Compat\SimpleCrosshairScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\Radar\RadarScope.cs" Link="Compat\RadarScope.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\ImpactCue\ImpactCueScope.cs" Link="Compat\ImpactCueScope.cs" />
+    <Compile Include="..\Redeploy.Core\Compat\EnemyMarkers\EnemyMarkersScope.cs" Link="Compat\EnemyMarkersScope.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
   </ItemGroup>
 

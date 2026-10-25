@@ -6,8 +6,8 @@ This offline console harness compiles the actual `BodyReplacementContext.cs`,
 reimplement their ownership or lifecycle logic. Lightweight game, Unity,
 Chainloader, public lifecycle-event, and adapter stand-ins expose the external
 boundaries. Adapter-specific tests and native checks establish their individual
-behavior; this harness checks the coordinator, including the Radar/Crosshair
-admission, cancellation and exact-world retirement paths added in Core 1.0.13.
+behavior; this harness checks the coordinator, including Radar/Crosshair and
+ImpactCue/Enemy Markers admission, cancellation and exact-world retirement.
 
 Run from the repository root with PowerShell 7 and .NET 10:
 

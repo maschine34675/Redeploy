@@ -73,9 +73,11 @@ public static class BodyReplacementCompatibility
         var magazineCheck = MagazineCheckCompat.GetRejectionReason();
         var crosshair = SimpleCrosshairCompat.GetRejectionReason();
         var radar = RadarCompat.GetRejectionReason();
+        var impactCue = ImpactCueCompat.GetRejectionReason();
+        var enemyMarkers = EnemyMarkersCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -118,7 +120,9 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(ManimalAmmoContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(MagazineCheckContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(SimpleCrosshairContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(RadarContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(RadarContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(ImpactCueContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(EnemyMarkersContract.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody)
     {
@@ -135,6 +139,8 @@ public static class BodyReplacementCompatibility
         MagazineCheckCompat.Prepare(game, oldBody);
         SimpleCrosshairCompat.Prepare(game, oldBody);
         RadarCompat.Prepare(game, oldBody);
+        ImpactCueCompat.Prepare(game, oldBody);
+        EnemyMarkersCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
@@ -170,6 +176,8 @@ public static class BodyReplacementCompatibility
         MagazineCheckCompat.AbortPreparation();
         SimpleCrosshairCompat.AbortPreparation();
         RadarCompat.AbortPreparation();
+        ImpactCueCompat.AbortPreparation();
+        EnemyMarkersCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -187,6 +195,8 @@ public static class BodyReplacementCompatibility
             MagazineCheckCompat.Tick();
             SimpleCrosshairCompat.Tick();
             RadarCompat.Tick();
+            ImpactCueCompat.Tick();
+            EnemyMarkersCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -217,6 +227,8 @@ public static class BodyReplacementCompatibility
         MagazineCheckCompat.RetireWorld(world);
         SimpleCrosshairCompat.RetireWorld(world);
         RadarCompat.RetireWorld(world);
+        ImpactCueCompat.RetireWorld(world);
+        EnemyMarkersCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();
