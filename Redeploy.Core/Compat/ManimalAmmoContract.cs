@@ -22,7 +22,7 @@ internal sealed class ManimalAmmoContract
     internal sealed class Iterator
     {
         internal MethodInfo Factory, MoveNext;
-        internal FieldInfo Player;
+        internal FieldInfo Player, State;
     }
     internal Type SessionType, ControllerType;
     internal FieldInfo Sessions, LoadingCount, Animating, ActiveController, Loop, Magazine, Renderer;
@@ -116,7 +116,8 @@ internal sealed class ManimalAmmoContract
         if (type == null || type.Assembly != driver.Assembly || type.DeclaringType != driver || !typeof(IEnumerator).IsAssignableFrom(type))
             throw new MissingMemberException("Manimal iterator shape changed: " + name);
         return new Iterator { Factory = factory, MoveNext = Method(type, "MoveNext", false, typeof(bool)),
-            Player = Field(type, "player", false, typeof(Player)) };
+            Player = Field(type, "player", false, typeof(Player)),
+            State = Field(type, "<>1__state", false, typeof(int)) };
     }
     private static void Receipt(MethodInfo target, MethodInfo foreign, bool prefix)
     {

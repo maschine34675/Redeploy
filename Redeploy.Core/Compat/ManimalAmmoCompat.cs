@@ -24,6 +24,10 @@ internal static class ManimalAmmoCompat
     private static Version _version;
     private static bool _runtimeFault, _patchAttempted, _reportedNewer, _reportedRetirement;
     private static string _failure, _lastWarning;
+    // Bounded diagnostics for a missed iterator-factory detour. Useful on Mono,
+    // where tiny iterator factories can otherwise be inlined into their callers.
+    private static int _ownedIteratorFactoryStamps, _unknownOwnedIterators, _lastUnknownIteratorState;
+    private static string _lastUnknownIterator;
 
     internal static string GetRejectionReason()
     {
@@ -39,19 +43,24 @@ internal static class ManimalAmmoCompat
             ClearBinding();
             var contract = ManimalAmmoContract.Resolve(info.Instance.GetType(), info.Metadata?.GUID, info.Metadata?.Version, out var version);
             _patchAttempted = true;
-            Patch(contract.Register, postfix: nameof(AfterRegister));
+            // Patch tiny callees before any caller is rebuilt/JIT-compiled by
+            // Harmony. OnLoadingStarted -> StartNextFrame is the critical pair:
+            // patching the caller first can inline the still-unpatched factory,
+            // bypass AfterIterator while MoveNext correctly rejects the unstamped
+            // owned coroutine. Native GPU-1 reproduced that exact symptom.
+            foreach (var iterator in contract.Iterators) Patch(iterator.Factory, postfix: nameof(AfterIterator));
             Patch(contract.Get, nameof(BeforeBodyAction), nameof(AfterGet));
             Patch(contract.TryGet, nameof(BeforeBodyAction));
             Patch(contract.Ended, nameof(BeforeForeignEnded));
-            Patch(contract.TryStart, nameof(BeforeTryStart));
-            Patch(contract.SpawnController, nameof(BeforeSpawnController));
             foreach (var action in contract.BodyActions) Patch(action, nameof(BeforeBodyAction));
-            foreach (var iterator in contract.Iterators)
-            { Patch(iterator.Factory, postfix: nameof(AfterIterator)); Patch(iterator.MoveNext, nameof(BeforeMoveNext)); }
+            Patch(contract.SpawnController, nameof(BeforeSpawnController));
+            Patch(contract.TryStart, nameof(BeforeTryStart));
+            foreach (var iterator in contract.Iterators) Patch(iterator.MoveNext, nameof(BeforeMoveNext));
             Patch(contract.DetectPrefix, nameof(BeforeDetect));
             Patch(contract.DetectPostfix, nameof(BeforeForeignCompletion));
             Patch(contract.DelayPrefix, nameof(BeforeDelay));
             Patch(contract.NativeStart, postfix: nameof(AfterProcessStart));
+            Patch(contract.Register, postfix: nameof(AfterRegister));
             _contract = contract; _plugin = info.Instance; _version = version;
             VerifyOwnPatches(); _failure = null;
             CoreLog.LogDebug("Redeploy Manimal Ammo: physical-session retirement and delayed animation guards ready.");
@@ -244,7 +253,12 @@ internal static class ManimalAmmoCompat
     private static void AfterIterator(Player __0, IEnumerator __result)
     {
         if (_contract == null || __result == null) return;
-        try { Scope.Stamp(__result, __0); } catch (Exception ex) { Fault(ex); }
+        try
+        {
+            Scope.Stamp(__result, __0);
+            if (Scope.Find(__0)?.Owned == true) ++_ownedIteratorFactoryStamps;
+        }
+        catch (Exception ex) { Fault(ex); }
     }
     private static bool BeforeMoveNext(object __instance, MethodBase __originalMethod, ref bool __result)
     {
@@ -258,7 +272,18 @@ internal static class ManimalAmmoCompat
                 var body = iterator.Player.GetValue(__instance);
                 // An already-running ordinary iterator may predate adapter install.
                 // An unknown iterator on an owned body cannot prove its generation.
-                if (Scope.Find(body)?.Owned != true) ticket = Scope.Stamp(__instance, body);
+                var lease = Scope.Find(body);
+                if (lease?.Owned != true) ticket = Scope.Stamp(__instance, body);
+                else
+                {
+                    ++_unknownOwnedIterators;
+                    _lastUnknownIterator = iterator.Factory.Name;
+                    _lastUnknownIteratorState = (int)iterator.State.GetValue(__instance);
+                    if (_unknownOwnedIterators <= 4)
+                        CoreLog.LogDebug("Manimal blocked an unstamped owned iterator: " + _lastUnknownIterator
+                            + ", state=" + _lastUnknownIteratorState + ", retired=" + lease.Retired
+                            + ", epoch=" + lease.Epoch + ".");
+                }
             }
             if (Allowed(ticket)) return true;
         }
@@ -321,6 +346,8 @@ internal static class ManimalAmmoCompat
     private static void ClearBinding()
     {
         _contract = null; _plugin = null; _version = null; Scope.Clear();
+        _ownedIteratorFactoryStamps = _unknownOwnedIterators = _lastUnknownIteratorState = 0;
+        _lastUnknownIterator = null;
         if (!_patchAttempted) return;
         _patchAttempted = false;
         try { Patches.UnpatchSelf(); } catch (Exception ex) { Reject(ex); }

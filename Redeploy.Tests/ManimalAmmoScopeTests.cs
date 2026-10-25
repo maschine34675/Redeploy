@@ -105,6 +105,22 @@ public class ManimalAmmoScopeTests
     }
 
     [Fact]
+    public void AFactoryStampedCurrentOwnedIteratorNeedsNoSessionOrOrdinaryFallback()
+    {
+        var scope = new ManimalAmmoScope(); var world = new object(); var old = new object(); var current = new object();
+        scope.Prepare(old, world, new object(), null);
+        scope.CommitCandidate(current, world, new object(), null, true);
+        var iterator = new object();
+        Assert.Null(scope.ForCallback(iterator));
+        var ticket = scope.Stamp(iterator, current);
+        Assert.Same(ticket, scope.ForCallback(iterator));
+        Assert.Null(ticket.Session);
+        Assert.True(ManimalAmmoScope.MayResume(ticket, world, current, true, true));
+        scope.RetireWorld(world);
+        Assert.False(ManimalAmmoScope.MayResume(ticket, world, current, true, true));
+    }
+
+    [Fact]
     public void CurrentCompletionRequiresExactSessionAndLiveCurrentBody()
     {
         var scope = new ManimalAmmoScope(); var world = new object(); var current = new object();
