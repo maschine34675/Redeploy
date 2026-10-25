@@ -68,9 +68,11 @@ public static class BodyReplacementCompatibility
         var recoil = RecoilLegacyCompat.GetRejectionReason();
         var ammo = ContinuousLoadAmmoCompat.GetRejectionReason();
         var healing = ContinuousHealingCompat.GetRejectionReason();
+        var fov = FovFixCompat.GetRejectionReason();
+        var manimal = ManimalAmmoCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -108,7 +110,9 @@ public static class BodyReplacementCompatibility
     private static bool HasOptionalMods()
         => Chainloader.PluginInfos.ContainsKey(RecoilLegacyContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ContinuousLoadAmmoContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(ContinuousHealingContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(ContinuousHealingContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(FovFixContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(ManimalAmmoContract.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody)
     {
@@ -120,10 +124,13 @@ public static class BodyReplacementCompatibility
         RecoilLegacyCompat.Prepare(game, oldBody);
         ContinuousLoadAmmoCompat.Prepare(game, oldBody);
         ContinuousHealingCompat.Prepare(game, oldBody);
+        FovFixCompat.Prepare(game, oldBody);
+        ManimalAmmoCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
         RecoilLegacyCompat.CompletePreparation();
+        FovFixCompat.CompletePreparation();
     }
 
     internal static void ValidateCreated(LocalPlayer body)
@@ -147,6 +154,8 @@ public static class BodyReplacementCompatibility
         // adoption; prior successful-body tombstones must survive a refused retry.
         RecoilLegacyCompat.AbortPreparation();
         ContinuousLoadAmmoCompat.AbortPreparation();
+        FovFixCompat.AbortPreparation();
+        ManimalAmmoCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -159,6 +168,8 @@ public static class BodyReplacementCompatibility
             RecoilLegacyCompat.Tick();
             ContinuousLoadAmmoCompat.Tick();
             ContinuousHealingCompat.Tick();
+            FovFixCompat.Tick();
+            ManimalAmmoCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -184,6 +195,8 @@ public static class BodyReplacementCompatibility
     {
         if (ReferenceEquals(world, null)) return;
         RecoilLegacyCompat.RetireWorld(world);
+        FovFixCompat.RetireWorld(world);
+        ManimalAmmoCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();

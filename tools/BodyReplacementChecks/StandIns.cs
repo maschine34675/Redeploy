@@ -154,14 +154,33 @@ namespace Redeploy.Core.Compat
     }
     internal static class Probes
     {
-        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing];
+        internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal];
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
     internal static class RecoilLegacyContract { internal const string PluginGuid = "fixture.recoil"; }
     internal static class ContinuousLoadAmmoContract { internal const string PluginGuid = "fixture.ammo"; }
     internal static class ContinuousHealingContract { internal const string PluginGuid = "fixture.healing"; }
+    internal static class FovFixContract { internal const string PluginGuid = "fixture.fov"; }
+    internal static class ManimalAmmoContract { internal const string PluginGuid = "fixture.manimal"; }
+    internal static class FovFixCompat
+    {
+        internal static string GetRejectionReason() => Probes.Fov.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Fov.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Fov.Abort();
+        internal static void CompletePreparation() => Probes.Fov.Complete();
+        internal static void Tick() => Probes.Fov.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Fov.Retired.Add(world);
+    }
+    internal static class ManimalAmmoCompat
+    {
+        internal static string GetRejectionReason() => Probes.Manimal.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Manimal.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Manimal.Abort();
+        internal static void Tick() => Probes.Manimal.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Manimal.Retired.Add(world);
+    }
     internal static class RecoilLegacyCompat
     {
         internal static string GetRejectionReason() => Probes.Recoil.GetRejectionReason();

@@ -283,13 +283,13 @@ internal static class Program
 
     private static void PrepareOrder()
     {
-        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid })
+        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid })
         {
             ResetFixture();
             Install(guid);
             var raid = NewRaid();
             var replacement = Replace(raid);
-            Check(string.Join(",", Probes.Trace.Take(7)) == "recoil.check,ammo.check,healing.check,recoil.prepare,ammo.prepare,healing.prepare,recoil.complete", "Admission/adoption/complete order changed");
+            Check(string.Join(",", Probes.Trace.Take(12)) == "recoil.check,ammo.check,healing.check,fov.check,manimal.check,recoil.prepare,ammo.prepare,healing.prepare,fov.prepare,manimal.prepare,recoil.complete,fov.complete", "Admission/adoption/complete order changed");
             Check(GameObject.Adds == 1 && raid.World.gameObject.GetComponent<BodyReplacementCompatPump>() != null, "Each optional family must get one world pump");
             Same(raid.World, raid.World.gameObject.GetComponent<BodyReplacementCompatPump>().World, "Pump must carry its exact world");
             Replace(raid, replacement);
@@ -307,12 +307,12 @@ internal static class Program
             fault.ThrowPrepare = true;
             Throws(() => BodyReplacementCompatibility.Prepare(raid.Game, raid.Body), fault.Name + " prepare fault");
             Check(BodyReplacementContext.IsCreating && BodyReplacementContext.OwnsBody(raid.Body), "Prepare fault must be cancellable while provisional context exists");
-            Check(GameObject.Adds == 0 && Probes.Recoil.Completions == 0, "Faulting preparation must not complete or create pump");
+            Check(GameObject.Adds == 0 && Probes.Recoil.Completions == 0 && Probes.Fov.Completions == 0, "Faulting preparation must not complete or create pump");
             BodyReplacementCompatibility.CancelPreparation();
             Check(!BodyReplacementContext.OwnsBody(raid.Body), "Cancellation leaked first provisional body lease");
             Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null, "Cancellation left an active attempt");
             Same(null, BodyReplacementContext.CurrentWorld, "Cancellation leaked first provisional world");
-            Check(Probes.Recoil.Aborts == 1 && Probes.Ammo.Aborts == 1, "Cancellation must abort both provisional adapter states");
+            Check(Probes.Recoil.Aborts == 1 && Probes.Ammo.Aborts == 1 && Probes.Fov.Aborts == 1 && Probes.Manimal.Aborts == 1, "Cancellation must abort every provisional adapter state");
             BodyReplacementCompatibility.ValidateCreated(null);
         }
     }
