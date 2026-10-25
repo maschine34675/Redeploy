@@ -49,3 +49,29 @@ Exact builds and scenarios:
 [FOV/Manimal](FOV-MANIMAL-COMPAT-20261025.md),
 [Magazine Check Interrupt](MAGCHECK-COMPAT-20261025.md),
 [Radar/Crosshair](HUD-COMPAT-20261025.md).
+
+## Final package verification
+
+Published on 2026-10-25 as
+[Redeploy 1.0.2](https://github.com/maschine34675/Redeploy/releases/tag/v1.0.2),
+from commit `1c78fb3694912106bb9e43b02020c3f0e37cdaf3`.
+ZIP SHA-256: `2d06882d950a4cc575ca9411062c9f06eebb7c1d876e9ae5e6dcac1421a7198e`.
+
+The isolated committed-source build contains exactly three DLLs. Assembly,
+Windows file/product, plugin/server and minimum-Core versions were independently
+verified. Core SHA-256 is
+`b6d226bfe61c7ff4333f7c2c90c35680cc1e5d413a962a104b22dd8ee4f6d9c5`,
+identical to ArenaMode 0.3.0. Old local Client/Server files were still 1.0.0;
+the earlier GitHub 1.0.1 ZIP was correct. The final deployment replaces all three.
+
+All 274 unit tests passed without skips, plus respawn interop, shared coordinator
+and compatibility mutation checks. GPU2 loaded these exact bytes for a genuine
+ordinary PMC death, native Redeploy dialog, fresh-body respawn at 440 HP and
+Gate 3 extraction. Arena was installed but inactive; Redeploy was the Core caller.
+This basic final smoke test does not expand the optional-mod matrix described
+above. Original test settings were restored and game/server processes stopped.
+
+Gitleaks found no credentials in the full history, frozen source or final payload.
+All three DLL hashes have zero malicious/suspicious VirusTotal detections, with
+individual report links in the release. The uploaded ZIP was downloaded again
+and matched both the local verified package and GitHub's SHA-256 asset digest.

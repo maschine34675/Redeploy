@@ -5,7 +5,8 @@
 - Checkout: `D:\SPT41\Development\Redeploy`, branch `main`.
 - Public repository: <https://github.com/maschine34675/Redeploy>.
 - Local `origin` fetch/push URL: `https://github.com/maschine34675/Redeploy.git`.
-- Current release preparation: Client/Server 1.0.2 and shared Core 1.0.13.
+- Published release: Client/Server 1.0.2 and shared Core 1.0.13; see
+  [final package verification](RELEASE-1.0.2.md#final-package-verification).
 - Compatibility worktrees have been consolidated; the retained archives and
   their verification are recorded in [worktree cleanup](WORKTREE-CLEANUP-20261025.md).
 
