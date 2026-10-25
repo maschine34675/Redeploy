@@ -1,6 +1,18 @@
-# Redeploy repository consolidation — 2026-10-12
+# Redeploy repository status
 
-## Active development
+## Active development — 2026-10-25
+
+- Checkout: `D:\SPT41\Development\Redeploy`, branch `main`.
+- Public repository: <https://github.com/maschine34675/Redeploy>.
+- Local `origin` fetch/push URL: `https://github.com/maschine34675/Redeploy.git`.
+- Current release preparation: Client/Server 1.0.2 and shared Core 1.0.13.
+- Compatibility worktrees have been consolidated; the retained archives and
+  their verification are recorded in [worktree cleanup](WORKTREE-CLEANUP-20261025.md).
+
+The record below describes the earlier private-repository consolidation. Its
+private URLs and versions are historical, not the current installation target.
+
+## Repository consolidation — 2026-10-12
 
 - Checkout: `D:\SPT41\Development\Redeploy`.
 - Branch: `main`.

@@ -9,7 +9,7 @@ public record ModMetadata : IModMetadata
     public string Name { get; init; } = "Redeploy";
     public string Author { get; init; } = "maschine";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("1.0.1");
+    public SemanticVersioning.Version Version { get; init; } = new("1.0.2");
     public Range SptVersion { get; init; } = new("~4.1.0");
     public bool HasPrepatcher { get; init; } = false;
     public List<string>? Incompatibilities { get; init; }

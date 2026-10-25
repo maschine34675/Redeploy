@@ -23,41 +23,43 @@ Core version line.
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** This release contains Client/Server `1.0.1` and Core `1.0.10`. Core has its own version and is a library, not a separate BepInEx plugin.
+- **Version lines:** This release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
   - **Continuous Healing 1.6.3+** — old player callbacks cannot continue or cancel the replacement body's healing; current local healing keeps the mod's behavior.
+  - **Fontaine FOV Fix 4.1.0+** — refreshes camera and weapon ownership after respawn and fences callbacks from the retired body.
+  - **Manimal Ammo Loading Animations 2.0.0+** — retires old loading sessions so their delayed animations cannot continue on a retired character.
+  - **Magazine Check Interrupt 1.1.1+** — retires the old body's floating magazine panel; delayed hide callbacks cannot hide its successor's display.
+  - **Accurate Circular Radar 1.3.4+** — preserves the radar through camera replacement and rebinds it to the current player. Radar colors retain the mod's faction/role meaning, not team hostility.
+  - **Simple Crosshair 1.4.0+** — preserves the overlay and binds its callbacks to the replacement body and camera.
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
   - **Killcam** (formerly KillcamReplay) — the death replay stays visible behind the respawn prompt. A chosen respawn waits for the replay to release the camera; Space skips the replay.
 - **Fika is deliberately unsupported.** Redeploy disables respawning when `com.fika.core` is loaded and warns at raid start. Its replacement-character flow has no co-op synchronisation.
 
-The three body-replacement integrations above are shared with ArenaMode from Core 1.0.9. Their migration is covered by offline lifecycle checks and bounded native tests with standalone Redeploy and ArenaMode on 2026-10-23; pending-operation races and PitFireTeam were not established by those native runs. Newer mod versions require matching APIs and log an unverified-version warning. An invalid contract refuses respawn before teardown, with a notice at raid start; ordinary spawning and mod settings remain unchanged. See [shared compatibility and test boundaries](docs/BODY-REPLACEMENT-COMPAT-20261023.md).
+These body-replacement integrations live in shared Core and do not require
+ArenaMode. Newer optional-mod versions require matching APIs and log an
+unverified-version warning. An invalid contract refuses respawn before teardown,
+with a notice at raid start; ordinary spawning and mod settings remain unchanged.
 
-**Development Core 1.0.11:** adds optional body-replacement support for Fontaine
-FOV Fix 4.1.0+ and Manimal Ammo Loading Animations 2.0.0+. The fixes are shared
-with ArenaMode; no Arena plugin is needed by standalone Redeploy. See
-[implementation and verification boundaries](docs/FOV-MANIMAL-COMPAT-20261025.md).
-These additions are not part of the published Redeploy 1.0.1 package described above.
-
-**Development Core 1.0.12:** additionally retires Magazine Check Interrupt 1.1.1+'s
-floating magazine panel when its owning body/camera is replaced. Late hide
-callbacks cannot hide the successor's display. This is an optional shared Core
-integration; ordinary bodies are not adopted. See
-[implementation and test boundaries](docs/MAGCHECK-COMPAT-20261025.md).
-
-**Development Core 1.0.13:** preserves Accurate Circular Radar 1.3.4+ and Simple
-Crosshair 1.4.0+ across body/camera replacement. Their HUDs follow the current
-physical player, while late old-body callbacks cannot remove the successor's
-display. These optional integrations are shared with ArenaMode. Radar colors
-still indicate faction/role, not team hostility. See
-[implementation and test boundaries](docs/HUD-COMPAT-20261025.md).
+The Recoil Rework, Continuous Load Ammo and Continuous Healing migration has
+bounded native coverage with both standalone Redeploy and ArenaMode. The final
+FOV/Manimal, magazine-panel and radar/crosshair fixes were tested natively through
+Arena's shared Core path, including real deaths, living kit replacement and raid
+exit; their final candidates were not separately rerun in standalone Redeploy.
+Offline checks cover their common lifecycle and ownership rules. These tests do
+not establish every optic, delayed callback race, practice-mode setting,
+PitFireTeam combination or long-session behavior. See the dated reports for
+[Recoil/CLA/Healing](docs/BODY-REPLACEMENT-COMPAT-20261023.md),
+[FOV/Manimal](docs/FOV-MANIMAL-COMPAT-20261025.md),
+[Magazine Check Interrupt](docs/MAGCHECK-COMPAT-20261025.md) and
+[Radar/Crosshair](docs/HUD-COMPAT-20261025.md).
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
-**ArenaMode 0.1.3 compatibility:** that release still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. This combination requires an Arena build that delegates these adapters to Core; the migration is currently on Arena's main branch. Standalone Redeploy does not require ArenaMode.
+**Older ArenaMode builds:** ArenaMode 0.1.3 still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. Use ArenaMode 0.2.0 or newer, which delegates these adapters to Core. Standalone Redeploy does not require ArenaMode.
 
 ## Installation
 
@@ -73,7 +75,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Replace the Client and Server together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.0.1 requires Core **1.0.10 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.0.2 requires Core **1.0.13 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 
