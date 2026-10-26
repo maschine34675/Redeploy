@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="ForeignFixture/ForeignFixture.csproj" />
+    <Compile Include="Program.cs" /><Compile Include="PublishedMetadata.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/PipDisabler/*.cs" Link="Production/%(Filename).cs" />
+    <Compile Include="../../../ArenaMode/ArenaMode.Client/Compat/PipPreloadCompat.cs" Link="Production/PipPreloadCompat.cs" />
+    <Compile Include="../../../ArenaMode/ArenaMode.Client/Kits/KitOpticPreloadGuard.cs" Link="Production/KitOpticPreloadGuard.cs" />
+    <Reference Include="Mono.Cecil"><HintPath>../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

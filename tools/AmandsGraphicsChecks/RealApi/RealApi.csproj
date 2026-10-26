@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>netstandard2.1</TargetFramework><LangVersion>latest</LangVersion><EnableDefaultCompileItems>false</EnableDefaultCompileItems><SptRoot Condition="'$(SptRoot)' == ''">../../../../..</SptRoot></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../Redeploy.Core/Compat/AmandsGraphics/*.cs" Link="Production/%(Filename).cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Compile Include="StandIns.cs" />
+    <Reference Include="Assembly-CSharp"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/Assembly-CSharp.dll</HintPath></Reference>
+    <Reference Include="DissonanceVoip"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/DissonanceVoip.dll</HintPath></Reference>
+    <Reference Include="Comfort"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/Comfort.dll</HintPath></Reference>
+    <Reference Include="Comfort.Unity"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/Comfort.Unity.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(SptRoot)/EscapeFromTarkov_Data/Managed/UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="BepInEx"><HintPath>$(SptRoot)/BepInEx/core/BepInEx.dll</HintPath></Reference>
+    <Reference Include="0Harmony"><HintPath>$(SptRoot)/BepInEx/core/0Harmony.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

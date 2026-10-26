@@ -7,16 +7,39 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
 contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
-## Unreleased — Core 1.0.14
+## Unreleased — Core 1.0.14–1.0.15
 
 - ImpactCue 2.0.3+: bind telemetry and weapon/health caches to the confirmed
   replacement body without clearing the raid's combat history. Late callbacks
   from a retired body cannot take the HUD back.
 - Enemy Markers 1.4.0+: preserve existing bot markers, bind their billboards to
   the replacement camera, and exclude the local replacement from new markers.
-- Both integrations belong to Core and apply to standalone Redeploy and Arena.
+- These Core 1.0.14 integrations passed three native respawns and raid exit per
+  driver, including the Enemy Markers destroyed-body cleanup correction. See
+  [HUD compatibility evidence](ITEMS-HUD-COMPAT-20261025.md).
+- Quick Cancel 2.0.0+: Core 1.0.15 retires only the old body's pending medical
+  controllers and rejects delayed callbacks for that body. Actual cancellation
+  and subsequent firearm use passed in Arena; the rare pending-drop/death race
+  is covered by offline production-boundary checks, not the native timing test.
+- Picture in Picture Disabler 2.1.0+: Core 1.0.15 limits optic callbacks and
+  generated mesh-cache retirement to proven physical owners. Preserve the exact
+  held optic's provenance when native death detaches the weapon before preparation.
+  Two actual scoped Arena deaths and new-scope rendering passed with FOV Fix 4.1.0.
+- Amand's Graphics 1.8.0+: Core 1.0.15 binds the replacement camera while
+  retaining the ON/OFF preference and original scene/light defaults. Factory
+  ON/OFF respawns passed. Labyrinth still fails in the mod's initial scene lookup
+  before Core replacement; an incomplete baseline is refused rather than reset.
+  This is a bounded camera repair, not a fix for that independent map blocker.
+- These integrations belong to Core and apply to standalone Redeploy and Arena.
   Ordinary raids without a Core replacement retain the foreign mods' behavior.
   The public RespawnApi version remains 1.
+- The same final Core 1.0.15 passed two Factory respawns with Arena absent:
+  scoped M700 death and old PiP-cache retirement, current Amand/HUD bindings,
+  plus native medical cancellation and an RGD throw after respawn. This does not
+  establish every optic, HUD feature, map or the rare pending-drop/death race. See
+  [remaining body compatibility](REMAINING-BODY-COMPAT-20261026.md) for native
+  scenarios, offline checks and limits. Client/Server stay at 1.0.2; the published
+  release still contains Core 1.0.13 and is not changed by this development work.
 
 ## [1.0.2]
 

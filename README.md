@@ -24,7 +24,7 @@ Core version line.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
 - **Version lines:** This release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
-  The current development source builds Core `1.0.14`; its rebuilt clients require that minimum. The published 1.0.2 package is unchanged.
+  The current development source builds Core `1.0.15`; its rebuilt clients require that minimum. The published 1.0.2 package is unchanged.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -36,6 +36,9 @@ Core version line.
   - **Simple Crosshair 1.4.0+** — preserves the overlay and binds its callbacks to the replacement body and camera.
   - **ImpactCue 2.0.3+** (development Core 1.0.14) — rebinds health/weapon telemetry while retaining the raid's combat history.
   - **Enemy Markers 1.4.0+** (development Core 1.0.14) — preserves bot markers, updates their camera and excludes the local replacement body.
+  - **Manimal's Quick Cancel 2.0.0+** (development Core 1.0.15) — retires pending medical controllers belonging to the old physical body and fences late callbacks without clearing unrelated controllers.
+  - **Picture in Picture Disabler 2.1.0+** (development Core 1.0.15) — retires owned optic state and generated mesh caches across replacement while retaining foreign settings and unrelated optics. Native Arena tests with Fontaine FOV Fix 4.1.0 passed two actual scoped deaths and replacement-scope rendering; standalone testing also passed a scoped death and old-cache retirement.
+  - **Amand's Graphics 1.8.0+** (development Core 1.0.15, limited) — binds graphics components to the replacement camera, preserving the ON/OFF choice and original scene/light defaults. Factory ON/OFF respawns passed, but the mod's initial Labyrinth scene activation fails before Core replacement. See the limitation below.
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
@@ -59,6 +62,19 @@ PitFireTeam combination or long-session behavior. See the dated reports for
 [FOV/Manimal](docs/FOV-MANIMAL-COMPAT-20261025.md),
 [Magazine Check Interrupt](docs/MAGCHECK-COMPAT-20261025.md) and
 [Radar/Crosshair](docs/HUD-COMPAT-20261025.md).
+
+ImpactCue and Enemy Markers subsequently passed three respawns and raid exit per
+driver with their final Core 1.0.14 correction; see
+[HUD body/camera verification](docs/ITEMS-HUD-COMPAT-20261025.md).
+The final Core 1.0.15 candidate additionally passed two Factory respawns with Arena
+absent. A scoped M700 death retired PiP's old cache; Amand's graphics and HUD
+Breakout followed both replacement bodies. Actual medical cancellation and a
+Fast Grenade Throw RGD throw worked after respawn. These are bounded tests, not
+validation of every HUD feature, optic or map. The rare Quick Cancel interrupted
+drop/death race has offline coverage only; a completed native cancel does not
+prove that timing window. See [remaining body integrations](docs/REMAINING-BODY-COMPAT-20261026.md)
+for exact scenarios, the Amand blocker and outstanding limits. Fast Grenade Throw's
+grenade-priority/input correction is Arena-specific and is not added to Core.
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
@@ -136,6 +152,11 @@ BepInEx `LogLevels=All` setting still writes Debug messages.
 ## Known limitations
 
 - **Fika co-op is not supported.** The mod disables itself when Fika is installed.
+- **Amand's Graphics 1.8.0 on Labyrinth:** its own initial activation dereferences
+  a missing `!settings` scene object before a Core replacement. Core cannot safely
+  capture the incomplete graphics baseline and refuses replacement. The Factory
+  camera repair does not resolve this map blocker; an ordinary PMC control has
+  not been run. See [native evidence](docs/REMAINING-BODY-COMPAT-20261026.md).
 - **Progress from earlier lives is only partly carried over.** Kills are restored to the end-of-raid screen, but the game starts a fresh statistics session for the replacement character, so session XP and other counters from before the last respawn are lost. This is intentional and keeps repeated respawns from paying off.
 - **Items carried through a normal respawn lose their found-in-raid status** through the game's player-creation path. Do not rely on respawning to preserve FiR loot; transit-raid edge cases have not been validated.
 - **Scav raids** work the same way, but have seen less testing than PMC raids.

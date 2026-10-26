@@ -75,9 +75,12 @@ public static class BodyReplacementCompatibility
         var radar = RadarCompat.GetRejectionReason();
         var impactCue = ImpactCueCompat.GetRejectionReason();
         var enemyMarkers = EnemyMarkersCompat.GetRejectionReason();
+        var quickCancel = QuickCancelCompat.GetRejectionReason();
+        var pipDisabler = PipDisablerCompat.GetRejectionReason();
+        var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -122,7 +125,10 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(SimpleCrosshairContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(RadarContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ImpactCueContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(EnemyMarkersContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(EnemyMarkersContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(QuickCancelCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
+           || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody)
     {
@@ -141,6 +147,9 @@ public static class BodyReplacementCompatibility
         RadarCompat.Prepare(game, oldBody);
         ImpactCueCompat.Prepare(game, oldBody);
         EnemyMarkersCompat.Prepare(game, oldBody);
+        QuickCancelCompat.Prepare(game, oldBody);
+        PipDisablerCompat.Prepare(game, oldBody);
+        AmandsGraphicsCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
@@ -178,6 +187,8 @@ public static class BodyReplacementCompatibility
         RadarCompat.AbortPreparation();
         ImpactCueCompat.AbortPreparation();
         EnemyMarkersCompat.AbortPreparation();
+        PipDisablerCompat.AbortPreparation();
+        AmandsGraphicsCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -197,6 +208,8 @@ public static class BodyReplacementCompatibility
             RadarCompat.Tick();
             ImpactCueCompat.Tick();
             EnemyMarkersCompat.Tick();
+            PipDisablerCompat.Tick();
+            AmandsGraphicsCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -229,6 +242,9 @@ public static class BodyReplacementCompatibility
         RadarCompat.RetireWorld(world);
         ImpactCueCompat.RetireWorld(world);
         EnemyMarkersCompat.RetireWorld(world);
+        QuickCancelCompat.RetireWorld(world);
+        PipDisablerCompat.RetireWorld(world);
+        AmandsGraphicsCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();

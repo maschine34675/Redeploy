@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>disable</Nullable><AssemblyName>PiP-Disabler</AssemblyName><Version>1.0.0</Version></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Boundaries/Boundaries.csproj" /></ItemGroup>
+</Project>

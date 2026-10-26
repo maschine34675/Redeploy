@@ -155,7 +155,9 @@ namespace Redeploy.Core.Compat
     internal static class Probes
     {
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers];
+        internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands];
+        internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -176,6 +178,31 @@ namespace Redeploy.Core.Compat
         internal static void RetireWorld(EFT.GameWorld world) => Probes.ImpactCue.Retired.Add(world);
     }
     internal static class EnemyMarkersContract { internal const string PluginGuid = "fixture.EnemyMarkers"; }
+    internal static class QuickCancelCompat
+    {
+        internal const string PluginGuid = "fixture.QuickCancel";
+        internal static string GetRejectionReason() => Probes.QuickCancel.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.QuickCancel.Prepare(game, body);
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.QuickCancel.Retired.Add(world);
+    }
+    internal static class PipDisablerContract { internal const string Guid = "fixture.Pip"; }
+    internal static class PipDisablerCompat
+    {
+        internal static string GetRejectionReason() => Probes.Pip.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Pip.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Pip.Abort();
+        internal static void Tick() => Probes.Pip.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Pip.Retired.Add(world);
+    }
+    internal static class AmandsGraphicsCompat
+    {
+        internal const string PluginGuid = "fixture.Amands";
+        internal static string GetRejectionReason() => Probes.Amands.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Amands.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Amands.Abort();
+        internal static void Tick() => Probes.Amands.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Amands.Retired.Add(world);
+    }
     internal static class EnemyMarkersCompat
     {
         internal static string GetRejectionReason() => Probes.EnemyMarkers.GetRejectionReason();
