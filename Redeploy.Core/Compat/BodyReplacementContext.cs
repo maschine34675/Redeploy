@@ -22,8 +22,9 @@ internal static class BodyReplacementContext
     private static LocalGame _previousGame;
     private static GameWorld _previousWorld;
     private static Lease _previousEntryLease;
+    private static Profile _expectedProfile;
 
-    internal static void Begin(LocalGame game, LocalPlayer oldBody)
+    internal static void Begin(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
     {
         var world = game?.GameWorld;
         if (game == null || world == null || oldBody == null || world is HideoutGameWorld
@@ -40,6 +41,7 @@ internal static class BodyReplacementContext
         CurrentGame = game;
         CurrentWorld = world;
         PreviousBody = oldBody;
+        _expectedProfile = replacementProfile ?? oldBody.Profile;
         IsCreating = true;
         Track(oldBody, world);
     }
@@ -60,7 +62,8 @@ internal static class BodyReplacementContext
         if (!IsCreating || body is not LocalPlayer || body == null || !body.IsYourPlayer
             || PreviousBody == null || ReferenceEquals(body, PreviousBody)
             || !OwnsRaid(CurrentGame, CurrentWorld) || !ReferenceEquals(body.GameWorld, CurrentWorld)
-            || !ReferenceEquals(body.Profile, PreviousBody.Profile) || !ReferenceEquals(body.Profile, CurrentGame.Profile)
+            || !ReferenceEquals(body.Profile, _expectedProfile)
+            || !(ReferenceEquals(CurrentGame.Profile, PreviousBody.Profile) || ReferenceEquals(CurrentGame.Profile, _expectedProfile))
             || !ReferenceEquals(CurrentWorld.MainPlayer, body)
             || !(ReferenceEquals(CurrentGame.LocalPlayer, PreviousBody) || ReferenceEquals(CurrentGame.LocalPlayer, body)))
             return false;
@@ -95,6 +98,7 @@ internal static class BodyReplacementContext
     {
         IsCreating = false;
         PreviousBody = null;
+        _expectedProfile = null;
         _previousGame = null;
         _previousWorld = null;
         _previousEntryLease = null;

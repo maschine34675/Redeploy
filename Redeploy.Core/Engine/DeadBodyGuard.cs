@@ -105,6 +105,9 @@ public static class DeadBodyGuard
                 if (!Singleton<AbstractGame>.Instantiated || !(Singleton<AbstractGame>.Instance is LocalGame))
                     return true;
 
+                // The normal respawn shares its profile and still needs suppression. During an
+                // identity replacement MainPlayer already refers to the fresh body, so the old
+                // identity's independent inventory remains available to AI and player looting.
                 var localId = Singleton<GameWorld>.Instance.MainPlayer?.ProfileId;
                 return localId == null || player.ProfileId != localId;
             }

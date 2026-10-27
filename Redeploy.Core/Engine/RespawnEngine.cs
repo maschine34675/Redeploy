@@ -26,6 +26,13 @@ public sealed class RespawnRequest
     /// <summary>The dead body being replaced. Defaults to <c>Game.LocalPlayer</c>.</summary>
     public LocalPlayer DeadPlayer;
 
+    /// <summary>
+    /// Optional fresh identity with independent inventory, health, skills and statistics.
+    /// Null keeps the existing shared-profile respawn. Core commits this profile only after
+    /// validating the created body; raid settlement and faction extracts belong to the caller.
+    /// </summary>
+    public Profile ReplacementProfile;
+
     /// <summary>Where the replacement player appears. Required.</summary>
     public ISpawnSelector SpawnSelector;
 
@@ -128,12 +135,15 @@ public static class RespawnEngine
             yield break;
         }
 
+        var replacementProfile = request.ReplacementProfile;
+        var originalProfile = replacementProfile != null ? request.Game.Profile : null;
         Exception compatibilityFailure = null;
         try
         {
+            ProfileReplacementValidation.BeforeTeardown(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer, replacementProfile);
             // All optional integrations validate/adopt the old body before irreversible teardown.
             // This also supports standalone Redeploy, whose initial player was never intercepted.
-            BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer);
+            BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer, replacementProfile);
         }
         catch (Exception ex)
         {
@@ -182,12 +192,23 @@ public static class RespawnEngine
             request.OnBeforeProfileMutation?.Invoke(deadPlayer);
             timing.Mark("profile.beforeMutation");
 
-            ResetProfileHealth(game.Profile, request.HealthPercent);
+            if (replacementProfile != null)
+                ProfileReplacementValidation.ValidateProfiles(originalProfile, replacementProfile);
+
+            ResetProfileHealth(replacementProfile ?? game.Profile, request.HealthPercent);
             timing.Mark("profile.health");
-            RaidVictimsSnapshot.Snapshot(game.Profile);
+            // A different life must not inherit the PMC's kills (also clears a stale pending snapshot).
+            RaidVictimsSnapshot.Snapshot(replacementProfile != null ? null : game.Profile);
             timing.Mark("profile.victims");
-            request.EquipmentStrategy?.Invoke(game.Profile, deadPlayer);
+            request.EquipmentStrategy?.Invoke(replacementProfile ?? game.Profile, deadPlayer);
             timing.Mark("profile.equipment");
+
+            if (replacementProfile != null)
+            {
+                if (!ReferenceEquals(game.Profile, originalProfile))
+                    throw new InvalidOperationException("The original profile changed during replacement preparation.");
+                ProfileReplacementValidation.ValidateProfiles(originalProfile, replacementProfile);
+            }
 
             var (position, rotation) = request.SpawnSelector.Resolve(game);
             timing.Mark("spawn");
@@ -208,7 +229,7 @@ public static class RespawnEngine
                 "Player",
                 string.Empty,
                 EPointOfView.FirstPerson,
-                game.Profile,
+                replacementProfile ?? game.Profile,
                 false,
                 game.UpdateQueue,
                 armsMode,
@@ -279,8 +300,11 @@ public static class RespawnEngine
                 throw createTask.Exception?.InnerException ?? createTask.Exception;
 
             var newPlayer = createTask.Result;
+            ProfileReplacementValidation.ValidateCreated(game, deadPlayer, newPlayer, originalProfile, replacementProfile);
             BodyReplacementCompatibility.ValidateCreated(newPlayer);
             newPlayer.Location = game.Location.Id;
+            if (replacementProfile != null)
+                game.Profile = replacementProfile;
             game.LocalPlayer = newPlayer;
             timing.Mark("rewire.result");
 
@@ -291,24 +315,39 @@ public static class RespawnEngine
             DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer);
             timing.Mark("rewire.doorDash");
 
-            LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
+            if (replacementProfile != null)
+                LocalGameAccessor.ReplacePlayerIdentityInDictionary(game, deadPlayer, newPlayer);
+            else
+                LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
             timing.Mark("rewire.dictionary");
-            LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
-            timing.Mark("rewire.deathHandler");
 
-            var bots = LocalGameAccessor.GetBotsController(game);
-            bots.DestroyInfo(deadPlayer);
-            timing.Mark("rewire.destroyInfo");
+            try
+            {
+                var bots = LocalGameAccessor.GetBotsController(game);
+                bots.DestroyInfo(deadPlayer);
+                timing.Mark("rewire.destroyInfo");
 
-            // DestroyInfo's own chain ends in DeadBodiesController.AddBody for a
-            // dead player — the record bots would use to loot the SHARED profile,
-            // i.e. the freshly equipped live player. The patch blocks new ones;
-            // this clears anything that slipped through earlier.
-            DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
-            timing.Mark("rewire.purgeBodies");
+                // DestroyInfo's own chain ends in DeadBodiesController.AddBody for a
+                // dead player — the record bots would use to loot the SHARED profile,
+                // i.e. the freshly equipped live player. The patch blocks new ones;
+                // this clears anything that slipped through earlier.
+                if (replacementProfile == null)
+                    DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
+                timing.Mark("rewire.purgeBodies");
 
-            bots.AddActivePLayer(newPlayer);
-            timing.Mark("rewire.addActive");
+                bots.AddActivePLayer(newPlayer);
+                timing.Mark("rewire.addActive");
+            }
+            finally
+            {
+                // Match native startup: LocalGame adds the player to bots before Spawn attaches
+                // CG_Spawn. AddActivePLayer integrations (e.g. PitFireTeam) must see death before
+                // CG_Spawn -> StopGettingInfo disposes them; unsubscribing during a multicast
+                // event does not remove their callback from the invocation already in progress.
+                // A failed bot rewire must still leave the committed body able to end the raid.
+                LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
+                timing.Mark("rewire.deathHandler");
+            }
 
             if (Singleton<GameWorld>.Instantiated)
                 Singleton<GameWorld>.Instance.MainPlayer = newPlayer;

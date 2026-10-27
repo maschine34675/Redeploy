@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace Redeploy.Tests;
@@ -61,9 +63,69 @@ public class SourceGuardTests
             "RespawnEngineState.LastRespawnedPlayer = newPlayer; RaidUiHelper.ClearBlackScreen();");
         Assert.False(golden.SequenceEqual(SourceGuards.RunRespawnOutline(added)), "an added step went unnoticed");
 
-        var commentsAndLayout = Replace(source, "ResetProfileHealth(game.Profile, request.HealthPercent);",
-            "// a comment\n            ResetProfileHealth(\n                game.Profile,   request.HealthPercent);");
+        var commentsAndLayout = Replace(source, "ResetProfileHealth(replacementProfile ?? game.Profile, request.HealthPercent);",
+            "// a comment\n            ResetProfileHealth(\n                replacementProfile ?? game.Profile,   request.HealthPercent);");
         Assert.True(golden.SequenceEqual(SourceGuards.RunRespawnOutline(commentsAndLayout)), "comments or layout changed the order");
+    }
+
+    [Fact]
+    public void BotDeathSubscribersRunBeforeFinalStopDisposesTheirRegistry()
+    {
+        var source = File.ReadAllText(EnginePath);
+        Assert.Equal(new[] { "bot-death", "stop" }, DispatchDeathInProductionSubscriptionOrder(source, finalDeath: true));
+        Assert.Equal(new[] { "bot-death", "keep-alive" }, DispatchDeathInProductionSubscriptionOrder(source, finalDeath: false));
+
+        // The previous order reproduces PFT's disposed-singleton failure even though Stop
+        // unsubscribes OnDead: the multicast invocation already captured that delegate.
+        const string subscribe = "LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);";
+        const string add = "bots.AddActivePLayer(newPlayer);";
+        var regressed = Replace(Replace(source, subscribe, ""), add, subscribe + " " + add);
+        Assert.Throws<NullReferenceException>(() => DispatchDeathInProductionSubscriptionOrder(regressed, finalDeath: true));
+    }
+
+    [Fact]
+    public void FailedBotRewireStillInstallsTheNativeDeathHandler()
+    {
+        var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(EnginePath)).GetRoot();
+        var subscribe = tree.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Single(call => call.Expression.ToString() == "LocalGameAccessor.SubscribeDeathHandler");
+        var cleanup = subscribe.Ancestors().OfType<FinallyClauseSyntax>().Single();
+        var guarded = Assert.IsType<TryStatementSyntax>(cleanup.Parent);
+        var calls = guarded.Block.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Select(call => call.Expression.ToString()).ToArray();
+        Assert.Contains("LocalGameAccessor.GetBotsController", calls);
+        Assert.Contains("bots.DestroyInfo", calls);
+        Assert.Contains("bots.AddActivePLayer", calls);
+        Assert.Empty(subscribe.Ancestors().TakeWhile(node => node != cleanup).OfType<IfStatementSyntax>());
+    }
+
+    private static string[] DispatchDeathInProductionSubscriptionOrder(string source, bool finalDeath)
+    {
+        // Model only the event boundary and PFT's registry lifetime, taking the actual
+        // production subscription order from RunRespawn. This is not a native raid test.
+        var steps = SourceGuards.RunRespawnOutline(source).Select(line => line.Trim()).Where(line =>
+            line == "LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);"
+            || line == "bots.AddActivePLayer(newPlayer);").ToArray();
+        Assert.Equal(2, steps.Length);
+        var calls = new List<string>();
+        Action died = null;
+        var registry = calls;
+        Action onBotDeath = () => registry.Add("bot-death");
+        foreach (var step in steps)
+        {
+            if (step == "bots.AddActivePLayer(newPlayer);")
+                died += onBotDeath;
+            else
+                died += () =>
+                {
+                    calls.Add(finalDeath ? "stop" : "keep-alive");
+                    if (!finalDeath) return;
+                    registry = null;
+                    died -= onBotDeath;
+                };
+        }
+        died();
+        return calls.ToArray();
     }
 
     [Fact]
@@ -71,7 +133,7 @@ public class SourceGuardTests
     {
         var source = File.ReadAllText(EnginePath);
         var golden = SourceGuards.RunRespawnOutline(source);
-        const string anchor = "ResetProfileHealth(game.Profile, request.HealthPercent);";
+        const string anchor = "ResetProfileHealth(replacementProfile ?? game.Profile, request.HealthPercent);";
 
         var timed = Replace(source, "var game = request.Game;",
                 "var game = request.Game; var timing = RespawnPipelineTiming.Begin(game, 3, \"death\", 2.5f, null);");

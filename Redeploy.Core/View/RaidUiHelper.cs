@@ -156,7 +156,7 @@ public static class RaidUiHelper
 
                 mainTimer.Show(
 
-                    DateTimeExtensions.UtcNow.AddSeconds(game.GameTimer.SessionSeconds()),
+                    DateTimeExtensions.UtcNow.AddSeconds(game.GameTimer.EscapeTimeSeconds()),
 
                     builder,
 

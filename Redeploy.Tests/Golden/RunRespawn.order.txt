@@ -7,9 +7,12 @@ if (refusal != null)
   CoreLog.LogWarning($"Respawn refused before any teardown: {refusal.Message}");
   onFailure?.Invoke(refusal);
   yield break;
+var replacementProfile = request.ReplacementProfile;
+var originalProfile = replacementProfile != null ? request.Game.Profile : null;
 Exception compatibilityFailure = null;
 try
-  BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer);
+  ProfileReplacementValidation.BeforeTeardown(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer, replacementProfile);
+  BodyReplacementCompatibility.Prepare(request.Game, request.DeadPlayer ?? request.Game.LocalPlayer, replacementProfile);
 catch (Exception ex)
   BodyReplacementCompatibility.CancelPreparation();
   compatibilityFailure = ex;
@@ -35,15 +38,21 @@ try
     OwnerCleanupHelper.DestroyOwnerWithoutClosingBattleUi(oldOwner, deadPlayer);
   UnregisterDeadPlayerFromWorld(deadPlayer);
   request.OnBeforeProfileMutation?.Invoke(deadPlayer);
-  ResetProfileHealth(game.Profile, request.HealthPercent);
-  RaidVictimsSnapshot.Snapshot(game.Profile);
-  request.EquipmentStrategy?.Invoke(game.Profile, deadPlayer);
+  if (replacementProfile != null)
+    ProfileReplacementValidation.ValidateProfiles(originalProfile, replacementProfile);
+  ResetProfileHealth(replacementProfile ?? game.Profile, request.HealthPercent);
+  RaidVictimsSnapshot.Snapshot(replacementProfile != null ? null : game.Profile);
+  request.EquipmentStrategy?.Invoke(replacementProfile ?? game.Profile, deadPlayer);
+  if (replacementProfile != null)
+    if (!ReferenceEquals(game.Profile, originalProfile))
+      throw new InvalidOperationException("The original profile changed during replacement preparation.");
+    ProfileReplacementValidation.ValidateProfiles(originalProfile, replacementProfile);
   var(position, rotation) = request.SpawnSelector.Resolve(game);
   var playerId = LocalGameAccessor.GetNextPlayerId(game);
   var armsMode = AppEnvironment.Config.UseHandsFastAnimator ? Player.EUpdateMode.Manual : Player.EUpdateMode.Auto;
   var raidSettings = LocalGameAccessor.GetLocalRaidSettings(game);
   var localMode = raidSettings != null ? raidSettings.mode : ELocalMode.TRAINING;
-  createTask = game.vmethod_3(game.GameWorld, playerId, position, rotation, "Player", string.Empty, EPointOfView.FirstPerson, game.Profile, false, game.UpdateQueue, armsMode, Player.EUpdateMode.Auto, AppEnvironment.Config.CharacterController.ClientPlayerMode, () => 1f, () => 1f, new LocalStatisticManager(), LocalGameAccessor.GetSession(game), localMode);
+  createTask = game.vmethod_3(game.GameWorld, playerId, position, rotation, "Player", string.Empty, EPointOfView.FirstPerson, replacementProfile ?? game.Profile, false, game.UpdateQueue, armsMode, Player.EUpdateMode.Auto, AppEnvironment.Config.CharacterController.ClientPlayerMode, () => 1f, () => 1f, new LocalStatisticManager(), LocalGameAccessor.GetSession(game), localMode);
 catch (Exception ex)
   pipelineFailure = ex;
 if (pipelineFailure != null)
@@ -74,16 +83,25 @@ try
   if (createTask.IsFaulted)
     throw createTask.Exception?.InnerException ?? createTask.Exception;
   var newPlayer = createTask.Result;
+  ProfileReplacementValidation.ValidateCreated(game, deadPlayer, newPlayer, originalProfile, replacementProfile);
   BodyReplacementCompatibility.ValidateCreated(newPlayer);
   newPlayer.Location = game.Location.Id;
+  if (replacementProfile != null)
+    game.Profile = replacementProfile;
   game.LocalPlayer = newPlayer;
   DoorDashCompatHelper.FollowBody(deadPlayer, newPlayer);
-  LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
-  LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
-  var bots = LocalGameAccessor.GetBotsController(game);
-  bots.DestroyInfo(deadPlayer);
-  DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
-  bots.AddActivePLayer(newPlayer);
+  if (replacementProfile != null)
+    LocalGameAccessor.ReplacePlayerIdentityInDictionary(game, deadPlayer, newPlayer);
+  else
+    LocalGameAccessor.ReplacePlayerInDictionary(game, newPlayer);
+  try
+    var bots = LocalGameAccessor.GetBotsController(game);
+    bots.DestroyInfo(deadPlayer);
+    if (replacementProfile == null)
+      DeadBodyGuard.PurgeRecords(bots, deadPlayer.ProfileId);
+    bots.AddActivePLayer(newPlayer);
+  finally
+    LocalGameAccessor.SubscribeDeathHandler(game, newPlayer);
   if (Singleton<GameWorld>.Instantiated)
     Singleton<GameWorld>.Instance.MainPlayer = newPlayer;
   var newOwner = LocalGameAccessor.CreatePlayerOwner(game, newPlayer);

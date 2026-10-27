@@ -21,16 +21,31 @@ public interface ISpawnSelector
 public sealed class InfilSpawnSelector : ISpawnSelector
 {
     private readonly ISpawnSelector _fallback;
+    private readonly Profile _profile;
 
     public InfilSpawnSelector(ISpawnSelector fallback = null)
     {
         _fallback = fallback;
     }
 
+    /// <summary>
+    /// Resolves the new identity's faction before Game.Profile is committed. An explicit
+    /// profile requires a native spawn; resolve before starting a destructive replacement.
+    /// The one-argument constructor retains its existing fallback behavior.
+    /// </summary>
+    public InfilSpawnSelector(ISpawnSelector fallback, Profile profile)
+    {
+        _fallback = fallback;
+        _profile = profile ?? throw new ArgumentNullException(nameof(profile));
+    }
+
     public (Vector3 position, Quaternion rotation) Resolve(LocalGame game)
     {
-        if (GameSpawnPoints.TryResolve(game, out var position, out var rotation))
+        if (GameSpawnPoints.TryResolve(game, out var position, out var rotation, _profile))
             return (position, rotation);
+
+        if (_profile != null)
+            throw new InvalidOperationException("No native player spawn is available for the replacement profile's faction.");
 
         if (_fallback != null)
             return _fallback.Resolve(game);
@@ -42,7 +57,7 @@ public sealed class InfilSpawnSelector : ISpawnSelector
 /// <summary>The game's own player spawn points (map-authored, always inside the map).</summary>
 internal static class GameSpawnPoints
 {
-    public static bool TryResolve(LocalGame game, out Vector3 position, out Quaternion rotation)
+    public static bool TryResolve(LocalGame game, out Vector3 position, out Quaternion rotation, Profile profile = null)
     {
         position = default;
         rotation = Quaternion.identity;
@@ -51,14 +66,15 @@ internal static class GameSpawnPoints
         if (spawnSystem == null)
             return false;
 
+        profile ??= game.Profile;
         var spawnPoint = spawnSystem.SelectSpawnPoint(
             ESpawnCategory.Player,
-            game.Profile.Info.Side,
+            profile.Info.Side,
             null,
             null,
             null,
             null,
-            game.Profile.Id);
+            profile.Id);
 
         if (spawnPoint == null)
             return false;

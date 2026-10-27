@@ -130,12 +130,12 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
            || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid);
 
-    internal static void Prepare(LocalGame game, LocalPlayer oldBody)
+    internal static void Prepare(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
     {
         var refusal = GetRejectionReason();
         if (refusal != null) throw new InvalidOperationException(refusal);
         if (!HasOptionalMods()) return; // Keep the original Core path unchanged when none is installed.
-        BodyReplacementContext.Begin(game, oldBody);
+        BodyReplacementContext.Begin(game, oldBody, replacementProfile);
         _prepared = true;
         RecoilLegacyCompat.Prepare(game, oldBody);
         ContinuousLoadAmmoCompat.Prepare(game, oldBody);

@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="..\Redeploy.Core\Engine\SignalDispatcher.cs" Link="Engine\SignalDispatcher.cs" />
     <Compile Include="..\Redeploy.Core\Engine\RespawnPreflight.cs" Link="Engine\RespawnPreflight.cs" />
+    <Compile Include="..\Redeploy.Core\Engine\ProfileReplacementPolicy.cs" Link="Engine\ProfileReplacementPolicy.cs" />
     <Compile Include="..\Redeploy.Core\Engine\RespawnClaimLogic.cs" Link="Engine\RespawnClaimLogic.cs" />
     <Compile Include="..\Redeploy.Core\Engine\AvailabilityRule.cs" Link="Engine\AvailabilityRule.cs" />
     <Compile Include="..\drivers\CoreVersionGate.cs" Link="Drivers\CoreVersionGate.cs" />

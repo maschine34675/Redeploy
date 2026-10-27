@@ -56,6 +56,23 @@ public static class LocalGameAccessor
         dict[player.ProfileId] = player;
     }
 
+    internal static void ValidateReplacementIdentity(LocalGame game, LocalPlayer oldBody, string newId,
+        LocalPlayer candidate = null)
+    {
+        var dict = GameTraverse(game).Field("_players").GetValue<Dictionary<string, Player>>();
+        if (dict == null || (dict.TryGetValue(newId, out var existing) && !ReferenceEquals(existing, candidate))
+            || (dict.TryGetValue(oldBody.ProfileId, out var old) && !ReferenceEquals(old, oldBody)))
+            throw new InvalidOperationException("The player registry cannot safely replace this identity.");
+    }
+
+    internal static void ReplacePlayerIdentityInDictionary(LocalGame game, LocalPlayer oldBody, LocalPlayer player)
+    {
+        ValidateReplacementIdentity(game, oldBody, player.ProfileId, player);
+        var dict = GameTraverse(game).Field("_players").GetValue<Dictionary<string, Player>>();
+        dict.Remove(oldBody.ProfileId);
+        dict[player.ProfileId] = player;
+    }
+
     public static IEftSession GetSession(LocalGame game)
         => GameTraverse(game).Field("_backEnd").GetValue<IEftSession>();
 
