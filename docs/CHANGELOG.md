@@ -7,6 +7,23 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
 contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
+## Experimental branch — PMC to Scav, Core 1.0.16
+
+- Optional `RespawnAsScav`: after a PMC death, continue once in the same raid as a
+  fresh Scav. The ordinary Player-Scav and its cooldown are not consumed.
+- The PMC corpse stays lootable. The PMC outcome remains a death; successful
+  Scav extraction sends carried loot through a system message and Receive items.
+- Recovered insured items are excluded from the original insurance claim. A
+  second death ends the raid; it does not offer another respawn.
+- Shared Core accepts an explicitly separate replacement profile. Existing
+  same-profile consumers retain their behavior and RespawnApi version 1.
+- The extraction timer now preserves remaining time across ordinary respawns
+  as well as the Scav switch.
+- Replacement death callbacks follow native ordering, allowing PitFireTeam to
+  handle the death before raid teardown disposes its registry. The death handler
+  is also retained when bot rebind fails.
+- This branch is not a release. See [behavior, evidence and limits](PMC-TO-SCAV.md).
+
 ## Unreleased — Core 1.0.14–1.0.15
 
 - ImpactCue 2.0.3+: bind telemetry and weapon/health caches to the confirmed

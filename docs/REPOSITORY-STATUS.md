@@ -1,5 +1,14 @@
 # Redeploy repository status
 
+## Experimental worktree — 2026-10-27
+
+- `feature/pmc-to-scav`, based on `ecf40d9`, is developed separately in
+  `D:\SPT41\Development\Redeploy-pmc-scav`.
+- Client/Server remain 1.0.2; this branch requires shared Core 1.0.16.
+- Default-off PMC-to-Scav continuation with independent generation and mailed
+  extracted loot. See [contract and validation](PMC-TO-SCAV.md).
+- No main-branch merge, push or release is part of this feature work.
+
 ## Active development — 2026-10-25
 
 - Checkout: `D:\SPT41\Development\Redeploy`, branch `main`.

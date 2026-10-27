@@ -17,6 +17,10 @@ Core version line.
 - **Insurance is preserved.** The mod keeps insurance records for gear left on corpses; returns still depend on SPT's normal insurance rules and your server settings.
 - **Kills are carried over.** Kills you scored before respawning still appear on the end-of-raid screen.
 - **Fails safe.** When the server component is missing, the mod stays inactive and death behaves exactly like vanilla.
+- **Experimental PMC-to-Scav continuation** on `feature/pmc-to-scav`: the optional
+  `RespawnAsScav` setting offers one fresh Scav life in the same raid after PMC
+  death. Extracted loot is delivered by message. It does not consume the regular
+  Player-Scav cooldown. See [behavior and test scope](docs/PMC-TO-SCAV.md).
 
 ## Requirements and compatibility
 
@@ -24,7 +28,7 @@ Core version line.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
 - **Version lines:** This release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
-  The current development source builds Core `1.0.15`; its rebuilt clients require that minimum. The published 1.0.2 package is unchanged.
+  This feature branch builds Core `1.0.16`; its rebuilt client requires that minimum. The published 1.0.2 package is unchanged.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -132,6 +136,7 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or close t
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | Master switch. When off, death behaves like vanilla. |
+| `RespawnAsScav` | `false` | Experimental: continue a dead PMC's raid once as a fresh Scav; successful extraction delivers carried loot by message. Regular Scav raids keep normal Redeploy behavior. |
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` or less means unlimited. |
 | `RespawnHealthPercent` | `100` | Starting health for each body part, clamped to 1–100%; old body-part effects are cleared. |
 | `RespawnCooldownSeconds` | `5` | Minimum seconds since death; time spent watching a replay counts. `0` or less removes the extra wait, but an active Killcam can still hold the respawn. |

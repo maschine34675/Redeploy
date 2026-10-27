@@ -1,5 +1,17 @@
 # RespawnApi v1 für Redeploy.Core: finaler Vorschlag (revidiert)
 
+> **Experimental addition, 2026-10-27, Core 1.0.16:**
+> `RespawnRequest.ReplacementProfile` is optional. `null` preserves the existing
+> same-profile pipeline. A non-null profile must have a distinct ID, independent
+> mutable state and item IDs; Core validates before teardown and commits it only
+> after validating the new body. It does not transfer equipment, victims or
+> progression between identities. The caller owns creation, settlement and
+> faction-specific extraction. `InfilSpawnSelector(ISpawnSelector, Profile)` can
+> resolve a target faction's native spawn before profile replacement; it refuses
+> missing faction spawns. The original constructor and RespawnApi v1 are unchanged.
+> See [PMC-to-Scav implementation and limits](PMC-TO-SCAV.md). The historical
+> design record below does not describe this optional identity change.
+
 > **Status (12.09.2026, Entwicklerdokument, deutsch):** Entwurf vom 11.09.2026 aus drei
 > konkurrierenden Designs, drei Bewertungen und drei Widerlegungsprüfungen. Alle Zeilenangaben
 > beziehen sich auf den Stand **vor** Stufe 0: Redeploy `bc95a28`, ArenaMode `0add445`.
