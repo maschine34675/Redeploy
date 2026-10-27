@@ -46,6 +46,7 @@ public class Plugin : BaseUnityPlugin
         Settings.Init(Config);
 
         RedeployRaidStartedPatch.EnablePatch();
+        PmcScavPatches.EnablePatches();
         DeathInterception.EnsurePatched();
         DeathInterception.Register(new RedeployDriver());
         PerfectCullingFix.EnableOnce();

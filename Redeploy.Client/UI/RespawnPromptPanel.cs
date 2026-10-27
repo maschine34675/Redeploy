@@ -93,21 +93,31 @@ public class RespawnPromptPanel : MonoBehaviour
             : (Settings.MaxRespawnsPerRaid.Value - RespawnSessionState.RespawnsUsed).ToString();
 
         GUILayout.Label(
-            $"Respawn without gear and recover your equipment from your corpse.\nRespawns remaining: {remaining}",
+            PmcScavSession.IsOffered
+                ? "Continue once as a fresh Scav. Your PMC remains dead.\nExtracted Scav loot arrives by message; your regular Scav is unchanged."
+                : $"Respawn without gear and recover your equipment from your corpse.\nRespawns remaining: {remaining}",
             _bodyStyle);
 
         GUILayout.Space(8);
 
         var itemRequired = Settings.RequiredRespawnItem.Value != "None";
-        var canRespawn = !itemRequired || RespawnSessionState.RespawnItemAvailable;
+        var hasRequiredItem = !itemRequired || RespawnSessionState.RespawnItemAvailable;
+        var canRespawn = hasRequiredItem;
+
+        if (PmcScavSession.IsOffered && PmcScavSession.UnavailableReason != null)
+        {
+            canRespawn = false;
+            GUILayout.Label(PmcScavSession.UnavailableReason, _warningStyle);
+            GUILayout.Space(6);
+        }
 
         if (itemRequired)
         {
             GUILayout.Label(
-                canRespawn
+                hasRequiredItem
                     ? $"Respawning consumes: {Settings.RequiredRespawnItem.Value}"
                     : $"Respawn unavailable: no {Settings.RequiredRespawnItem.Value} in inventory!",
-                canRespawn ? _bodyStyle : _warningStyle);
+                hasRequiredItem ? _bodyStyle : _warningStyle);
             GUILayout.Space(6);
         }
 
@@ -116,13 +126,21 @@ public class RespawnPromptPanel : MonoBehaviour
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("Respawn near corpse", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
-                RespawnService.BeginRespawn(RespawnLocationMode.NearCorpse);
+            if (PmcScavSession.IsOffered)
+            {
+                if (GUILayout.Button("Continue as Scav", _buttonStyle, GUILayout.Width(250f), GUILayout.Height(36f)))
+                    RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
+            }
+            else
+            {
+                if (GUILayout.Button("Respawn near corpse", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
+                    RespawnService.BeginRespawn(RespawnLocationMode.NearCorpse);
 
-            GUILayout.Space(12);
+                GUILayout.Space(12);
 
-            if (GUILayout.Button("Respawn at spawn point", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
-                RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
+                if (GUILayout.Button("Respawn at spawn point", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
+                    RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
+            }
 
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();

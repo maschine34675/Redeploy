@@ -1,4 +1,5 @@
 using Redeploy.Server.Helpers;
+using Redeploy.Server.Scav;
 using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
@@ -37,10 +38,11 @@ public sealed class RedeployPostRaidPatch : AbstractPatch
     // compared against SURVIVED — the two are disjoint, so the guard could never fire.
 
     [PatchPostfix]
-    public static void Postfix(SptProfile fullServerProfile, EndLocalRaidRequestData request)
+    public static void Postfix(MongoId sessionId, SptProfile fullServerProfile, EndLocalRaidRequestData request)
     {
         var pmcData = fullServerProfile?.CharacterData?.PmcData;
         var preferredEquipment = request?.Results?.Profile?.Inventory?.Equipment;
         InventoryEquipmentFixHelper.EnsureEquipmentRootIsValid(pmcData, preferredEquipment);
+        if (fullServerProfile != null) ScavContinuationService.Current?.NativePmcHandled(sessionId, fullServerProfile);
     }
 }

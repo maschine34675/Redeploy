@@ -30,6 +30,7 @@ public static class RespawnSessionState
         // prompt has to be told, on every path.
         UI.RespawnPromptPanel.Instance?.Hide();
         Reset();
+        PmcScavSession.ResetForRaidStart();
         IsInRaid = true;
     }
 

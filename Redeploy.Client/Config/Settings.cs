@@ -5,6 +5,7 @@ namespace Redeploy.Config;
 public static class Settings
 {
     public static ConfigEntry<bool> Enabled { get; private set; }
+    public static ConfigEntry<bool> RespawnAsScav { get; private set; }
     public static ConfigEntry<int> MaxRespawnsPerRaid { get; private set; }
     public static ConfigEntry<float> RespawnHealthPercent { get; private set; }
     public static ConfigEntry<float> RespawnCooldownSeconds { get; private set; }
@@ -47,6 +48,12 @@ public static class Settings
             "MaxRespawnsPerRaid",
             1,
             "How many respawns are allowed per raid. 0 = unlimited.");
+
+        RespawnAsScav = config.Bind(
+            "General",
+            "RespawnAsScav",
+            false,
+            "After a PMC death, offer one fresh Scav in the same raid instead of a normal respawn. The PMC remains dead; extract as the Scav to receive carried loot by message. Your regular Scav and its cooldown are unchanged. A second death ends the raid.");
 
         RespawnHealthPercent = config.Bind(
             "Respawn",

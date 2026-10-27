@@ -27,6 +27,9 @@ internal sealed class RedeployDriver : IDeathInterceptionDriver
         if (RespawnSessionState.HasGivenUp)
             return false;
 
+        if (PmcScavSession.HasSwitched(game))
+            return false;
+
         if (RespawnSessionState.IsRespawnInProgress)
             return false;
 

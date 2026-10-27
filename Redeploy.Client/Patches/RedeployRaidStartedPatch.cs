@@ -24,6 +24,9 @@ internal sealed class RedeployRaidStartedPatch : ModulePatch
     [PatchPostfix]
     private static void Postfix()
     {
+        // A previous hybrid result can outlive Core's early async GameEnd reset.
+        // Clear it even when Redeploy was disabled between raids.
+        PmcScavSession.ResetForRaidStart();
         if (!Settings.Enabled.Value)
             return;
 

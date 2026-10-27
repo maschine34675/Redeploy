@@ -56,6 +56,7 @@ public static class RespawnService
 
         RespawnSessionState.CurrentLocalGame = game;
         RespawnSessionState.RegisterDeath(corpsePos);
+        PmcScavSession.RecordDeath(game);
         RespawnSessionState.RespawnItemAvailable = HasRequiredRespawnItem(deadPlayer);
         SpawnSystemCache.Warm(game);
 
@@ -150,10 +151,10 @@ public static class RespawnService
             return;
 
         RespawnSessionState.SelectedSpawnMode = spawnMode;
-        game.StartCoroutine(RespawnCoroutine(game));
+        game.StartCoroutine(RespawnCoroutine(game, PmcScavSession.IsOffered));
     }
 
-    private static IEnumerator RespawnCoroutine(LocalGame game)
+    private static IEnumerator RespawnCoroutine(LocalGame game, bool continueAsScav)
     {
         RespawnSessionState.IsRespawnInProgress = true;
 
@@ -187,13 +188,39 @@ public static class RespawnService
             yield break;
         }
 
+        Profile scavProfile = null;
+        ISpawnSelector scavSpawn = null;
+        if (continueAsScav)
+        {
+            Exception prepareFailure = null;
+            yield return game.StartCoroutine(PmcScavSession.Prepare(game,
+                () => ConsumeRespawnItem(game.LocalPlayer, failOnError: true),
+                (profile, selector, error) =>
+                {
+                    scavProfile = profile;
+                    scavSpawn = selector;
+                    prepareFailure = error;
+                }));
+
+            if (prepareFailure != null || scavProfile == null)
+            {
+                Plugin.ModLogger.LogWarning($"Scav continuation unavailable: {prepareFailure?.Message ?? "no profile returned"}");
+                PmcScavSession.NotifyUnavailable(prepareFailure?.Message);
+                if (game.Status == GameStatus.Started)
+                    GiveUpRaid();
+                RespawnSessionState.IsRespawnInProgress = false;
+                yield break;
+            }
+        }
+
         var request = new RespawnRequest
         {
             Game = game,
             DeadPlayer = game.LocalPlayer,
-            SpawnSelector = BuildSpawnSelector(),
-            OnBeforeProfileMutation = ConsumeRespawnItem,
-            EquipmentStrategy = (profile, dead) => EquipmentSurgeon.ReplaceEquipment(profile, dead),
+            ReplacementProfile = scavProfile,
+            SpawnSelector = scavSpawn ?? BuildSpawnSelector(),
+            OnBeforeProfileMutation = continueAsScav ? null : dead => ConsumeRespawnItem(dead),
+            EquipmentStrategy = continueAsScav ? null : (profile, dead) => EquipmentSurgeon.ReplaceEquipment(profile, dead),
             HealthPercent = Settings.RespawnHealthPercent.Value,
             EnablePipelineTiming = Settings.EnablePipelineTiming.Value,
             Protection = new SpawnProtectionOptions
@@ -207,6 +234,22 @@ public static class RespawnService
 
         Exception failure = null;
         yield return game.StartCoroutine(RespawnEngine.RunRespawn(request, e => failure = e));
+
+        if (continueAsScav)
+        {
+            if (PmcScavSession.HasSwitched(game))
+            {
+                Exception bindingFailure = null;
+                try { PmcScavSession.CompleteSwitch(game); }
+                catch (Exception ex) { bindingFailure = ex; }
+                if (failure == null)
+                    failure = bindingFailure;
+            }
+            else
+            {
+                PmcScavSession.CancelPrepared();
+            }
+        }
 
         if (failure is OperationCanceledException)
         {
@@ -262,7 +305,7 @@ public static class RespawnService
         return false;
     }
 
-    private static void ConsumeRespawnItem(LocalPlayer deadPlayer)
+    private static void ConsumeRespawnItem(LocalPlayer deadPlayer, bool failOnError = false)
     {
         var templateId = Settings.GetRequiredRespawnItemTemplateId();
         if (string.IsNullOrEmpty(templateId))
@@ -280,11 +323,15 @@ public static class RespawnService
 
         if (requiredItem == null)
         {
+            if (failOnError)
+                throw new InvalidOperationException("The required respawn item is no longer available.");
             Plugin.ModLogger.LogWarning("Required respawn item not found at consume time; respawning anyway.");
             return;
         }
 
         var result = ItemManipulator.RemoveWithoutRestrictions(requiredItem, deadPlayer.InventoryController);
+        if (result.Failed && failOnError)
+            throw new InvalidOperationException($"The required respawn item could not be consumed: {result.Error}");
         if (result.Failed)
             Plugin.ModLogger.LogWarning($"Failed to consume respawn item: {result.Error}");
         else
