@@ -22,7 +22,7 @@ alive-player lookup. Status and exact-owned cleanup remain available after a rai
 
 | Action | Meaning |
 | --- | --- |
-| `Status()` | Reports current body instance ID, adoption, ownership, flags and counts. No tokens, journals or profile snapshots. |
+| `Status()` | Reports current body instance ID, adoption, ownership, flags and counts, plus the read-only `preparation` diagnostics below. No tokens, journals or profile snapshots. |
 | `HoldActivation(true)` | Arm on the original PMC. Suppress only the later activation acknowledgment for this exact game's adopted Scav. The native preparation/body switch still runs. |
 | `HoldActivation(false)` | Disarm. Does not send or replay a suppressed acknowledgment. New-game detection also disarms. |
 | `SetScavExits(false)` | Save the exact scene controller and exit array, then install a distinct empty array to test the prompt. |
@@ -46,6 +46,35 @@ require no active exit/delivery overrides before leaving the isolated test.
 Native movement coverage is intentionally bounded: this runs the actual patched
 native item-movement boundary with a synthetic controller and test item. It does
 not prove a BTR ride, dialogue rendering, service pricing or a UI purchase.
+
+## Read-only preparation diagnostics
+
+`Status().preparation` reads existing state through reflection. It adds no hooks,
+starts no timers or loading jobs, does not alter production state, and never reads
+or serializes lease tokens, generation hashes, profile snapshots or task results.
+Diagnostic lookup failures appear as `available=false` with an exception type;
+the original status fields remain available.
+
+- `frame` and `realtime` distinguish advancing Unity frames from a stopped main thread.
+- `contextPresent`, `contextGameMatches`, `preparedScavPresent` and
+  `preparedScavIsCurrentProfile` distinguish an absent preparation context, a
+  parsed Scav reservation and an adopted profile. These are booleans only.
+- `respawnInProgress`, `pendingChoice`, `ending` and `backendAcknowledged` are
+  existing client flags; an absent reflected value is `null`, not `false`.
+- `pipelineRunning` and `replacementCreating` describe existing Core state.
+  `coreStateAvailable` and `replacementContextAvailable` report type lookup.
+  `previousBodyId` and `lastRespawnedBodyId` are Unity instance IDs only; an older
+  respawned body does not prove that the current attempt advanced.
+- `timingActive`, `timingStartFrame` and `lastCompletedStage` read the optional
+  existing Core timing collector. The stage is the last completed mark, not the
+  currently executing method. With timing disabled or no active measurement,
+  no stage is available; this probe does not enable timing.
+
+A present reserved Scav with `pipelineRunning=false`, an unchanged dead PMC and
+advancing frames points toward preparation/resource loading before Core. It does
+not prove a particular bundle or job is stalled. The HTTP and preload tasks are
+coroutine-local variables and are not measured by this snapshot. Compare repeated
+explicit status calls and native logs; do not infer a missing task as completed.
 
 Verified EFT 40743 source boundaries:
 

@@ -320,6 +320,65 @@ public sealed class Plugin : BaseUnityPlugin
             CleanupTemporary();
     }
 
+    private static object ReadPreparationStatus(LocalGame game)
+    {
+        try
+        {
+            var context = Read(_sessionType, "_context");
+            var contextType = context?.GetType();
+            var preparedScav = Read(contextType, "Scav", context) as Profile;
+            var engine = Find("Redeploy.Core.Engine.RespawnEngineState");
+            var replacement = Find("Redeploy.Core.Compat.BodyReplacementContext");
+            var timing = Read(Find("Redeploy.Core.Engine.RespawnPipelineTiming"), "_active");
+            return new
+            {
+                available = true, frame = Time.frameCount, realtime = Time.realtimeSinceStartup,
+                respawnInProgress = Read(_stateType, "IsRespawnInProgress"),
+                pendingChoice = Read(_stateType, "PendingRespawnChoice"),
+                contextPresent = context != null,
+                contextGameMatches = context != null && game != null
+                    && ReferenceEquals(Read(contextType, "Game", context), game),
+                preparedScavPresent = preparedScav != null,
+                preparedScavIsCurrentProfile = preparedScav != null && ReferenceEquals(preparedScav, game?.Profile),
+                ending = Read(contextType, "Ending", context),
+                backendAcknowledged = Read(contextType, "BackendAcknowledged", context),
+                coreStateAvailable = engine != null,
+                pipelineRunning = Read(engine, "IsPipelineRunning"),
+                replacementContextAvailable = replacement != null,
+                replacementCreating = Read(replacement, "IsCreating"),
+                previousBodyId = BodyId(Read(replacement, "PreviousBody") as Player),
+                lastRespawnedBodyId = BodyId(Read(engine, "LastRespawnedPlayer") as Player),
+                timingActive = timing != null,
+                timingStartFrame = Read(timing?.GetType(), "_startFrame", timing),
+                lastCompletedStage = ReadLastCompletedStage(timing)
+            };
+        }
+        catch (Exception ex)
+        {
+            // A diagnostic contract drift must not hide the original probe status.
+            return new { available = false, errorType = ex.GetType().Name };
+        }
+    }
+
+    private static string ReadLastCompletedStage(object timing)
+    {
+        var stages = Read(timing?.GetType(), "_stages", timing);
+        if (Read(stages?.GetType(), "_groups", stages) is not System.Collections.IList groups || groups.Count == 0)
+            return null;
+        var group = groups[groups.Count - 1] as string;
+        if (group == null)
+            return null;
+        string name = null;
+        if (Read(stages.GetType(), "_steps", stages) is System.Collections.IDictionary steps
+            && steps[group] is System.Collections.IList entries && entries.Count > 0)
+        {
+            var step = entries[entries.Count - 1];
+            name = Read(step?.GetType(), "Name", step) as string;
+        }
+        var result = string.IsNullOrEmpty(name) ? group : group + "." + name;
+        return result.Length <= 120 ? result : result.Substring(0, 120);
+    }
+
     [UiBridgeAction("Status", Control = true, Description = "Bounded probe state: current body identity, flags and counts; no profile snapshots or continuation credentials.")]
     public static string Status() => Run(() =>
     {
@@ -332,6 +391,7 @@ public sealed class Plugin : BaseUnityPlugin
             heldAcknowledgements = _heldAcknowledgements, exitsOverridden = _exitController != null,
             scavExitCount = ExfiltrationController.Instance?.ScavExfiltrationPoints?.Length,
             priorDeliverySeeded = _seedStash != null, seededItemCount = _seedGrid?.ItemCollection.Count,
-            itemOwnerCount = world?.ItemOwners.Count, lastCleanup = _lastCleanup };
+            itemOwnerCount = world?.ItemOwners.Count, lastCleanup = _lastCleanup,
+            preparation = ReadPreparationStatus(game) };
     });
 }
