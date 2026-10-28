@@ -1,5 +1,9 @@
 using EFT;
+using EFT.Dialogs;
+using EFT.InventoryLogic;
+using EFT.Quests;
 using EFT.UI;
+using EFT.Vehicle;
 using HarmonyLib;
 using JsonType;
 using Redeploy.Services;
@@ -29,6 +33,11 @@ internal static class PmcScavPatches
             new PmcScavTransitInteractionPatch().Enable();
             new PmcScavTransitStartPatch().Enable();
             new PmcScavTransitUiPatch().Enable();
+            new PmcScavBtrDialogPatch().Enable();
+            new PmcScavBtrScreenPatch().Enable();
+            new PmcScavBtrPurchasePatch().Enable();
+            new PmcScavBtrTransferPatch().Enable();
+            new PmcScavSellAllPatch().Enable();
             UnavailableReason = null;
         }
         catch (Exception ex)
@@ -170,5 +179,71 @@ internal static class PmcScavPatches
         [PatchPrefix]
         private static bool Prefix(ExtractionTimersPanel __instance)
             => !PmcScavSession.BlocksTransitUi(__instance);
+    }
+
+    private sealed class PmcScavBtrDialogPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(TraderDialogScreen), nameof(TraderDialogScreen.HandlePurchaseService),
+                new[] { typeof(DialogAction) });
+
+        [PatchPrefix]
+        private static bool Prefix(DialogAction action, Profile ____profile)
+            => !(action is DialogPurchaseServiceAction purchase
+                && PmcScavSession.BlocksBtrItemDelivery(____profile, purchase.ServiceType));
+    }
+
+    private sealed class PmcScavBtrScreenPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(BTRView), nameof(BTRView.OpenTransferItemsScreen), Type.EmptyTypes);
+
+        [PatchPrefix]
+        private static bool Prefix()
+            => !PmcScavSession.BlocksBtrItemDelivery(GamePlayerOwner.MyPlayer?.Profile,
+                ETraderServiceType.BtrItemsDelivery);
+    }
+
+    private sealed class PmcScavBtrPurchasePatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(InventoryController), nameof(InventoryController.TryPurchaseTraderService),
+                new[] { typeof(ETraderServiceType), typeof(QuestController), typeof(string) });
+
+        [PatchPrefix]
+        private static bool Prefix(InventoryController __instance, ETraderServiceType serviceType,
+            ref Task<bool> __result)
+        {
+            if (!PmcScavSession.BlocksBtrItemDelivery(__instance.Profile, serviceType))
+                return true;
+            __result = Task.FromResult(false);
+            return false;
+        }
+    }
+
+    private sealed class PmcScavBtrTransferPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(TransferItemsController), nameof(TransferItemsController.MoveItemsFromTempStashToTransferStash),
+                new[] { typeof(Player) });
+
+        [PatchPrefix]
+        private static bool Prefix(TransferItemsController __instance, Player player)
+            => !PmcScavSession.BlocksBtrItemDelivery(player?.Profile, __instance.ServiceType);
+    }
+
+    private sealed class PmcScavSellAllPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(ScavengerInventoryScreen), nameof(ScavengerInventoryScreen.SellAll), Type.EmptyTypes);
+
+        [PatchPrefix]
+        private static bool Prefix(BackEndInventoryController ____scavInventoryController, ref Task __result)
+        {
+            if (!PmcScavSession.BlocksScavSellAll(____scavInventoryController))
+                return true;
+            __result = Task.CompletedTask;
+            return false;
+        }
     }
 }

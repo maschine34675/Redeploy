@@ -4,6 +4,7 @@ using Diz.Jobs;
 using EFT;
 using EFT.Communications;
 using EFT.Interactive;
+using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.BattleTimer;
 using HarmonyLib;
@@ -55,6 +56,9 @@ internal static class PmcScavSession
 
     private static Context _context;
     private static LocalGame _deathGame;
+    private static LocalPlayer _deathPlayer;
+    private static FlatItem[] _deathInsurance;
+    private static string _deathInsuranceFailure;
     private static float _deathTime;
     private static string _unsafePreparationServerId;
     private static string _unsafePreparationPmcId;
@@ -71,8 +75,31 @@ internal static class PmcScavSession
             var game = RespawnSessionState.CurrentLocalGame;
             if (game == null || HasSwitched(game))
                 return null;
-            return ScavUnavailableReason(LocalGameAccessor.GetSession(game)?.ProfileOfPet);
+            return ScavUnavailableReason(LocalGameAccessor.GetSession(game)?.ProfileOfPet)
+                ?? ReadOnlyUnavailableReason(game);
         }
+    }
+
+    private static string ReadOnlyUnavailableReason(LocalGame game)
+    {
+        if (_unsafePreparationReason != null || _context != null)
+            return "A Scav continuation has already been prepared. Finish or recover that continuation before trying again.";
+        if (!CanContinue(game) || game.Profile?.Info?.Side == EPlayerSide.Savage)
+            return "Only a live PMC raid can continue as your Scav.";
+        if (_deathInsuranceFailure != null)
+            return _deathInsuranceFailure;
+        var world = Singleton<GameWorld>.Instance;
+        if (world == null)
+            return "The current raid world is unavailable.";
+        var settings = LocalGameAccessor.GetLocalRaidSettings(game);
+        var exits = ExfiltrationController.Instance?.ScavExfiltrationPoints;
+        return ScavEligibilityPolicy.UnavailableReason(
+            ReferenceEquals(_deathGame, game) && ReferenceEquals(_deathPlayer, game.LocalPlayer)
+                && _deathInsurance != null,
+            !string.IsNullOrWhiteSpace(settings?.serverId),
+            exits != null && exits.Any(point => point != null), ExitAuthority != null,
+            ScavEligibilityPolicy.HasDeliveredItems(world.BtrController?.TransferItemsController?.Stash)
+                || ScavEligibilityPolicy.HasDeliveredItems(world.TransitController?.TransferItemsController?.Stash));
     }
 
     private static string ScavUnavailableReason(Profile scav)
@@ -104,16 +131,54 @@ internal static class PmcScavSession
     {
         _context = null;
         _deathGame = null;
+        _deathPlayer = null;
+        _deathInsurance = null;
+        _deathInsuranceFailure = null;
         _deathTime = 0f;
         _unsafePreparationServerId = _unsafePreparationPmcId = _unsafePreparationReason = null;
     }
 
     public static void RecordDeath(LocalGame game)
     {
-        if (game?.Profile?.Info.Side == EPlayerSide.Savage)
+        if (game?.Profile?.Info == null || game.Profile.Info.Side == EPlayerSide.Savage)
             return;
         _deathGame = game;
+        _deathPlayer = game.LocalPlayer;
         _deathTime = game.PastTime;
+        _deathInsurance = null;
+        _deathInsuranceFailure = null;
+        if (!Settings.RespawnAsScav.Value)
+            return;
+        try
+        {
+            // Recovery after process loss cannot inspect this world again. Freeze the
+            // native loss calculation now, including insured items dropped earlier.
+            _deathInsurance = CaptureDeathInsurance(game);
+        }
+        catch (Exception ex)
+        {
+            _deathInsuranceFailure = "The PMC insurance snapshot could not be verified. Continue as PMC or end the raid.";
+            Plugin.ModLogger.LogWarning($"{_deathInsuranceFailure} {ex.Message}");
+        }
+    }
+
+    private static FlatItem[] CaptureDeathInsurance(LocalGame game)
+    {
+        var world = Singleton<GameWorld>.Instance
+            ?? throw new InvalidOperationException("The raid world is unavailable for insurance capture.");
+        var factory = Singleton<ItemFactory>.Instance
+            ?? throw new InvalidOperationException("The item factory is unavailable for insurance capture.");
+        // Native GetLostInsuredItems also removes restricted items from corpse slots.
+        // Never run that cleanup at death: snapshot only, and let server recovery
+        // exclude protected/retained slots. Include the dead equipment root because
+        // this callback can precede the corpse entering the world's loot registry.
+        var roots = world.LootList.OfType<LootItem>().Select(item => item.ItemOwner.RootItem)
+            .Concat(world.LootList.OfType<LootableContainer>().Select(item => item.ItemOwner.RootItem))
+            .Append(game.LocalPlayer.Profile.Inventory.Equipment).Where(item => item != null).Distinct().ToArray();
+        var collections = roots.OfType<ContainerCollection>().GetAllItemsFromCollections();
+        var serialized = factory.TreeToFlatItems(roots.Concat(collections).Distinct());
+        return ScavEligibilityPolicy.SelectInsuredSnapshot(serialized,
+            game.Profile.InsuredItems.Select(item => item.ItemId.ToString()));
     }
 
     public static bool HasSwitched(LocalGame game)
@@ -121,7 +186,7 @@ internal static class PmcScavSession
             && _context.Scav != null && ReferenceEquals(game.Profile, _context.Scav);
 
     private static bool CanContinue(LocalGame game)
-        => ReferenceEquals(RespawnSessionState.CurrentLocalGame, game)
+        => game != null && ReferenceEquals(RespawnSessionState.CurrentLocalGame, game)
             && RespawnSessionState.IsInRaid && !RespawnSessionState.HasGivenUp
             && game.Status == GameStatus.Started;
 
@@ -135,22 +200,16 @@ internal static class PmcScavSession
         {
             if (UnavailableReason != null)
                 throw new InvalidOperationException(UnavailableReason);
-            if (!CanContinue(game) || game.Profile.Info.Side == EPlayerSide.Savage)
-                throw new InvalidOperationException("Only a live PMC raid can continue as your Scav.");
-            if (!ReferenceEquals(_deathGame, game))
-                throw new InvalidOperationException("The PMC death snapshot is unavailable.");
+            // Revalidate this exact game immediately before any profile mutation or
+            // reservation; the prompt may have been displayed before the respawn delay.
+            var unavailable = ReadOnlyUnavailableReason(game);
+            if (unavailable != null)
+                throw new InvalidOperationException(unavailable);
             var settings = LocalGameAccessor.GetLocalRaidSettings(game);
-            if (string.IsNullOrWhiteSpace(settings?.serverId))
-                throw new InvalidOperationException("The original raid identity is unavailable.");
-            var controller = ExfiltrationController.Instance;
-            if (controller?.ScavExfiltrationPoints == null || controller.ScavExfiltrationPoints.Length == 0)
-                throw new InvalidOperationException("This location has no Scav extraction points.");
-            if (ExitAuthority == null)
-                throw new InvalidOperationException("Scav extraction compatibility could not be verified.");
             var transfers = game.GetTransferItems();
             // A transfer stash's single root item is present even when nothing was sent.
             if (transfers.Values.Any(items => items != null && items.Length > 1))
-                throw new InvalidOperationException("Scav continuation is unavailable after sending items through BTR or transit.");
+                throw new InvalidOperationException(ScavEligibilityPolicy.PriorDeliveryReason);
 
             var dead = game.LocalPlayer;
             dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null);
@@ -181,12 +240,14 @@ internal static class PmcScavSession
                 ["protocolVersion"] = 2,
                 ["initialServerId"] = candidate.ServerId,
                 ["clientRequestId"] = Guid.NewGuid().ToString("N"),
+                ["pmcInsuranceCaptured"] = true,
                 ["frozenPmcDeath"] = new JObject
                 {
                     ["serverId"] = candidate.ServerId,
                     ["results"] = frozen,
-                    // Insurance is measured at final exit, after the Scav can recover gear.
-                    ["lostInsuredItems"] = new JArray(),
+                    // Recovery fallback only: final live settlement still measures loss
+                    // after the Scav has had the chance to recover insured equipment.
+                    ["lostInsuredItems"] = JArray.FromObject(_deathInsurance),
                 },
             };
             task = Post("prepare", body);
@@ -312,7 +373,7 @@ internal static class PmcScavSession
             return;
         BindScavExits(game);
         _context.ExitsBound = true;
-        ShowNotice("You are now playing your Scav. Extract to transfer your loot to the stash. Your next death ends the raid.");
+        ShowNotice("You are now playing your Scav. Extract to transfer your loot to the stash. Your next death ends the raid. BTR item delivery is unavailable during this continuation.");
         Plugin.ModLogger.LogInfo("PMC-to-Scav continuation active; your regular Scav is in use and the PMC remains dead.");
     }
 
@@ -380,6 +441,44 @@ internal static class PmcScavSession
     public static bool BlocksTransit(Player player)
         => _context != null && !_context.Ending && _context.Scav != null
             && ReferenceEquals(player?.Profile, _context.Scav);
+
+    public static bool BlocksBtrItemDelivery(object profile, ETraderServiceType serviceType)
+    {
+        var context = _context;
+        if (serviceType != ETraderServiceType.BtrItemsDelivery || context?.Scav == null
+            || !RespawnSessionState.IsInRaid
+            || !ReferenceEquals(RespawnSessionState.CurrentLocalGame, context.Game)
+            || !HasSwitched(context.Game)
+            || !ReferenceEquals(context.Game.LocalPlayer?.Profile, context.Scav)
+            || !ReferenceEquals(profile, context.Scav))
+            return false;
+        // Keep the exact adopted identity fenced during Ending as well: a delayed
+        // native service completion must not add delivery after the final snapshot.
+        ShowNotice(ScavEligibilityPolicy.BtrDeliveryReason, warning: true);
+        return true;
+    }
+
+    public static bool BlocksScavSellAll(BackEndInventoryController controller)
+    {
+        if (controller is not OfflineInventoryController offline)
+            return false;
+        var context = _context;
+        var accountScav = context?.Session?.ProfileOfPet;
+        bool ownsResultTransfer = context?.Scav != null && context.Ending && context.BackendAcknowledged
+            && (context.ScavOutcome == ExitStatus.Survived || context.ScavOutcome == ExitStatus.Runner)
+            && ReferenceEquals(controller._backendSession, context.Session)
+            && ReferenceEquals(controller.Profile, accountScav)
+            && accountScav?.Inventory?.Equipment != null
+            && ReferenceEquals(controller.Inventory?.Equipment, accountScav.Inventory.Equipment)
+            && RegularScavPolicy.IsAccountScav(context.OriginalPmc.Id, accountScav.Id, context.Scav.Id)
+            && accountScav.Inventory.Equipment.Id == context.Scav.Inventory?.Equipment?.Id;
+        if (!ownsResultTransfer && !ScavRecoveryClient.OwnsTransfer(offline))
+            return false;
+        // Native SellAll pays server-side but removes the Scav equipment only locally.
+        // A crash before FinishScavSession would otherwise expose the same loot again.
+        ShowNotice("Move loot to your stash first; Sell all is unavailable for this continued Scav.", warning: true);
+        return true;
+    }
 
     public static bool BlocksTransitUi(ExtractionTimersPanel panel)
         => _context != null && !_context.Ending && _context.ExitsBound && _context.Scav != null

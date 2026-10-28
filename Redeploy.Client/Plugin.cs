@@ -47,11 +47,13 @@ public class Plugin : BaseUnityPlugin
 
         RedeployRaidStartedPatch.EnablePatch();
         PmcScavPatches.EnablePatches();
+        ScavRecoveryMenuPatch.EnablePatches();
         DeathInterception.EnsurePatched();
         DeathInterception.Register(new RedeployDriver());
         PerfectCullingFix.EnableOnce();
 
         gameObject.AddComponent<RespawnPromptPanel>();
+        gameObject.AddComponent<ScavRecoveryPanel>();
 
         ModLogger.LogInfo($"{PluginName} {PluginVersion} loaded (Core {RedeployCore.Version})");
     }
