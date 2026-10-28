@@ -9,18 +9,19 @@ Core version line.
 
 ## Features
 
-- **Choose what happens when you die.** A prompt offers a respawn near your corpse, a respawn at a regular player spawn, or ending the raid as usual.
-- **Your gear stays on your corpse.** The replacement character has no armour, firearms or carried loot, except the retained items below. Recover the rest from your body — if you make it back.
-- **What you would normally keep, you keep.** Secure container, melee weapon, armband and pocket special slots move to the replacement character, because corpses never hand those back.
+- **Choose what happens when you die.** Respawn without gear near your corpse or at a regular player spawn, continue as your own Scav when available, or end the raid as usual.
+- **Your gear stays on your corpse.** A normal respawn has no armour, firearms or carried loot, except the retained items below. Recover the rest from your body — if you make it back. Choosing your own Scav instead uses that Scav's existing equipment.
+- **What you would normally keep, you keep.** During a normal respawn, the secure container, melee weapon, armband and pocket special slots move to the replacement character, because corpses never hand those back. They are not transferred to your own Scav.
 - **Spawn protection.** A configurable invulnerability window starts after respawn. Drawing a firearm, melee weapon or grenade ends it early; the final seconds are announced on screen.
 - **Optional respawn cost.** Require a medical item in your carried inventory; one whole matching item is removed when you respawn, not just one charge.
 - **Insurance is preserved.** The mod keeps insurance records for gear left on corpses; returns still depend on SPT's normal insurance rules and your server settings.
 - **Kills are carried over.** Kills you scored before respawning still appear on the end-of-raid screen.
 - **Fails safe.** When the server component is missing, the mod stays inactive and death behaves exactly like vanilla.
 - **Experimental PMC-to-Scav continuation** on `feature/pmc-to-scav`: the optional
-  `RespawnAsScav` setting offers one life as your regular Player-Scav in the same
+  `RespawnAsScav` setting is enabled by default and adds a choice of one life as your regular Player-Scav in the same
   raid after PMC death, provided the normal Scav cooldown has expired. Successful
-  extraction opens the usual Scav-to-stash transfer screen. See
+  extraction opens the usual Scav-to-stash transfer screen. A Scav cooldown only
+  disables this choice; the normal PMC respawn remains available. See
   [behavior and test scope](docs/PMC-TO-SCAV.md).
 
 ## Requirements and compatibility
@@ -99,7 +100,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.0.2 requires Core **1.0.13 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. The published Redeploy 1.0.2 release requires Core **1.0.13 or newer**; this experimental `feature/pmc-to-scav` client still reports 1.0.2 but requires Core **1.0.16 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 
@@ -120,9 +121,13 @@ Finish the raid and close the game and server. Remove `maschine-Redeploy.Client.
 
 There are no hotkeys. When you die, the raid keeps running and a window opens with the mouse cursor released:
 
-- **Respawn near corpse** — searches around your body for a reachable position, checking walls, fences, sniper/mine boundaries and standing room. It tries closer positions, your body's own spot and then a regular player spawn if needed. If every validated option fails, the final fallback is 2 m above the body and is logged as a warning; safe placement cannot be guaranteed on every map.
-- **Respawn at spawn point** — uses one of the map's regular player spawns, not necessarily your original spawn. Falls back to the near-corpse search if no player spawn is found.
+- **PMC near corpse** — respawns without gear, searching around your body for a reachable position and checking walls, fences, sniper/mine boundaries and standing room. It tries closer positions, your body's own spot and then a regular player spawn if needed. If every validated option fails, the final fallback is 2 m above the body and is logged as a warning; safe placement cannot be guaranteed on every map.
+- **PMC at spawn point** — respawns without gear at one of the map's regular player spawns, not necessarily your original spawn. Falls back to the near-corpse search if no player spawn is found.
+- **Continue as Scav** — uses your own regular Scav and their equipment at a Scav spawn. This additional choice is enabled by default; its button is disabled while your Scav is unavailable or on cooldown. After switching, another death ends the raid; successful extraction opens the normal loot transfer screen.
 - **End raid** — the raid ends as killed, exactly as it would without the mod.
+
+In a raid started as a Scav, the normal respawn buttons read **Scav near corpse**
+and **Scav at spawn point**. There is no separate own-Scav continuation choice.
 
 After respawning, run back to your body and loot your equipment from it. Redeploy leaves the corpse in the world, but does not protect its loot or prevent another mod from cleaning it up. The raid and its timer keep running while the prompt or replay is open; respawning does not restart the raid.
 
@@ -137,18 +142,24 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or close t
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | Master switch. When off, death behaves like vanilla. |
-| `RespawnAsScav` | `false` | Experimental: continue a dead PMC's raid once as your regular Scav when its cooldown has expired; extraction opens the normal loot transfer. Regular Scav raids keep normal Redeploy behavior. |
+| `RespawnAsScav` | `true` | Experimental: offer your regular Scav alongside naked PMC respawn when its cooldown has expired; extraction opens the normal loot transfer. Regular Scav raids keep normal Redeploy behavior. |
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` or less means unlimited. |
 | `RespawnHealthPercent` | `100` | Starting health for each body part, clamped to 1–100%; old body-part effects are cleared. |
 | `RespawnCooldownSeconds` | `5` | Minimum seconds since death; time spent watching a replay counts. `0` or less removes the extra wait, but an active Killcam can still hold the respawn. |
 | `CorpseSpawnDistanceMeters` | `20` | Preferred search distance, at least 5 m; half-distance and 3 m rings are also tried. This is not a guaranteed distance. |
 | `SpawnProtectionSeconds` | `10` | Invulnerability after respawning; `0` disables it. |
 | `RequiredRespawnItem` | `None` | Item that must be carried and is consumed to respawn. |
-| `Diagnostics/EnablePipelineTiming` | `false` | Opt-in technical respawn measurements. Reads extra state counters and measures the following frames; leave off during normal play. |
+| `Diagnostics/EnablePipelineTiming` | `false` | Advanced setting: opt-in technical respawn measurements. Reads extra state counters and measures the following frames; leave off during normal play. |
 
-`RequiredRespawnItem` accepts `None`, `Defibrillator`, `Grizzly`, `Salewa`, `IFAK`, `AFAK`, `CMS`, `Surv12`, `CarFirstAidKit`, `Adrenaline` or `Propital`. The check covers carried equipment and its contents, including your secure container, but not the stash. Remaining medical charges are not checked. If the item is absent when you die, only ending the raid remains. If it disappears before consumption or removal fails, the current implementation logs a warning and still respawns; this is a convenience setting, not a strict economy safeguard.
+`RequiredRespawnItem` accepts `None`, `Defibrillator`, `Grizzly`, `Salewa`, `IFAK`, `AFAK`, `CMS`, `Surv12`, `CarFirstAidKit`, `Adrenaline` or `Propital`. The check covers carried equipment and its contents, including your secure container, but not the stash. Remaining medical charges are not checked. The item must be present at death and is checked again when choosing a respawn. If it disappears later during ordinary respawn or removal fails, that path logs a warning and still respawns; this is a convenience setting, not a strict economy safeguard. Scav continuation reserves and consumes its cost before the body switch and rejects a failed cost transaction.
 
 Only the item selection is a fixed dropdown; the other numeric settings do not expose bounded sliders. Use finite, non-negative values unless the table explicitly describes otherwise.
+
+The F12 menu uses readable labels and units, ordered as General, Respawn and
+Diagnostics. Diagnostics is marked advanced and hidden in the normal unfiltered view. Existing
+configuration keys and saved preferences, including an explicitly disabled Scav
+option, are preserved. Both death-menu choices use the configured respawn limit
+and required item; after switching to your Scav, another death ends the raid.
 
 The timing switch applies to Redeploy's own respawns. Other Core consumers choose
 independently for each request. Successful camera/marker/freecam setup is logged at

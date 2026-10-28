@@ -9,14 +9,14 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
 ## Experimental branch — PMC to Scav, Core 1.0.16
 
-- Optional `RespawnAsScav`: after a PMC death, continue once in the same raid as
+- Default-on `RespawnAsScav`: after a PMC death, choose naked PMC respawn or continue once in the same raid as
   your regular Player-Scav with its current gear, when its normal cooldown permits.
 - The PMC corpse stays lootable. The PMC outcome remains a death; successful
   Scav extraction opens the normal Scav-to-stash transfer screen. Scav progression,
   regeneration and cooldown follow the native Scav outcome. This replaces the
   independent Scav and mailed-loot prototype.
-- Recovered insured items are excluded from the original insurance claim. A
-  second death ends the raid; it does not offer another respawn.
+- Recovered insured items are excluded from the original insurance claim. Dying
+  after switching to the Scav ends the raid; it does not offer another respawn.
 - Shared Core accepts an explicitly separate replacement profile. Existing
   same-profile consumers retain their behavior and RespawnApi version 1.
 - The extraction timer now preserves remaining time across ordinary respawns
@@ -28,6 +28,8 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
   handle the death before raid teardown disposes its registry. The death handler
   is also retained when bot rebind fails.
 - This branch is not a release. See [behavior, evidence and limits](PMC-TO-SCAV.md).
+- The configuration menu uses readable ordered labels and preserves existing
+  saved settings. Detailed respawn measurements are an advanced setting.
 
 ## Unreleased — Core 1.0.14–1.0.15
 

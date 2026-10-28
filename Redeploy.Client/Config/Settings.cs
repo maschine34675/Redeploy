@@ -31,63 +31,76 @@ public static class Settings
 
     public static void Init(ConfigFile config)
     {
-        EnablePipelineTiming = config.Bind(
-            "Diagnostics",
-            "EnablePipelineTiming",
-            false,
-            "Collect detailed respawn timing, state counters and following-frame measurements. Enable only when diagnosing slow respawns; this adds measurement work and technical log output.");
-
+        // Keep stored section/key identities stable. ConfigurationManager reads
+        // display names/order from tags and section order from the bind order.
         Enabled = config.Bind(
             "General",
             "Enabled",
             true,
-            "Enable respawn after death instead of immediately ending the raid.");
+            Describe("Enable respawning", "Enable respawn choices after death instead of immediately ending the raid.", 100));
+
+        RespawnAsScav = config.Bind(
+            "General",
+            "RespawnAsScav",
+            true,
+            Describe("Offer own Scav", "Also offer your regular Scav after a PMC death, alongside the normal respawn without equipment. Requires the normal Scav cooldown to have expired and uses that Scav's gear. Your PMC remains dead. Extract to use the normal loot transfer screen; dying as the Scav ends the raid. The next Scav receives the normal cooldown.", 90));
 
         MaxRespawnsPerRaid = config.Bind(
             "General",
             "MaxRespawnsPerRaid",
             1,
-            "How many respawns are allowed per raid. 0 = unlimited.");
-
-        RespawnAsScav = config.Bind(
-            "General",
-            "RespawnAsScav",
-            false,
-            "After a PMC death, offer your regular Scav in the same raid instead of a normal respawn. Requires the normal Scav cooldown to have expired and uses that Scav's gear. Your PMC remains dead. Extract to use the normal loot transfer screen; a second death ends the raid. The next Scav receives the normal cooldown.");
+            Describe("Respawn limit", "How many respawns are allowed per raid. 0 = unlimited.", 80));
 
         RespawnHealthPercent = config.Bind(
             "Respawn",
             "RespawnHealthPercent",
             100f,
-            "Health percentage restored after respawn (1-100).");
+            Describe("Respawn health (%)", "Health percentage restored after respawn (1-100).", 50));
 
         RespawnCooldownSeconds = config.Bind(
             "Respawn",
             "RespawnCooldownSeconds",
             5f,
-            "Minimum seconds between death and respawn, counted from the death: time spent watching a death replay counts, so choosing Respawn after it spawns you right away.");
+            Describe("Respawn delay (seconds)", "Minimum seconds between death and respawn, counted from the death: time spent watching a death replay counts, so choosing Respawn after it spawns you right away.", 40));
 
         CorpseSpawnDistanceMeters = config.Bind(
             "Respawn",
             "CorpseSpawnDistanceMeters",
             20f,
-            "Preferred distance from the corpse when respawning near the corpse (chosen in the death prompt). Only spots you could have walked to count; closer ones are tried if needed, then the corpse's own spot, then a map spawn point.");
+            Describe("Distance from corpse (meters)", "Preferred distance from the corpse when respawning near the corpse (chosen in the death prompt). Only spots you could have walked to count; closer ones are tried if needed, then the corpse's own spot, then a map spawn point.", 30));
 
         SpawnProtectionSeconds = config.Bind(
             "Respawn",
             "SpawnProtectionSeconds",
             10f,
-            "Invulnerability duration after respawn (0 = disabled).");
+            Describe("Spawn protection (seconds)", "Invulnerability duration after respawn (0 = disabled).", 20));
 
         RequiredRespawnItem = config.Bind(
             "Respawn",
             "RequiredRespawnItem",
             "None",
-            new ConfigDescription(
+            Describe("Required respawn item",
                 "Item that must be in the inventory to respawn; it is consumed on respawn.",
+                10,
                 new AcceptableValueList<string>(System.Linq.Enumerable.ToArray(
                     System.Linq.Enumerable.Select(RespawnItems, entry => entry.Name)))));
+
+        EnablePipelineTiming = config.Bind(
+            "Diagnostics",
+            "EnablePipelineTiming",
+            false,
+            Describe("Detailed respawn measurements", "Collect detailed respawn timing, state counters and following-frame measurements. Enable only when diagnosing slow respawns; this adds measurement work and technical log output.", 10, advanced: true));
     }
+
+    private static ConfigDescription Describe(string name, string description, int order,
+        AcceptableValueBase range = null, bool advanced = false) =>
+        new ConfigDescription(description, range, new ConfigurationManagerAttributes
+        {
+            DispName = name,
+            Order = order,
+            IsAdvanced = advanced,
+            ShowRangeAsPercent = false
+        });
 
     public static string GetRequiredRespawnItemTemplateId()
     {
@@ -107,4 +120,13 @@ public static class Settings
 
         return used < MaxRespawnsPerRaid.Value;
     }
+}
+
+// Read by ConfigurationManager through its type name and public fields.
+internal sealed class ConfigurationManagerAttributes
+{
+    public string DispName;
+    public int? Order;
+    public bool? IsAdvanced;
+    public bool? ShowRangeAsPercent;
 }

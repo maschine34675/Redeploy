@@ -141,17 +141,34 @@ public static class RespawnService
     }
 
     public static void BeginRespawn(RespawnLocationMode spawnMode)
-    {
-        // Same reasoning as GiveUpRaid: the player pressed a button on the
-        // prompt, so it is going away whether or not the respawn can start.
-        RespawnPromptPanel.Instance?.Hide();
+        => BeginRespawn(spawnMode, continueAsScav: false);
 
+    public static void BeginScavRespawn()
+        => BeginRespawn(RespawnLocationMode.InfilSpawn, continueAsScav: true);
+
+    private static void BeginRespawn(RespawnLocationMode spawnMode, bool continueAsScav)
+    {
         var game = RespawnSessionState.CurrentLocalGame;
-        if (game == null || RespawnSessionState.IsRespawnInProgress)
+        if (game == null || !Settings.Enabled.Value
+            || !RespawnSessionState.PendingRespawnChoice || !RespawnSessionState.IsInRaid
+            || RespawnSessionState.HasGivenUp || RespawnSessionState.IsRespawnInProgress
+            || game.Status != GameStatus.Started || game.LocalPlayer?.HealthController?.IsAlive != false
+            || PmcScavSession.HasSwitched(game)
+            || !Settings.HasRespawnsRemaining(RespawnSessionState.RespawnsUsed))
             return;
 
+        // Availability describes one option, never which body the user chose.
+        // No Scav lease or profile mutation takes place for an ordinary respawn.
+        if (continueAsScav && (!PmcScavSession.IsOffered || PmcScavSession.UnavailableReason != null))
+            return;
+
+        RespawnSessionState.RespawnItemAvailable = HasRequiredRespawnItem(game.LocalPlayer);
+        if (!RespawnSessionState.RespawnItemAvailable)
+            return;
+
+        RespawnPromptPanel.Instance?.Hide();
         RespawnSessionState.SelectedSpawnMode = spawnMode;
-        game.StartCoroutine(RespawnCoroutine(game, PmcScavSession.IsOffered));
+        game.StartCoroutine(RespawnCoroutine(game, continueAsScav));
     }
 
     private static IEnumerator RespawnCoroutine(LocalGame game, bool continueAsScav)

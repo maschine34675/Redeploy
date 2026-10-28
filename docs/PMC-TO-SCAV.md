@@ -1,15 +1,19 @@
 # PMC death followed by your regular Player-Scav
 
-Development work on `feature/pmc-to-scav`. This is an opt-in same-raid continuation
+Development work on `feature/pmc-to-scav`. This is an optional same-raid continuation
 using the account's regular Scav and cooldown. It is not released. The 2026-10-28
 revision replaces the earlier independent generated-Scav/mail prototype; that
 prototype's dated evidence below is historical and does not validate the new flow.
 
 ## Behavior
 
-- With `RespawnAsScav` disabled, Redeploy retains its normal respawn choices.
-- With it enabled, a dead PMC can continue once as their regular Player-Scav at a
-  Scav spawn on the same map. The PMC corpse remains in the world and can be looted.
+- `RespawnAsScav` defaults to enabled; an explicitly saved false is preserved.
+  The death prompt offers naked PMC respawn near the corpse or at a map spawn,
+  plus continuing once as the regular Player-Scav at a Scav spawn on the same map.
+  With the setting disabled, only the normal respawn choices remain.
+- Scav cooldown or unavailability known before selection disables only the Scav choice. Choosing PMC
+  never reserves the Scav or starts its continuation transaction. Both choices
+  respect the respawn limit and configured item cost. The PMC corpse stays lootable.
 - The Scav uses the account's current Scav identity, equipment and progression,
   separate from the PMC. The normal Scav cooldown must have expired; the prompt
   explains when it is unavailable, and the server independently enforces it.
@@ -94,7 +98,7 @@ native runs from offline tests and remaining limits.
 | Persistence | PMC death and original progression; Scav outcome, successor and cooldown saved |
 | Cooldown | Native expiry boundary is enforced in prompt and server; unavailable Scav cannot be used |
 | Retry | Duplicate prepare/activate/end and save ambiguity cannot duplicate effects |
-| Regression | Default-off normal PMC respawn and normal Scav respawn remain functional |
+| Regression | Normal PMC respawn works with the additional Scav choice enabled by default and explicitly disabled; normal Scav respawn remains functional |
 
 Native testing uses the dedicated SPT-GPU-1 test profile. Syncthing for its SPT41
 folder is paused before test files or profiles are changed. Original files,
@@ -204,7 +208,7 @@ performed.
 At the user's subsequent request, the exact tested candidate 3 DLLs and their
 matching PDBs were installed in `D:\SPT41` and `C:\SPT41` on SPT-GPU-1. All
 three DLL hashes match the table above. `[General] RespawnAsScav = true` was
-set in the existing installation configuration; the code default remains false.
+set in the existing installation configuration; at that point the code default was false.
 Other settings and profiles were preserved. Original binaries and configuration
 are backed up outside synchronization in
 `C:\Temp\RedeployScavDeployment-20261028-130643-ae84a41f` on the development host.
@@ -287,6 +291,73 @@ Server DLL/PDB matched the build on all three installations. No temporary mod
 was installed. Private evidence and this run's backups remain outside sync in
 `C:\Temp\RedeployScavCommon-20261028` on SPT-GPU-1 and
 `C:\Temp\RedeployScavCommonDeploy-20261028` on the development host.
+
+## Explicit respawn choice and configuration menu — 2026-10-28
+
+The default-on Scav setting now adds a choice instead of replacing ordinary
+respawn. The death prompt offers **PMC near corpse**, **PMC at spawn point** and
+**Continue as Scav**. Ordinary Scav raids retain their same-profile respawn and
+use Scav labels for the first two buttons. The selected body type is captured
+before the respawn delay. Changing a setting during that delay cannot change
+the decision. A known Scav cooldown or other pre-selection unavailability
+disables only the Scav button; both choices retain the existing respawn limit
+and item-cost checks. Transaction failures after Scav preparation still fail
+closed; this change does not reopen a potentially reserved Scav transaction.
+
+The F12 menu keeps all nine original configuration identities and saved values.
+It uses readable labels, explicit units and General / Respawn / Diagnostics
+ordering. Only detailed pipeline measurements are advanced. ConfigurationManager
+shows matching advanced entries while searching, regardless of its Advanced
+filter; they are hidden in the normal unfiltered view. Existing explicit
+`RespawnAsScav=false` is preserved; new or missing entries default to `true`.
+
+Offline checks: Client Release build without warnings/errors, **394 client/Core
+unit tests passed** (including 43 production-boundary choice tests and two
+negative controls), and **76 config checks passed** against the installed
+BepInEx/ConfigurationManager parser. The server and shared Core were unchanged.
+
+Focused native acceptance used SPT-GPU-1, SPT 4.1.6 / EFT 40743, two ordinary
+Factory PMC raids with the native `Common` flag. ArenaMode was installed but
+inactive; PitFireTeam had no invited squad. Client SHA-256:
+`1D74A59FBD5A3D8805E0150CA9B1046740BCD23AB17D118F84FE7CA34C6A659E`.
+The exact tested DLL/PDB were retained; its informational Git stamp names base
+`616b8ee`, since compilation preceded this change's commit. Loaded code and the
+host/development copies matched in UiBridge. Core remained
+`25DE9FB8F3853EFD1EC3B18EA650777ECFD6D21E02189D5AE6B3D2FEDBC4CA9C`,
+Server remained `CC70BB90D488022F49576DC1BA85281A1821F4037835F67F6815254B3061871F`.
+
+| Check | Result |
+| --- | --- |
+| F12 menu | Labels, order and units were visually checked at 1920x1080. Diagnostics appeared with Advanced and disappeared without it after clearing the search. |
+| Death prompt | Both PMC buttons, Scav and End raid were visible and legible; cooldown text also fit. |
+| PMC while Scav enabled | At 16:18 local time, Near corpse returned the same PMC profile with empty ordinary equipment, preserving melee/container. This fixture started without a firearm, so it did not re-test firearm removal. No Scav prepare occurred for this choice. |
+| Later Scav choice | After another PMC death, Continue as Scav activated at 16:23:54. The live profile ID and reserved equipment root matched the baseline account Scav, with its M4A1, sidearm and other equipment. |
+| Scav death | The health-controller kill hook ended the raid without another prompt/body despite a configured limit of five. Native result screens returned to menu. Settlement was Committed, with no journal error, a regenerated Scav equipment root and a future normal cooldown. |
+| Cooldown fallback | In the second PMC raid, the Scav button was disabled with 23 minutes remaining. PMC at spawn point returned the original PMC alive at 16:27:28. Disconnect, result screens and healing completed. Exactly one new continuation journal was created across both raids. |
+
+Client log: `LogOutput-SPT-GPU-1-2026-10-28_15-50-09.log`. No Redeploy/Core
+warning or error appeared. The log was not globally error-free: microphone
+initialization failed at startup; ordinary disconnect logged an inactive
+MenuScreen coroutine and one `BotWeaponSelector.OnWeaponTaken` null reference
+at 16:27:40 during teardown. These did not interrupt either result flow. Their
+origin was not established by this focused test and is not claimed fixed.
+Extraction/loot transfer, ordinary Scav raids and fault recovery were not
+repeated here; their previous validation and limitations remain applicable.
+
+The current Client DLL and matching PDB were hash-verified in `D:\SPT41`,
+SPT-GPU-1 and SPT-GPU-2. Only GPU-1 was restarted and tested; the GPU-2 check
+establishes files on disk, not which code its process has loaded. Existing Core,
+Server and configuration files were retained. No temporary test mod was added.
+
+Syncthing's SPT41 folder on GPU-1 was paused for the entire test. After stopping
+game/server, all **10,039** current baseline files were restored and hash-verified
+at **15:32:33 UTC**; **76** test-added files were removed from the managed
+directories. The original `paused=false` synchronization state was restored;
+the other folder was untouched. The baseline was taken after installing the
+Client, so restoration retains the exact tested DLL/PDB. Private backups and
+evidence are outside sync in `C:\Temp\RedeployChoice-20261028` on GPU-1 and
+`C:\Temp\RedeployChoiceDeploy-20261028` on the development host. Profiles and
+private journals/logs are not committed.
 
 ## Historical validation — independent-Scav prototype, 2026-10-27
 

@@ -5,10 +5,17 @@
 - `feature/pmc-to-scav`, based on `ecf40d9`, is developed separately in
   `D:\SPT41\Development\Redeploy-pmc-scav`.
 - Client/Server remain 1.0.2; this branch requires shared Core 1.0.16.
-- Default-off PMC-to-Scav continuation using the regular account Scav, its normal
-  cooldown and the native loot transfer. This replaces the earlier independent
+- Default-on additional own-Scav choice alongside naked PMC respawn, using the
+  regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
 - No main-branch merge, push or release is part of this feature work.
+- Latest Client update adds an explicit naked-PMC / own-Scav death-menu choice
+  and readable F12 settings with advanced diagnostics. It passed 394 unit tests,
+  76 config checks and focused native choice/cooldown tests on SPT-GPU-1. The
+  exact tested Client/PDB are on disk in the development installation and both
+  GPU hosts; GPU-2 was not restarted or tested for this change. The test profile,
+  configuration and original synchronization state were restored. See
+  [choice and menu validation](PMC-TO-SCAV.md#explicit-respawn-choice-and-configuration-menu--2026-10-28).
 - Follow-up deployment: the feature remains installed with `RespawnAsScav=true`.
   A server-only correction now allows fresh PMC starts with the native Common
   transit flag. It passed 103 server tests and a focused native PMC-to-Scav/death

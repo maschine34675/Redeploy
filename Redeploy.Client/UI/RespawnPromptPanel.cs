@@ -1,6 +1,7 @@
 using Redeploy.Config;
 using Redeploy.Core.Ui;
 using Redeploy.Services;
+using EFT;
 using UnityEngine;
 
 namespace Redeploy.UI;
@@ -75,7 +76,8 @@ public class RespawnPromptPanel : MonoBehaviour
         // KillcamReplay death replay can play behind the prompt.
 
         var width = Mathf.Min(520f, Screen.width * 0.9f);
-        var height = Settings.RequiredRespawnItem.Value != "None" ? 320f : 290f;
+        var height = (PmcScavSession.IsOffered ? 430f : 290f)
+            + (Settings.RequiredRespawnItem.Value != "None" ? 30f : 0f);
         if (_windowRect.width < 1f)
             _windowRect = new Rect((Screen.width - width) / 2f, (Screen.height - height) / 2f, width, height);
 
@@ -92,24 +94,14 @@ public class RespawnPromptPanel : MonoBehaviour
             ? "unlimited"
             : (Settings.MaxRespawnsPerRaid.Value - RespawnSessionState.RespawnsUsed).ToString();
 
-        GUILayout.Label(
-            PmcScavSession.IsOffered
-                ? "Continue once with your regular Scav and their gear. Your PMC remains dead.\nNormal Scav cooldown applies. Extract to transfer loot to your stash."
-                : $"Respawn without gear and recover your equipment from your corpse.\nRespawns remaining: {remaining}",
-            _bodyStyle);
+        var side = RespawnSessionState.CurrentLocalGame?.Profile?.Info?.Side == EPlayerSide.Savage ? "Scav" : "PMC";
+        GUILayout.Label($"Respawn as {side} without gear and recover your equipment from your corpse.\nRespawns remaining: {remaining}", _bodyStyle);
 
         GUILayout.Space(8);
 
         var itemRequired = Settings.RequiredRespawnItem.Value != "None";
         var hasRequiredItem = !itemRequired || RespawnSessionState.RespawnItemAvailable;
         var canRespawn = hasRequiredItem;
-
-        if (PmcScavSession.IsOffered && PmcScavSession.UnavailableReason != null)
-        {
-            canRespawn = false;
-            GUILayout.Label(PmcScavSession.UnavailableReason, _warningStyle);
-            GUILayout.Space(6);
-        }
 
         if (itemRequired)
         {
@@ -126,25 +118,41 @@ public class RespawnPromptPanel : MonoBehaviour
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            if (PmcScavSession.IsOffered)
-            {
-                if (GUILayout.Button("Continue as Scav", _buttonStyle, GUILayout.Width(250f), GUILayout.Height(36f)))
-                    RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
-            }
-            else
-            {
-                if (GUILayout.Button("Respawn near corpse", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
-                    RespawnService.BeginRespawn(RespawnLocationMode.NearCorpse);
+            if (GUILayout.Button($"{side} near corpse", _buttonStyle, GUILayout.Width(220f), GUILayout.Height(36f)))
+                RespawnService.BeginRespawn(RespawnLocationMode.NearCorpse);
 
-                GUILayout.Space(12);
+            GUILayout.Space(12);
 
-                if (GUILayout.Button("Respawn at spawn point", _buttonStyle, GUILayout.Width(190f), GUILayout.Height(36f)))
-                    RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
-            }
+            if (GUILayout.Button($"{side} at spawn point", _buttonStyle, GUILayout.Width(220f), GUILayout.Height(36f)))
+                RespawnService.BeginRespawn(RespawnLocationMode.InfilSpawn);
 
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
+            GUILayout.Space(10);
+        }
+
+        if (PmcScavSession.IsOffered)
+        {
+            GUILayout.Space(8);
+            GUILayout.Label("Or continue once as your own Scav with their gear.\nYour PMC stays dead. Extract to transfer loot to your stash.", _bodyStyle);
+            GUILayout.Space(6);
+            var unavailable = PmcScavSession.UnavailableReason;
+            if (unavailable != null)
+            {
+                GUILayout.Label(unavailable, _warningStyle);
+                GUILayout.Space(6);
+            }
+
+            var enabledBefore = GUI.enabled;
+            GUI.enabled = enabledBefore && canRespawn && unavailable == null;
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Continue as Scav", _buttonStyle, GUILayout.Width(250f), GUILayout.Height(36f)))
+                RespawnService.BeginScavRespawn();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUI.enabled = enabledBefore;
             GUILayout.Space(10);
         }
 
