@@ -9,6 +9,10 @@
   cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
 - No main-branch merge, push or release is part of this feature work.
+- Follow-up deployment: the tested candidate is now persistently installed in
+  the development SPT installation and on SPT-GPU-1, with `RespawnAsScav=true`.
+  SPT-GPU-2 still needs its locked server DLL synchronized after the user stops
+  its running test. See the [deployment record](PMC-TO-SCAV.md#persistent-feature-deployment--2026-10-28).
 
 ## Active development — 2026-10-25
 

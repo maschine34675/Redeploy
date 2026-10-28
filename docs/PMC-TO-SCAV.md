@@ -199,6 +199,25 @@ test host or the development installation. Implementation commit: `0047ad5`.
 The feature remains on `feature/pmc-to-scav`; no main merge, push or release was
 performed.
 
+### Persistent feature deployment — 2026-10-28
+
+At the user's subsequent request, the exact tested candidate 3 DLLs and their
+matching PDBs were installed in `D:\SPT41` and `C:\SPT41` on SPT-GPU-1. All
+three DLL hashes match the table above. `[General] RespawnAsScav = true` was
+set in the existing installation configuration; the code default remains false.
+Other settings and profiles were preserved. Original binaries and configuration
+are backed up outside synchronization in
+`C:\Temp\RedeployScavDeployment-20261028-130643-ae84a41f` on the development host.
+
+SPT-GPU-2 was initially stopped, but another session started an Arena test before
+deployment finished. Its client/Core files and enabled configuration reached
+disk, while the running server kept the previous Server DLL locked. The user
+will stop/restart that host themselves; no raid was interrupted. The server
+update must finish synchronizing while both game and server are closed before
+the feature is used there. This deployment records disk hashes, not a new
+running-process or raid acceptance test. The feature branch remains unmerged
+and unpublished.
+
 ## Historical validation — independent-Scav prototype, 2026-10-27
 
 SPT 4.1.6 / EFT 40743, SPT-GPU-1, Factory. Deaths used UiBridge's real health
