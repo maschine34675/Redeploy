@@ -9,6 +9,10 @@
   regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
 - No main-branch merge, push or release is part of this feature work.
+- Release review at `7037a25` found unresolved interruption recovery, post-switch
+  BTR delivery and pre-selection availability issues. The user's conditional
+  merge/branch removal/push is held until those are fixed and verified. See the
+  [release blockers and acceptance plan](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
 - Latest Client update adds an explicit naked-PMC / own-Scav death-menu choice
   and readable F12 settings with advanced diagnostics. It passed 394 unit tests,
   76 config checks and focused native choice/cooldown tests on SPT-GPU-1. The

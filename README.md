@@ -22,7 +22,10 @@ Core version line.
   raid after PMC death, provided the normal Scav cooldown has expired. Successful
   extraction opens the usual Scav-to-stash transfer screen. A Scav cooldown only
   disables this choice; the normal PMC respawn remains available. See
-  [behavior and test scope](docs/PMC-TO-SCAV.md).
+  [behavior and test scope](docs/PMC-TO-SCAV.md). This development feature is not
+  release-ready: interrupted sessions can require manual recovery, and delivery
+  and availability guards still need fixes. See the
+  [release readiness review](docs/PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
 
 ## Requirements and compatibility
 

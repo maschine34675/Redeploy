@@ -5,6 +5,8 @@ Start with the [project README](../README.md) for installation, settings, update
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
+| [Own-Scav continuation](PMC-TO-SCAV.md) | Experimental regular-Scav choice, native loot transfer, recovery limits and dated validation. |
+| [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Confirmed release blockers, required fixes and acceptance before merging or publishing. |
 | [Redeploy 1.0.2 release notes](RELEASE-1.0.2.md) | Client/Server 1.0.2, bundled Core 1.0.13, optional integrations and update instructions. |
 | [Respawn API](RESPAWN-API.md) | Core's observer contract, design decisions, implementation history and verification notes. German; dated status entries supersede earlier proposals. |
 | [Shared body compatibility](BODY-REPLACEMENT-COMPAT-20261023.md) | Core 1.0.9: Recoil Rework Legacy, Continuous Load Ammo and Continuous Healing, exact ownership and migration test boundaries. |

@@ -5,6 +5,11 @@ using the account's regular Scav and cooldown. It is not released. The 2026-10-2
 revision replaces the earlier independent generated-Scav/mail prototype; that
 prototype's dated evidence below is historical and does not validate the new flow.
 
+**Release status:** the review of `7037a25` found three required fixes:
+interruption recovery, BTR delivery after switching, and availability checks
+before selection. The normal-flow tests below do not cover or resolve them.
+See [release review and required acceptance](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
+
 ## Behavior
 
 - `RespawnAsScav` defaults to enabled; an explicitly saved false is preserved.
