@@ -30,5 +30,6 @@ public sealed record ScavResponse
     [JsonPropertyName("scavProfile")] public PmcData? ScavProfile { get; set; }
     [JsonPropertyName("expiresAt")] public long? ExpiresAt { get; set; }
     [JsonPropertyName("generationHash")] public string? GenerationHash { get; set; }
+    [JsonPropertyName("availableAt")] public double? AvailableAt { get; set; }
     public static ScavResponse Rejected(string reason) => new() { Error = reason };
 }

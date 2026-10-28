@@ -94,7 +94,7 @@ public class RespawnPromptPanel : MonoBehaviour
 
         GUILayout.Label(
             PmcScavSession.IsOffered
-                ? "Continue once as a fresh Scav. Your PMC remains dead.\nExtracted Scav loot arrives by message; your regular Scav is unchanged."
+                ? "Continue once with your regular Scav and their gear. Your PMC remains dead.\nNormal Scav cooldown applies. Extract to transfer loot to your stash."
                 : $"Respawn without gear and recover your equipment from your corpse.\nRespawns remaining: {remaining}",
             _bodyStyle);
 

@@ -53,7 +53,7 @@ public static class Settings
             "General",
             "RespawnAsScav",
             false,
-            "After a PMC death, offer one fresh Scav in the same raid instead of a normal respawn. The PMC remains dead; extract as the Scav to receive carried loot by message. Your regular Scav and its cooldown are unchanged. A second death ends the raid.");
+            "After a PMC death, offer your regular Scav in the same raid instead of a normal respawn. Requires the normal Scav cooldown to have expired and uses that Scav's gear. Your PMC remains dead. Extract to use the normal loot transfer screen; a second death ends the raid. The next Scav receives the normal cooldown.");
 
         RespawnHealthPercent = config.Bind(
             "Respawn",

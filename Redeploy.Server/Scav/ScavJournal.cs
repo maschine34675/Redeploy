@@ -5,15 +5,17 @@ using System.Text.Json;
 namespace Redeploy.Server.Scav;
 
 public enum ScavPhase { Prepared, Active, Settling, Committed, Cancelled, RecoveryRequired }
+public enum ScavTransferPhase { None, Pending, Completing, Complete, Retired }
 
 /// <summary>Private write-ahead record. Never ship this directory or log its payloads.</summary>
 public sealed record ScavJournalEntry
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
     public string SessionId { get; set; } = "";
     public string InitialServerId { get; set; } = "";
     public string PmcProfileId { get; set; } = "";
     public string ScavProfileId { get; set; } = "";
+    public string ScavEquipmentId { get; set; } = "";
     public string RequestId { get; set; } = "";
     public string PrepareHash { get; set; } = "";
     public string Token { get; set; } = "";
@@ -28,6 +30,13 @@ public sealed record ScavJournalEntry
     public string? BeforeProfileJson { get; set; }
     public string? ReceiptJson { get; set; }
     public string ReceiptId { get; set; } = "";
+    public string? ExpectedProfileHash { get; set; }
+    public bool Extracted { get; set; }
+    public bool PmcOnly { get; set; }
+    public ScavTransferPhase TransferPhase { get; set; }
+    public string? TransferBeforeProfileJson { get; set; }
+    public string? TransferExpectedProfileHash { get; set; }
+    public string? TransferResponse { get; set; }
     public string? Error { get; set; }
 }
 
@@ -42,7 +51,7 @@ public sealed class ScavJournal(string directory)
         if (!File.Exists(path)) return null;
         var entry = JsonSerializer.Deserialize<ScavJournalEntry>(File.ReadAllText(path))
             ?? throw new InvalidDataException("Invalid Scav continuation journal.");
-        if (entry.Version != 1 || entry.SessionId != session || entry.InitialServerId != raid)
+        if (entry.Version is not (1 or 2) || entry.SessionId != session || entry.InitialServerId != raid)
             throw new InvalidDataException("Scav continuation journal identity mismatch.");
         return entry;
     }
@@ -54,7 +63,7 @@ public sealed class ScavJournal(string directory)
         {
             var entry = JsonSerializer.Deserialize<ScavJournalEntry>(File.ReadAllText(path))
                 ?? throw new InvalidDataException("Invalid Scav continuation journal.");
-            if (entry.Version != 1 || entry.SessionId != session || Path.GetFullPath(path) != Path.GetFullPath(PathFor(session, entry.InitialServerId)))
+            if (entry.Version is not (1 or 2) || entry.SessionId != session || Path.GetFullPath(path) != Path.GetFullPath(PathFor(session, entry.InitialServerId)))
                 throw new InvalidDataException("Scav continuation journal identity mismatch.");
             yield return entry;
         }
@@ -86,6 +95,8 @@ public static class ScavStatePolicy
     // Prepared can already own an authoritative body when Activate/its response was lost.
     // Expiry stops another generation response; it cannot prove that no body was committed.
     public static bool BlocksNewRaid(ScavPhase phase) => phase is ScavPhase.Prepared or ScavPhase.Active or ScavPhase.Settling or ScavPhase.RecoveryRequired;
+    public static bool BlocksNewRaid(ScavJournalEntry entry) => BlocksNewRaid(entry.Phase)
+        || entry.Version == 2 && entry.TransferPhase is ScavTransferPhase.Pending or ScavTransferPhase.Completing;
     public static bool SamePreparedRequest(ScavJournalEntry entry, string requestId, string hash)
         => entry.RequestId == requestId && entry.PrepareHash == hash;
     public static bool MatchesToken(ScavJournalEntry entry, string token)

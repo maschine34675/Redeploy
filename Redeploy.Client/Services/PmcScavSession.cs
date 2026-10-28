@@ -23,9 +23,9 @@ using UnityEngine;
 namespace Redeploy.Services;
 
 /// <summary>
-/// Owns only the opt-in PMC-to-Scav conversion. In particular, it never replaces the
-/// backend account's PMC/regular Scav pair. The native end request still belongs to
-/// the original PMC raid; the server journals and settles both phases separately.
+/// Owns the opt-in switch from a dead PMC to the account's regular Player-Scav.
+/// The native end request still belongs to the original PMC raid; the server
+/// journals both results, then native Scav UI transfers the reconciled inventory.
 /// </summary>
 internal static class PmcScavSession
 {
@@ -35,7 +35,6 @@ internal static class PmcScavSession
         public Profile OriginalPmc;
         public Profile Scav;
         public IEftSession Session;
-        public PlayerVisualRepresentation PmcVisual;
         public string ServerId;
         public string Token;
         public string GenerationHash;
@@ -49,15 +48,47 @@ internal static class PmcScavSession
         public bool ResultNoticeShown;
         public bool RegularScavSaveBlocked;
         public ExitStatus ScavOutcome;
+        public readonly RegularScavLifeClock LifeClock = new();
+        public LocalPlayer ScavBody;
+        public string TimingFailure;
     }
 
     private static Context _context;
     private static LocalGame _deathGame;
     private static float _deathTime;
+    private static string _unsafePreparationServerId;
+    private static string _unsafePreparationPmcId;
+    private static string _unsafePreparationReason;
     private static readonly System.Reflection.FieldInfo ExitAuthority =
         AccessTools.Field(typeof(ExfiltrationPoint), "_authorityToChangeStatusExternally");
 
-    public static string UnavailableReason => PmcScavPatches.UnavailableReason;
+    public static string UnavailableReason
+    {
+        get
+        {
+            if (PmcScavPatches.UnavailableReason != null)
+                return PmcScavPatches.UnavailableReason;
+            var game = RespawnSessionState.CurrentLocalGame;
+            if (game == null || HasSwitched(game))
+                return null;
+            return ScavUnavailableReason(LocalGameAccessor.GetSession(game)?.ProfileOfPet);
+        }
+    }
+
+    private static string ScavUnavailableReason(Profile scav)
+    {
+        if (scav?.Info == null || scav.Info.Side != EPlayerSide.Savage)
+            return "Your regular Scav profile is unavailable.";
+        var remaining = RegularScavPolicy.CooldownSeconds(scav.Info.SavageLockTime, DateTimeExtensions.UtcNowUnixInt);
+        if (double.IsInfinity(remaining))
+            return "Your Scav cooldown could not be verified.";
+        if (remaining <= 0)
+            return null;
+        var minutes = Math.Ceiling(remaining / 60d);
+        return remaining < 60d
+            ? $"Your Scav is on cooldown ({remaining:0}s remaining)."
+            : $"Your Scav is on cooldown ({minutes:0} min remaining).";
+    }
 
     public static bool IsOffered
     {
@@ -74,6 +105,7 @@ internal static class PmcScavSession
         _context = null;
         _deathGame = null;
         _deathTime = 0f;
+        _unsafePreparationServerId = _unsafePreparationPmcId = _unsafePreparationReason = null;
     }
 
     public static void RecordDeath(LocalGame game)
@@ -93,18 +125,18 @@ internal static class PmcScavSession
             && RespawnSessionState.IsInRaid && !RespawnSessionState.HasGivenUp
             && game.Status == GameStatus.Started;
 
-    public static IEnumerator Prepare(LocalGame game, Action consumeRequiredItem,
-        Action<Profile, ISpawnSelector, Exception> completed)
+    public static IEnumerator Prepare(LocalGame game, Action<Profile, ISpawnSelector, Exception> completed)
     {
         Task<JObject> task = null;
         Exception failure = null;
         Context candidate = null;
+        ScavRespawnItemCost cost = null;
         try
         {
             if (UnavailableReason != null)
                 throw new InvalidOperationException(UnavailableReason);
             if (!CanContinue(game) || game.Profile.Info.Side == EPlayerSide.Savage)
-                throw new InvalidOperationException("Only a live PMC raid can continue as a fresh Scav.");
+                throw new InvalidOperationException("Only a live PMC raid can continue as your Scav.");
             if (!ReferenceEquals(_deathGame, game))
                 throw new InvalidOperationException("The PMC death snapshot is unavailable.");
             var settings = LocalGameAccessor.GetLocalRaidSettings(game);
@@ -120,8 +152,6 @@ internal static class PmcScavSession
             if (transfers.Values.Any(items => items != null && items.Length > 1))
                 throw new InvalidOperationException("Scav continuation is unavailable after sending items through BTR or transit.");
 
-            // The final immutable PMC payload must include the cost of continuing.
-            consumeRequiredItem();
             var dead = game.LocalPlayer;
             dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null);
             game.Profile.Health = dead.ActiveHealthController.Store();
@@ -130,11 +160,13 @@ internal static class PmcScavSession
                 Game = game,
                 OriginalPmc = game.Profile,
                 Session = LocalGameAccessor.GetSession(game),
-                PmcVisual = game.Profile.GetVisualEquipmentState(),
                 ServerId = settings.serverId,
                 DeathTime = _deathTime,
             };
-            var frozen = new SessionResult
+            cost = new ScavRespawnItemCost(dead);
+            // Serialize while the cost is temporarily removed, then restore it in the
+            // same frame. Cooldown rejection and preload failure consume nothing.
+            var frozen = cost.CaptureWithoutCostItem(() => JObject.Parse(new SessionResult
             {
                 profile = new ProfileDescriptor(candidate.OriginalPmc, FullySearchedSearchController.Instance).ToUnparsedData(),
                 result = ExitStatus.Killed,
@@ -143,21 +175,29 @@ internal static class PmcScavSession
                 playTime = (int)candidate.DeathTime,
                 inSession = false,
                 ProfileId = candidate.OriginalPmc.Id,
-            };
+            }.ToJson()));
             var body = new JObject
             {
-                ["protocolVersion"] = 1,
+                ["protocolVersion"] = 2,
                 ["initialServerId"] = candidate.ServerId,
                 ["clientRequestId"] = Guid.NewGuid().ToString("N"),
                 ["frozenPmcDeath"] = new JObject
                 {
                     ["serverId"] = candidate.ServerId,
-                    ["results"] = JObject.Parse(frozen.ToJson()),
+                    ["results"] = frozen,
                     // Insurance is measured at final exit, after the Scav can recover gear.
                     ["lostInsuredItems"] = new JArray(),
                 },
             };
             task = Post("prepare", body);
+        }
+        catch (ScavCostRestorationException ex)
+        {
+            _unsafePreparationServerId = candidate?.ServerId;
+            _unsafePreparationPmcId = candidate?.OriginalPmc.Id;
+            _unsafePreparationReason = ex.Message;
+            Plugin.ModLogger.LogError($"Scav continuation preparation failed: {ex}");
+            failure = ex;
         }
         catch (Exception ex) { failure = ex; }
 
@@ -184,10 +224,11 @@ internal static class PmcScavSession
             if (!string.Equals((string)response["phase"], "Prepared", StringComparison.Ordinal))
                 throw new InvalidOperationException("The server did not prepare a new Scav continuation.");
             scav = new Profile(response["scavProfile"].ToString().ParseJsonTo<ProfileDescriptor>());
-            if (scav.Info.Side != EPlayerSide.Savage || scav.Id == candidate.OriginalPmc.Id
-                || scav.Id == LocalGameAccessor.GetSession(game).ProfileOfPet?.Id
+            if (scav.Info.Side != EPlayerSide.Savage
+                || !RegularScavPolicy.IsAccountScav(candidate.OriginalPmc.Id,
+                    candidate.Session.ProfileOfPet?.Id, scav.Id)
                 || scav.FenceInfo == null || scav.FenceInfo.AvailableExitsCount < 1)
-                throw new InvalidOperationException("The generated Scav has an invalid identity or extraction allowance.");
+                throw new InvalidOperationException("The reserved Scav does not match your account or has no extraction allowance.");
             if (!CanContinue(game))
                 throw new OperationCanceledException("The raid ended while preparing the Scav.");
             candidate.Scav = scav;
@@ -215,6 +256,20 @@ internal static class PmcScavSession
                 CancelPrepared();
             }
         }
+        if (failure == null)
+        {
+            try
+            {
+                if (!CanContinue(game))
+                    throw new OperationCanceledException("The raid ended before the Scav switch.");
+                cost.Commit();
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+                CancelPrepared();
+            }
+        }
         completed(failure == null ? scav : null, spawn, failure);
     }
 
@@ -231,7 +286,7 @@ internal static class PmcScavSession
         var resources = scav.GetAllPrefabPaths(allCustomization: true)
             .Where(key => key != null && key != ResourceKey.EmptyResourceKey).Distinct().ToArray();
         if (resources.Length == 0)
-            throw new InvalidOperationException("The generated Scav has no loadable prefab resources.");
+            throw new InvalidOperationException("Your Scav has no loadable prefab resources.");
         await factory.LoadBundlesAndCreatePools(ObjectsFactory.PoolsCategory.Raid,
             ObjectsFactory.AssemblyType.Local, resources, JobYieldPriority.General, null, token);
         if (!Current())
@@ -245,9 +300,11 @@ internal static class PmcScavSession
     public static void CompleteSwitch(LocalGame game)
     {
         if (!HasSwitched(game))
-            throw new InvalidOperationException("The fresh Scav did not become the active profile.");
+            throw new InvalidOperationException("Your Scav did not become the active profile.");
         if (_context.Ending || game.Status != GameStatus.Started)
             return;
+        if (!_context.LifeClock.Owns(game.LocalPlayer) || _context.TimingFailure != null)
+            throw new InvalidOperationException("The Scav's statistics start could not be verified.");
         // A failed acknowledgement cannot undo a committed body. The server also recognizes
         // this exact issued Scav ID on native final settlement if the response was lost.
         ObserveActivation(_context);
@@ -255,8 +312,8 @@ internal static class PmcScavSession
             return;
         BindScavExits(game);
         _context.ExitsBound = true;
-        ShowNotice("You are now a Scav. Extract to receive your carried loot by message. Your next death ends the raid.");
-        Plugin.ModLogger.LogInfo("PMC-to-Scav continuation active; the PMC death is frozen and regular Scav is unchanged.");
+        ShowNotice("You are now playing your Scav. Extract to transfer your loot to the stash. Your next death ends the raid.");
+        Plugin.ModLogger.LogInfo("PMC-to-Scav continuation active; your regular Scav is in use and the PMC remains dead.");
     }
 
     private static void BindScavExits(LocalGame game)
@@ -292,6 +349,7 @@ internal static class PmcScavSession
                 point.Enabled = false;
         }
         var timer = LocalGameAccessor.GetGameUI(game).TimerPanel;
+        ScavExtractionUi.ValidateOwnedTimers(timer);
         // Native Close clears its transit dictionary without closing the instantiated
         // rows. Retire them before rebuilding the panel for a life with no transit.
         foreach (var transitTimer in timer.GetComponentsInChildren<TransitTimerPanel>(true))
@@ -302,6 +360,7 @@ internal static class PmcScavSession
             UnityEngine.Object.Destroy(transitTimer.gameObject);
         }
         timer.Close();
+        ScavExtractionUi.RetireNativeTimersAfterClose(timer);
         timer.ProfileId = game.Profile.Id;
         timer.SetTime(DateTimeExtensions.UtcNow, EPlayerSide.Savage,
             Mathf.Max(0f, game.GameTimer.EscapeTimeSeconds()), points, secret);
@@ -330,14 +389,15 @@ internal static class PmcScavSession
     public static bool BlocksRegularScavSave(SessionResultShowOperation operation)
     {
         var context = _context;
-        if (context == null || !context.Ending || context.Scav == null || operation == null
-            || !ReferenceEquals(operation._session, context.Session)
-            || operation._matchProfileId != context.OriginalPmc.Id)
+        if (context?.Scav == null || operation == null
+            || !RegularScavPolicy.OwnsResult(context.Ending,
+                ReferenceEquals(operation._session, context.Session), context.OriginalPmc.Id,
+                context.Scav.Id, operation._matchProfileId))
             return false;
         if (!context.RegularScavSaveBlocked)
         {
             context.RegularScavSaveBlocked = true;
-            Plugin.ModLogger.LogDebug("PMC-to-Scav result: regular Player-Scav save bypassed; loot is settled by the continuation message.");
+            Plugin.ModLogger.LogDebug("PMC-to-Scav result: stale client Scav save bypassed; the native transfer uses the server-settled inventory.");
         }
         // Keep this guard until the next raid: native Init can run again after an error.
         return true;
@@ -349,6 +409,8 @@ internal static class PmcScavSession
             return;
         _context.Ending = true;
         _context.ScavOutcome = outcome;
+        if (!_context.LifeClock.TryFreeze(game.LocalPlayer, game.PastTime, out _))
+            _context.TimingFailure = "Redeploy could not verify the Scav's own play time. The combined raid was not saved to protect progression.";
         // Capture while every physical body/item is still present. The native method uses
         // game.Profile only for the insured-ID filter; scope the swap to this sync call.
         try { _context.FinalInsurance = CaptureOriginalInsurance(game); }
@@ -403,10 +465,54 @@ internal static class PmcScavSession
 
     public static string GetUnsafeSettlementReason(LocalRaidSettings settings, SessionResult results)
     {
+        if (_unsafePreparationReason != null && settings?.serverId == _unsafePreparationServerId
+            && results?.ProfileId == _unsafePreparationPmcId)
+            return _unsafePreparationReason;
         var context = _context;
         return context != null && context.Ending && context.Scav != null
             && settings?.serverId == context.ServerId && results?.ProfileId == context.Scav.Id
-                ? context.InsuranceFailure : null;
+                ? context.TimingFailure ?? context.InsuranceFailure : null;
+    }
+
+    public static void RecordScavLifeStart(Player player)
+    {
+        var context = _context;
+        if (context?.Scav == null || context.Ending || player is not LocalPlayer local
+            || !ReferenceEquals(player.Profile, context.Scav) || !CanContinue(context.Game))
+            return;
+        if (!context.LifeClock.TryStart(local, context.Game.PastTime))
+            context.TimingFailure = "Redeploy could not record the Scav's statistics start.";
+        else
+            context.ScavBody = local;
+    }
+
+    public static void RewriteScavSessionTime(LocalPlayer player, ref float pastTime)
+    {
+        var context = _context;
+        if (context?.Scav == null || !context.Ending || !ReferenceEquals(player, context.ScavBody)
+            || !ReferenceEquals(player.Profile, context.Scav) || !HasSwitched(context.Game))
+            return;
+        if (context.LifeClock.TryRead(player, out var elapsed))
+            pastTime = elapsed;
+        else
+        {
+            // Do not let the old PMC clock reach lifetime/conditional counters even if
+            // the timing contract failed; the backend fence below refuses that save.
+            pastTime = 0f;
+            context.TimingFailure = "Redeploy could not verify the Scav's own play time. The combined raid was not saved to protect progression.";
+        }
+    }
+
+    public static void RewriteScavBackendTime(LocalRaidSettings settings, SessionResult results)
+    {
+        var context = _context;
+        if (context?.Scav == null || !context.Ending || settings?.serverId != context.ServerId
+            || results?.ProfileId != context.Scav.Id)
+            return;
+        if (context.LifeClock.TryRead(context.ScavBody, out var elapsed))
+            results.playTime = (int)elapsed;
+        else
+            context.TimingFailure = "Redeploy could not verify the Scav's own play time. The combined raid was not saved to protect progression.";
     }
 
     private static async Task AwaitBackendEnd(Context context, Task original)
@@ -415,23 +521,37 @@ internal static class PmcScavSession
         context.BackendAcknowledged = true;
     }
 
-    public static void RewritePmcResult(IEftSession session, string profileId, ref ExitStatus exitStatus, ref TimeSpan exitTime)
+    public static void RewriteScavResult(IEftSession session, ref string profileId, ref Profile savageProfile,
+        ref ExitStatus exitStatus, ref TimeSpan exitTime)
     {
         var context = _context;
-        if (context == null || !context.Ending || !ReferenceEquals(session, context.Session)
-            || profileId != context.OriginalPmc.Id)
+        if (context?.Scav == null || !RegularScavPolicy.OwnsResult(context.Ending,
+            ReferenceEquals(session, context.Session), context.OriginalPmc.Id, context.Scav.Id, profileId))
             return;
-        exitStatus = ExitStatus.Killed;
-        exitTime = TimeSpan.FromSeconds(context.DeathTime);
-        // Native GameEnd stored the final Scav's visual state. Change only presentation,
-        // after the final payload was serialized/sent, to the PMC's cloned death appearance.
-        session.LastPlayerState = context.PmcVisual;
-        if (context.BackendAcknowledged && !context.ResultNoticeShown)
+        if (!context.BackendAcknowledged)
+            throw new InvalidOperationException("The combined PMC/Scav result was not acknowledged; loot transfer cannot open safely.");
+        var accountScav = session.ProfileOfPet;
+        if (!RegularScavPolicy.IsAccountScav(context.OriginalPmc.Id, accountScav?.Id, context.Scav.Id))
+            throw new InvalidOperationException("The settled Scav profile could not be verified; loot transfer cannot open safely.");
+        bool extracted = context.ScavOutcome == ExitStatus.Survived || context.ScavOutcome == ExitStatus.Runner;
+        if (extracted && (accountScav.Inventory?.Equipment == null
+            || accountScav.Inventory.Equipment.Id != context.Scav.Inventory?.Equipment?.Id))
+            throw new InvalidOperationException("The Scav transfer inventory has already changed; an old result cannot reopen it.");
+        profileId = context.Scav.Id;
+        exitStatus = context.ScavOutcome;
+        if (!context.LifeClock.TryRead(context.ScavBody, out var elapsed))
+            throw new InvalidOperationException("The settled Scav duration is unavailable.");
+        exitTime = TimeSpan.FromSeconds(elapsed);
+        // GetProfiles has already loaded authoritative post-raid inventories. Never
+        // reinstall our pre-transfer snapshot: Init may run again after some loot moved.
+        savageProfile = extracted ? accountScav : context.Scav;
+        if (extracted)
+            accountScav.LearnAll();
+        if (!context.ResultNoticeShown)
         {
             context.ResultNoticeShown = true;
-            bool extracted = context.ScavOutcome == ExitStatus.Survived || context.ScavOutcome == ExitStatus.Runner;
             ShowNotice(extracted
-                ? "PMC raid ended in death. Your Scav extracted; collect the recovered loot from messages."
+                ? "Your PMC remains dead. Your Scav extracted; transfer the recovered loot to your stash."
                 : "PMC raid ended in death. Your Scav did not extract; no loot was recovered.");
         }
     }
@@ -490,11 +610,18 @@ internal static class PmcScavSession
     private static void RequireSuccess(JObject response)
     {
         if ((bool?)response?["success"] != true)
-            throw new InvalidOperationException((string)response?["error"] ?? "The server rejected the Scav continuation.");
+        {
+            var error = (string)response?["error"];
+            if (error == "scav-cooldown")
+                error = "Your regular Scav is still on cooldown. No Scav or equipment was consumed.";
+            throw new InvalidOperationException(error ?? "The server rejected the Scav continuation.");
+        }
     }
 
     public static void NotifyUnavailable(string reason)
-        => ShowNotice("Scav continuation unavailable; the PMC raid will end normally. "
+        => ShowNotice((_unsafePreparationReason != null
+                ? "Scav continuation unavailable; raid saving was stopped to protect your profile. "
+                : "Scav continuation unavailable; the PMC raid will end normally. ")
             + (reason ?? string.Empty), warning: true);
 
     private static void ShowNotice(string message, bool warning = false)

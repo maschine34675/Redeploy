@@ -59,6 +59,7 @@
     <Compile Include="..\Redeploy.Core\Compat\ImpactCue\ImpactCueScope.cs" Link="Compat\ImpactCueScope.cs" />
     <Compile Include="..\Redeploy.Core\Compat\EnemyMarkers\EnemyMarkersScope.cs" Link="Compat\EnemyMarkersScope.cs" />
     <Compile Include="..\Redeploy.Client\Services\RespawnCooldown.cs" Link="Client\RespawnCooldown.cs" />
+    <Compile Include="..\Redeploy.Client\Services\RegularScavPolicy.cs" Link="Client\RegularScavPolicy.cs" />
   </ItemGroup>
 
 </Project>

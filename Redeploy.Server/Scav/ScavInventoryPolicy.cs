@@ -55,19 +55,6 @@ public static class ScavInventoryPolicy
         return all.Select(x => x.Id.ToString()).Where(x => !lost.Contains(x)).ToHashSet(StringComparer.Ordinal);
     }
 
-    public static List<Item> LootItems(List<Item> carried, string equipment)
-        => carried.Where(x => !(x.ParentId == equipment && x.SlotId == "Pockets")).ToList();
-
-    public static void ApplyRunThrough(List<Item> items, ExitStatus? result)
-    {
-        if (result != ExitStatus.RUNNER) return;
-        foreach (var item in items)
-        {
-            item.Upd ??= new();
-            item.Upd.SpawnedInSession = false;
-        }
-    }
-
     public static List<Item> LostInsurance(IEnumerable<Item>? finalLost, HashSet<string> originallyInsured,
         HashSet<string> recovered, HashSet<string> protectedIds)
     {
@@ -85,23 +72,4 @@ public static class ScavInventoryPolicy
         return result;
     }
 
-    /// <summary>Input must already be deep-cloned. Returns one normalized mail graph with new IDs.</summary>
-    public static List<Item> MailItems(List<Item> carried, MongoId stash)
-    {
-        var idMap = carried.ToDictionary(x => x.Id.ToString(), _ => new MongoId(), StringComparer.Ordinal);
-        foreach (var item in carried)
-        {
-            string oldId = item.Id.ToString();
-            if (item.ParentId != null && idMap.TryGetValue(item.ParentId, out var parent))
-                item.ParentId = parent.ToString();
-            else
-            {
-                item.ParentId = stash.ToString();
-                item.SlotId = "main";
-                item.Location = null;
-            }
-            item.Id = idMap[oldId];
-        }
-        return carried;
-    }
 }

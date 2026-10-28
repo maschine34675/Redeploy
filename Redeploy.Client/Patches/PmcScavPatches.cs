@@ -18,6 +18,9 @@ internal static class PmcScavPatches
     {
         try
         {
+            ScavExtractionUi.ValidateContract();
+            new PmcScavStatisticsStartPatch().Enable();
+            new PmcScavStatisticsEndPatch().Enable();
             new PmcScavBeforeGameEndPatch().Enable();
             new PmcScavLostInsurancePatch().Enable();
             new PmcScavSessionResultPatch().Enable();
@@ -35,6 +38,26 @@ internal static class PmcScavPatches
             UnavailableReason = "Scav continuation is unavailable with this game build.";
             Plugin.ModLogger.LogWarning($"{UnavailableReason} {ex.Message}");
         }
+    }
+
+    private sealed class PmcScavStatisticsStartPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(Player), nameof(Player.OnGameSessionBegin));
+
+        [PatchPostfix]
+        private static void Postfix(Player __instance) => PmcScavSession.RecordScavLifeStart(__instance);
+    }
+
+    private sealed class PmcScavStatisticsEndPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+            => AccessTools.Method(typeof(LocalPlayer), nameof(LocalPlayer.OnGameSessionEnd),
+                new[] { typeof(ExitStatus), typeof(float), typeof(string), typeof(string) });
+
+        [PatchPrefix]
+        private static void Prefix(LocalPlayer __instance, ref float pastTime)
+            => PmcScavSession.RewriteScavSessionTime(__instance, ref pastTime);
     }
 
     private sealed class PmcScavBeforeGameEndPatch : ModulePatch
@@ -73,8 +96,9 @@ internal static class PmcScavPatches
             => AccessTools.Method(typeof(SessionResultShowOperation), "Execute");
 
         [PatchPrefix]
-        private static void Prefix(IEftSession session, string profileId, ref ExitStatus exitStatus, ref TimeSpan exitTime)
-            => PmcScavSession.RewritePmcResult(session, profileId, ref exitStatus, ref exitTime);
+        private static void Prefix(IEftSession session, ref string profileId, ref Profile savageProfile,
+            ref ExitStatus exitStatus, ref TimeSpan exitTime)
+            => PmcScavSession.RewriteScavResult(session, ref profileId, ref savageProfile, ref exitStatus, ref exitTime);
     }
 
     private sealed class PmcScavBackendEndPatch : ModulePatch
@@ -85,6 +109,7 @@ internal static class PmcScavPatches
         [PatchPrefix]
         private static bool Prefix(LocalRaidSettings settings, SessionResult results, ref Task __result)
         {
+            PmcScavSession.RewriteScavBackendTime(settings, results);
             var reason = PmcScavSession.GetUnsafeSettlementReason(settings, results);
             if (reason == null)
                 return true;
@@ -101,9 +126,10 @@ internal static class PmcScavPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            // SPT's Init prefix assumes every final Savage body is the account's regular
-            // Player-Scav. Patch that handler itself, preserving the native result screen
-            // and every other Init patch. Ordinary PMC/Scav results still run it normally.
+            // Combined settlement already persists the actual Scav. SPT's ordinary Init
+            // handler would replace that inventory with an old client snapshot, including
+            // after partial transfer or after death generated the next Scav. Skip only
+            // the owned hybrid handler; keep native result UI and ordinary raid handling.
             var type = AccessTools.TypeByName("SPT.SinglePlayer.Patches.ScavMode.SendPlayerScavProfileToServerAfterRaidPatch");
             var method = type == null ? null : AccessTools.DeclaredMethod(type, "PatchPrefix",
                 new[] { typeof(SessionResultShowOperation) });

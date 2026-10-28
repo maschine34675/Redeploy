@@ -194,7 +194,6 @@ public static class RespawnService
         {
             Exception prepareFailure = null;
             yield return game.StartCoroutine(PmcScavSession.Prepare(game,
-                () => ConsumeRespawnItem(game.LocalPlayer, failOnError: true),
                 (profile, selector, error) =>
                 {
                     scavProfile = profile;
@@ -305,7 +304,7 @@ public static class RespawnService
         return false;
     }
 
-    private static void ConsumeRespawnItem(LocalPlayer deadPlayer, bool failOnError = false)
+    private static void ConsumeRespawnItem(LocalPlayer deadPlayer)
     {
         var templateId = Settings.GetRequiredRespawnItemTemplateId();
         if (string.IsNullOrEmpty(templateId))
@@ -323,15 +322,11 @@ public static class RespawnService
 
         if (requiredItem == null)
         {
-            if (failOnError)
-                throw new InvalidOperationException("The required respawn item is no longer available.");
             Plugin.ModLogger.LogWarning("Required respawn item not found at consume time; respawning anyway.");
             return;
         }
 
         var result = ItemManipulator.RemoveWithoutRestrictions(requiredItem, deadPlayer.InventoryController);
-        if (result.Failed && failOnError)
-            throw new InvalidOperationException($"The required respawn item could not be consumed: {result.Error}");
         if (result.Failed)
             Plugin.ModLogger.LogWarning($"Failed to consume respawn item: {result.Error}");
         else

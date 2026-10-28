@@ -32,7 +32,7 @@ public sealed class ScavContinuationTests
         var root = Item();
         return new PmcData
         {
-            Id = new MongoId(), Info = new() { Side = side, Experience = 123 }, InsuredItems = [],
+            Id = new MongoId(), Info = new() { Side = side, Experience = 123, SavageLockTime = 0 }, InsuredItems = [],
             Inventory = new() { Equipment = root.Id, Items = [root] }
         };
     }
@@ -87,28 +87,6 @@ public sealed class ScavContinuationTests
         Assert.Throws<InvalidDataException>(() => ScavInventoryPolicy.Carried(Profile(), _ => false));
     }
 
-    [Fact] public void MailDropsPocketShellAndRemapsContentsAndModsWithoutChangingCondition()
-    {
-        var p = Profile(); var pockets = Item(p.Inventory!.Equipment.ToString(), "Pockets");
-        var gun = Item(pockets.Id.ToString(), "pocket1"); var mod = Item(gun.Id.ToString(), "mod_scope");
-        mod.Upd = new() { SpawnedInSession = true, StackObjectsCount = 9 };
-        p.Inventory.Items!.AddRange([pockets, gun, mod]);
-        var carried = ScavInventoryPolicy.Carried(p, _ => true); var stash = new MongoId();
-        var old = new[] { gun.Id, mod.Id };
-        var mail = ScavInventoryPolicy.MailItems(ScavInventoryPolicy.LootItems(carried, p.Inventory.Equipment.ToString()!), stash);
-        Assert.Equal(2, mail.Count); Assert.Equal(stash.ToString(), gun.ParentId);
-        Assert.Equal(gun.Id.ToString(), mod.ParentId); Assert.DoesNotContain(gun.Id, old); Assert.DoesNotContain(mod.Id, old);
-        Assert.True(mod.Upd.SpawnedInSession); Assert.Equal(9, mod.Upd.StackObjectsCount);
-    }
-
-    [Theory] [InlineData(ExitStatus.RUNNER, false)] [InlineData(ExitStatus.SURVIVED, true)]
-    public void RunThroughRemovesFirOnlyWhenRequired(ExitStatus result, bool expected)
-    {
-        var item = Item(); item.Upd = new() { SpawnedInSession = true };
-        ScavInventoryPolicy.ApplyRunThrough([item], result);
-        Assert.Equal(expected, item.Upd.SpawnedInSession);
-    }
-
     [Fact] public void JournalRoundtripUsesSafeFilenameAndKeepsRecoveryData()
     {
         using var f = new Fixture();
@@ -121,7 +99,7 @@ public sealed class ScavContinuationTests
         record.Phase = ScavPhase.Committed; ScavStatePolicy.CompactCommitted(record); f.Journal.Write(record);
         var compact = f.Journal.Read(f.Session.ToString(), record.InitialServerId)!;
         Assert.Null(compact.BeforeProfileJson); Assert.Empty(compact.FrozenPmcJson); Assert.Empty(compact.Token);
-        Assert.NotEmpty(compact.ReceiptId);
+        Assert.Equal(record.ScavEquipmentId, compact.ScavEquipmentId);
     }
 
     [Fact] public void CorruptOtherProfileJournalCannotBlockOrdinaryRaid()
@@ -162,7 +140,7 @@ public sealed class ScavContinuationTests
         f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = nextRaid });
         var request = f.Json.Deserialize<EndLocalRaidRequestData>(f.Json.Serialize(f.Frozen))!;
         request.ServerId = nextRaid;
-        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 1, InitialServerId = nextRaid,
+        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 2, InitialServerId = nextRaid,
             ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = request }, default);
         Assert.Equal("previous-continuation-pending", result.Error);
         Assert.Null(f.Journal.Read(f.Session.ToString(), nextRaid));
@@ -171,7 +149,7 @@ public sealed class ScavContinuationTests
     [Fact] public async Task PrepareWithoutServerIssuedRaidDoesNotArmAnything()
     {
         using var f = new Fixture();
-        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 1, InitialServerId = f.Raid,
+        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 2, InitialServerId = f.Raid,
             ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = f.Frozen }, default);
         Assert.False(result.Success); Assert.Equal("no-issued-pmc-raid", result.Error);
         Assert.Null(f.Journal.Read(f.Session.ToString(), f.Raid));
@@ -192,11 +170,11 @@ public sealed class ScavContinuationTests
             // The raw-native recursion guard still bypasses this wrapper.
             Assert.False(f.Service.ShouldInterceptEnd(f.Session, request));
             entered.SetResult(); await finish.Task;
-        }, default);
+        }, f.NativeScavOutcome, default);
         await entered.Task;
         var delayedPrepare = f.Service.Prepare(f.Session, new()
         {
-            ProtocolVersion = 1, InitialServerId = f.Raid, ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = f.Frozen
+            ProtocolVersion = 2, InitialServerId = f.Raid, ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = f.Frozen
         }, default);
         Assert.False(delayedPrepare.IsCompleted);
         finish.SetResult(); await ending;
@@ -212,8 +190,8 @@ public sealed class ScavContinuationTests
         using var f = new Fixture();
         f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = f.Raid });
         await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Frozen,
-            _ => throw new IOException("native failure"), default));
-        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 1, InitialServerId = f.Raid,
+            _ => throw new IOException("native failure"), f.NativeScavOutcome, default));
+        var result = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 2, InitialServerId = f.Raid,
             ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = f.Frozen }, default);
         Assert.Equal("no-issued-pmc-raid", result.Error);
         Assert.Null(f.Journal.Read(f.Session.ToString(), f.Raid));
@@ -233,7 +211,7 @@ public sealed class ScavContinuationTests
     [Fact] public async Task RegisteredGenerationRetryAndWrongControlToken()
     {
         using var f = new Fixture(); var entry = f.Entry(); f.Journal.Write(entry);
-        var response = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 1, InitialServerId = f.Raid,
+        var response = await f.Service.Prepare(f.Session, new() { ProtocolVersion = 2, InitialServerId = f.Raid,
             ClientRequestId = entry.RequestId, FrozenPmcDeath = f.Frozen }, default);
         Assert.True(response.Success); Assert.Equal(entry.ScavProfileId, response.ScavProfile!.Id.ToString());
         var bad = await f.Service.Control(f.Session, new() { InitialServerId = f.Raid, Token = new string('1',64) }, false, default);
@@ -243,86 +221,145 @@ public sealed class ScavContinuationTests
     [Fact] public async Task OrdinaryPmcEndAfterFailedBodyIsPassedThroughWithoutHybridEffects()
     {
         using var f = new Fixture(); f.Journal.Write(f.Entry()); int calls = 0;
-        await f.Service.End(f.Session, f.Frozen, request => { calls++; Assert.Same(f.Frozen, request); return Task.CompletedTask; }, default);
-        Assert.Equal(1, calls); Assert.Equal(ScavPhase.Cancelled, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        async Task Native(EndLocalRaidRequestData request) { calls++; Assert.Same(f.Frozen, request); await f.NativeEnd(request); }
+        Task NoScav(PmcData _, PmcData __, EndLocalRaidRequestData ___)
+            => throw new InvalidOperationException("A failed replacement must not settle the regular Scav.");
+        await f.Service.End(f.Session, f.Frozen, Native, NoScav, default);
+        await f.Service.End(f.Session, f.Frozen, Native, NoScav, default);
+        Assert.Equal(1, calls); Assert.Equal(ScavPhase.Committed, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        Assert.True(f.Journal.Read(f.Session.ToString(), f.Raid)!.PmcOnly);
+        Assert.False(f.Service.OwnsRegeneration(f.Session));
+        Assert.False(f.Service.BlocksScavSave(f.Session, f.Scav.Inventory!.Equipment.ToString()));
         Assert.Empty(f.Full.DialogueRecords!);
     }
 
-    [Fact] public async Task CommitFreezesPmcPreservesRegularScavAndDeliversExactlyOnce()
+    [Fact] public async Task CommitSettlesPmcThenActualScavAndNeverMailsOrRepeats()
     {
-        using var f = new Fixture(); f.Journal.Write(f.Entry()); string beforeScav = f.Json.Serialize(f.Full.CharacterData!.ScavData)!;
-        int calls = 0;
-        async Task Native(EndLocalRaidRequestData request)
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        var scavGear = f.Json.Serialize(f.Scav.Inventory);
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        Assert.Equal(new[] { "pmc", "scav" }, f.NativeStages);
+        Assert.Equal(1, f.Writes); Assert.Empty(f.Full.DialogueRecords!);
+        Assert.Equal(scavGear, f.Json.Serialize(f.Full.CharacterData!.ScavData!.Inventory));
+        Assert.Equal(99999, f.Full.CharacterData.ScavData.Info!.Experience);
+        Assert.Equal(123, f.Full.CharacterData.PmcData!.Info!.Experience);
+        var entry = f.Journal.Read(f.Session.ToString(), f.Raid)!;
+        Assert.Equal(ScavPhase.Committed, entry.Phase);
+        Assert.Equal(ScavTransferPhase.Pending, entry.TransferPhase);
+        Assert.Empty(entry.ScavJson); Assert.Null(entry.BeforeProfileJson);
+        Assert.Throws<InvalidOperationException>(() => f.Service.BeforeStart(f.Session));
+    }
+
+    [Fact] public void NativeScavHandlerContractMatchesReferencedSpt()
+        => NativeScavOutcome.ValidateContract();
+
+    [Fact] public async Task CombinedResultDoesNotReenterAnOuterExactRaidGateWithInventedIdentity()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        using var outerGate = new SemaphoreSlim(1, 1);
+        await outerGate.WaitAsync();
+        int outerCalls = 0;
+        async Task OuterEnd(EndLocalRaidRequestData request)
         {
-            calls++;
-            Assert.Equal(f.Pmc.Id, request.Results!.Profile!.Id); Assert.Equal(ExitStatus.KILLED, request.Results.Result);
-            Assert.Equal(123, request.Results.Profile.Info!.Experience);
-            Assert.Equal(12, request.Results.PlayTime); Assert.Null(request.Results.ExitName);
-            f.Full.CharacterData!.ScavData!.Info!.Experience = 9876;
-            f.Service.NativePmcHandled(f.Session, f.Full);
-            await f.Service.Save(f.Session, f.WriteProfile, default);
+            outerCalls++;
+            if (request.ServerId != f.Raid)
+            {
+                // Arena's ordinary end owns this gate for the issued identity. Its
+                // lower prefix can bypass it only for that exact original identity.
+                // A zero-time probe reproduces the blocked wait without hanging tests.
+                Assert.False(await outerGate.WaitAsync(0));
+                throw new InvalidOperationException("outer exact-raid gate would deadlock");
+            }
+            await f.NativeEnd(request);
         }
-        await f.Service.End(f.Session, f.Final, Native, default);
-        await f.Service.End(f.Session, f.Final, Native, default);
-        Assert.Equal(1, calls); Assert.Equal(beforeScav, f.Json.Serialize(f.Full.CharacterData!.ScavData));
-        Assert.True(Assert.Single(Assert.Single(f.Full.DialogueRecords!).Value.Messages!).HasRewards);
-        var committed = f.Journal.Read(f.Session.ToString(), f.Raid)!;
-        Assert.Equal(ScavPhase.Committed, committed.Phase); Assert.Empty(committed.ScavJson); Assert.Null(committed.BeforeProfileJson);
-        // Collect/delete mail cannot make a committed request deliver twice.
-        f.Full.DialogueRecords!.Clear(); await f.WriteProfile();
-        await f.Service.End(f.Session, f.Final, Native, default); Assert.Equal(1, calls);
+
+        await f.Service.End(f.Session, f.Final, OuterEnd, f.NativeScavOutcome, default);
+        Assert.Equal(1, outerCalls);
+        Assert.Equal(new[] { "pmc", "scav" }, f.NativeStages);
+        Assert.Equal(ScavPhase.Committed, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        Assert.Equal(1, f.Writes);
+
+        // Negative control: the previous implementation routed its second stage
+        // through that outer pipeline with a synthetic Scav ServerId.
+        var mutant = new EndLocalRaidRequestData { ServerId = "factory4_day.scav redeploy", Results = f.Final.Results };
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => OuterEnd(mutant));
+        Assert.Equal("outer exact-raid gate would deadlock", failure.Message);
     }
 
     [Theory] [InlineData(ExitStatus.KILLED)] [InlineData(ExitStatus.LEFT)] [InlineData(ExitStatus.MISSINGINACTION)]
-    public async Task FailedScavExitProducesReceiptWithoutLoot(ExitStatus outcome)
+    public async Task FailedScavExitCreatesSuccessorAndCooldownWithoutTransfer(ExitStatus outcome)
     {
         using var f = new Fixture(); f.Final.Results!.Result = outcome; f.Journal.Write(f.Entry());
-        await f.Service.End(f.Session, f.Final, async _ => { f.Service.NativePmcHandled(f.Session, f.Full);
-            await f.Service.Save(f.Session, f.WriteProfile, default); }, default);
-        Assert.False(Assert.Single(Assert.Single(f.Full.DialogueRecords!).Value.Messages!).HasRewards);
+        string oldRoot = f.Scav.Inventory!.Equipment.ToString()!;
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        Assert.Empty(f.Full.DialogueRecords!);
+        Assert.NotEqual(oldRoot, f.Full.CharacterData!.ScavData!.Inventory!.Equipment.ToString());
+        Assert.True(f.Full.CharacterData.ScavData.Info!.SavageLockTime > DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        Assert.Equal(ScavTransferPhase.Complete, f.Journal.Read(f.Session.ToString(), f.Raid)!.TransferPhase);
+        f.Service.BeforeStart(f.Session);
     }
 
     [Fact] public async Task WriteFailureQuarantinesPartialStateAndNeverReplaysNative()
     {
         using var f = new Fixture(); f.Journal.Write(f.Entry()); int calls = 0;
         Task Native(EndLocalRaidRequestData _) { calls++; throw new IOException("simulated before write"); }
-        await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Final, Native, default));
+        await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Final, Native, f.NativeScavOutcome, default));
         Assert.Equal(ScavPhase.RecoveryRequired, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, Native, default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, Native, f.NativeScavOutcome, default));
         await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.Save(f.Session, f.WriteProfile, default));
         Assert.Equal(1, calls); Assert.False(File.Exists(f.ProfilePath));
     }
 
-    [Fact] public async Task BackupFailureAfterVerifiedDiskReceiptDoesNotReplayNative()
+    [Fact] public async Task NativeErrorBeforeJointSaveCannotCommitOnlyPmc()
     {
-        using var f = new Fixture(); f.Journal.Write(f.Entry()); int calls = 0;
-        async Task Native(EndLocalRaidRequestData _) { calls++; f.Service.NativePmcHandled(f.Session, f.Full);
-            await f.Service.Save(f.Session, f.WriteProfile, default); throw new IOException("simulated backup failure"); }
-        await f.Service.End(f.Session, f.Final, Native, default);
-        await f.Service.End(f.Session, f.Final, Native, default);
-        Assert.Equal(1, calls); Assert.Equal(ScavPhase.Committed, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Final, async request =>
+        {
+            await f.NativeEnd(request);
+            throw new IOException("backup failed before Scav settlement");
+        }, f.NativeScavOutcome, default));
+        Assert.Equal(0, f.Writes); Assert.False(File.Exists(f.ProfilePath));
+        Assert.Equal(ScavPhase.RecoveryRequired, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
     }
 
-    [Fact] public async Task RestartWithSettlingJournalAndDiskReceiptRecoversWithoutNativeReplay()
+    [Fact] public async Task NativeScavFailurePropagatesAndCannotCommitOnlyPmc()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        var expected = new IOException("Scav outcome failed");
+        var actual = await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Final,
+            f.NativeEnd, async (pmc, scav, request) =>
+            {
+                await f.NativeScavOutcome(pmc, scav, request);
+                throw expected;
+            }, default));
+        Assert.Same(expected, actual);
+        Assert.Equal(new[] { "pmc", "scav" }, f.NativeStages);
+        Assert.Equal(0, f.Writes); Assert.False(File.Exists(f.ProfilePath));
+        Assert.Equal(ScavPhase.RecoveryRequired, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+    }
+
+    [Fact] public async Task RestartWithSettlingJournalAndExactDiskStateDoesNotReplayNative()
     {
         using var f = new Fixture(); var entry = f.Entry(); entry.Phase = ScavPhase.Settling;
-        entry.FinalHash = ScavJournal.Hash(f.Json.Serialize(f.Final)!); f.Journal.Write(entry);
-        ScavContinuationService.AddReceipt(f.Full, new Message { Id = new MongoId(entry.ReceiptId), HasRewards = false });
-        await f.WriteProfile();
-        await f.Service.End(f.Session, f.Final, _ => throw new Exception("must not replay"), default);
+        entry.FinalHash = ScavJournal.Hash(f.Json.Serialize(f.Final)!);
+        entry.ExpectedProfileHash = ScavJournal.Hash(f.Json.Serialize(f.Full)!);
+        entry.TransferPhase = ScavTransferPhase.Pending; f.Journal.Write(entry); await f.WriteProfile();
+        await f.Service.End(f.Session, f.Final, _ => throw new Exception("must not replay"), f.NativeScavOutcome, default);
         Assert.Equal(ScavPhase.Committed, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        Assert.Throws<InvalidOperationException>(() => f.Service.BeforeStart(f.Session));
     }
 
     [Fact] public async Task ConflictingReplayAndProtectedItemLeakFailBeforeNative()
     {
         using var f = new Fixture(); var entry = f.Entry(); entry.FinalHash = "different"; f.Journal.Write(entry);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, _ => throw new Exception("native"), default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, _ => throw new Exception("native"), f.NativeScavOutcome, default));
         entry.FinalHash = null; f.Journal.Write(entry);
         // Pockets root is retained by native PMC deletion, cannot be extracted as Scav loot.
         var kept = Item(f.Pmc.Inventory!.Equipment.ToString(), "Pockets"); f.Pmc.Inventory.Items!.Add(kept);
         entry.FrozenPmcJson = f.Json.Serialize(f.Frozen)!; f.Journal.Write(entry);
         f.Scav.Inventory!.Items!.Add(kept with { ParentId = f.Scav.Inventory.Equipment.ToString() });
-        await Assert.ThrowsAsync<InvalidDataException>(() => f.Service.End(f.Session, f.Final, _ => throw new Exception("native"), default));
+        await Assert.ThrowsAsync<InvalidDataException>(() => f.Service.End(f.Session, f.Final, _ => throw new Exception("native"), f.NativeScavOutcome, default));
     }
 
     [Fact] public async Task ConcurrentAutosaveWaitsUntilSettlementCompletes()
@@ -330,8 +367,8 @@ public sealed class ScavContinuationTests
         using var f = new Fixture(); f.Journal.Write(f.Entry());
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var end = f.Service.End(f.Session, f.Final, async _ => { entered.SetResult(); await release.Task;
-            f.Service.NativePmcHandled(f.Session, f.Full); await f.Service.Save(f.Session, f.WriteProfile, default); }, default);
+        var end = f.Service.End(f.Session, f.Final, async _ => { entered.TrySetResult(); await release.Task;
+            await f.NativeEnd(_); }, f.NativeScavOutcome, default);
         await entered.Task;
         var save = f.Service.Save(f.Session, f.WriteProfile, default);
         Assert.False(save.IsCompleted);
@@ -348,7 +385,7 @@ public sealed class ScavContinuationTests
         f.Journal.Write(f.Entry());
         f.Scav.Inventory!.Items!.Add(child with { ParentId = f.Scav.Inventory.Equipment.ToString(), SlotId = "Holster" });
         await Assert.ThrowsAsync<InvalidDataException>(() => f.Service.End(f.Session, f.Final,
-            _ => throw new Exception("native must not execute"), default));
+            _ => throw new Exception("native must not execute"), f.NativeScavOutcome, default));
         Assert.Equal(ScavPhase.Prepared, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
     }
 
@@ -359,7 +396,7 @@ public sealed class ScavContinuationTests
         var root = new Item { Id = new MongoId(ScavTransferPolicy.TransferRootId), Template = new MongoId(ScavTransferPolicy.TransferRootTemplate) };
         f.Final.TransferItems = new() { [key] = [root, Item(root.Id.ToString(), "main")] };
         await Assert.ThrowsAsync<InvalidDataException>(() => f.Service.End(f.Session, f.Final,
-            _ => throw new Exception("native must not execute"), default));
+            _ => throw new Exception("native must not execute"), f.NativeScavOutcome, default));
         Assert.Equal(ScavPhase.Prepared, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
         f.Final.TransferItems[key] = [root];
         await f.Service.End(f.Session, f.Final, async request =>
@@ -367,7 +404,7 @@ public sealed class ScavContinuationTests
             Assert.Null(request.TransferItems);
             f.Service.NativePmcHandled(f.Session, f.Full);
             await f.Service.Save(f.Session, f.WriteProfile, default);
-        }, default);
+        }, f.NativeScavOutcome, default);
         Assert.Equal(ScavPhase.Committed, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
     }
 
@@ -377,6 +414,244 @@ public sealed class ScavContinuationTests
             => method!.ReturnType == typeof(void) ? null : method.ReturnType.IsValueType ? Activator.CreateInstance(method.ReturnType) : null;
     }
     private static ISptLogger<T> Logger<T>() => DispatchProxy.Create<ISptLogger<T>, NullLog>();
+
+    [Fact] public async Task PrepareUsesActualAccountScavAndPreservesGearSkillsAndCooldown()
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = f.Raid });
+        string before = f.Json.Serialize(f.Full)!;
+        var request = f.PrepareRequest();
+        var response = await f.Service.Prepare(f.Session, request, default);
+        Assert.True(response.Success, response.Error);
+        Assert.Equal(f.Full.CharacterData!.ScavData!.Id, response.ScavProfile!.Id);
+        Assert.Equal(f.Json.Serialize(f.Full.CharacterData.ScavData), f.Json.Serialize(response.ScavProfile));
+        Assert.NotSame(f.Full.CharacterData.ScavData, response.ScavProfile);
+        Assert.NotSame(f.Full.CharacterData.ScavData.Inventory, response.ScavProfile.Inventory);
+        Assert.Equal(before, f.Json.Serialize(f.Full));
+        var retry = await f.Service.Prepare(f.Session, request, default);
+        Assert.True(retry.Success); Assert.Equal(response.Token, retry.Token);
+        Assert.Equal(response.GenerationHash, retry.GenerationHash);
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task CooldownRefusesPreparationWithoutConsumingScavOrWritingJournal()
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = f.Raid });
+        f.Full.CharacterData!.ScavData!.Info!.SavageLockTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 3600;
+        string before = f.Json.Serialize(f.Full)!;
+        var response = await f.Service.Prepare(f.Session, f.PrepareRequest(), default);
+        Assert.False(response.Success); Assert.Equal("scav-cooldown", response.Error);
+        Assert.Equal(f.Full.CharacterData.ScavData.Info.SavageLockTime, response.AvailableAt);
+        Assert.Null(f.Journal.Read(f.Session.ToString(), f.Raid));
+        Assert.Equal(before, f.Json.Serialize(f.Full)); Assert.Equal(0, f.Writes);
+    }
+
+    [Theory] [InlineData("id")] [InlineData("side")] [InlineData("lock")]
+    public async Task MalformedAccountScavCannotBecomeAReplacement(string mutation)
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = f.Raid });
+        var scav = f.Full.CharacterData!.ScavData!;
+        if (mutation == "id") scav.Id = new MongoId();
+        if (mutation == "side") scav.Info!.Side = "Usec";
+        if (mutation == "lock") scav.Info!.SavageLockTime = null;
+        Assert.Equal("regular-scav-unavailable", (await f.Service.Prepare(f.Session, f.PrepareRequest(), default)).Error);
+        Assert.Null(f.Journal.Read(f.Session.ToString(), f.Raid));
+    }
+
+    [Fact] public async Task CancelledPreparationPreservesAccountScavAndDoesNotFenceOrdinaryUpload()
+    {
+        using var f = new Fixture(); var entry = f.Entry(); f.Journal.Write(entry);
+        string before = f.Json.Serialize(f.Full)!;
+        var response = await f.Service.Control(f.Session, new() { InitialServerId = f.Raid, Token = entry.Token }, true, default);
+        Assert.True(response.Success); Assert.Equal(before, f.Json.Serialize(f.Full));
+        Assert.False(f.Service.OwnsRegeneration(f.Session));
+        Assert.False(f.Service.BlocksScavSave(f.Session, entry.ScavEquipmentId));
+        f.Service.BeforeStart(f.Session);
+    }
+
+    [Fact] public async Task ChangedReservedLoadoutRefusesActivationAndSettlementBeforeSideEffects()
+    {
+        using var f = new Fixture(); var entry = f.Entry(); f.Journal.Write(entry);
+        f.Full.CharacterData!.ScavData!.Inventory!.Items!.Add(Item(entry.ScavEquipmentId, "Backpack"));
+        var activation = await f.Service.Control(f.Session, new() { InitialServerId = f.Raid, Token = entry.Token,
+            ScavProfileId = entry.ScavProfileId, GenerationHash = entry.GenerationHash }, false, default);
+        Assert.False(activation.Success);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default));
+        Assert.Empty(f.NativeStages); Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task LateActivationStillUsesReservedBodyAndCannotCancelIt()
+    {
+        using var f = new Fixture(); var entry = f.Entry(); entry.ExpiresAt = 1; f.Journal.Write(entry);
+        var request = new ScavControlRequest { InitialServerId = f.Raid, Token = entry.Token,
+            ScavProfileId = entry.ScavProfileId, GenerationHash = entry.GenerationHash };
+        Assert.True((await f.Service.Control(f.Session, request, false, default)).Success);
+        Assert.True((await f.Service.Control(f.Session, request, false, default)).Success);
+        Assert.False((await f.Service.Control(f.Session, request, true, default)).Success);
+    }
+
+    [Fact] public async Task TransferCompletionGeneratesOnceAndRetryCannotRecreateLoot()
+    {
+        using var f = new Fixture(); var entry = f.Entry(); f.Journal.Write(entry);
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        var transferred = f.Full.CharacterData!.ScavData!.Inventory!.Items!.Last();
+        f.Full.CharacterData.ScavData.Inventory.Items!.Remove(transferred);
+        f.Pmc.Inventory!.Items!.Add(transferred with { ParentId = f.Pmc.Inventory.Equipment.ToString(), SlotId = "Backpack" });
+        int generations = 0;
+        ValueTask<string> Regenerate()
+        {
+            generations++; Assert.False(f.Service.OwnsRegeneration(f.Session));
+            var next = Profile(); next.Id = f.Scav.Id; next.Info!.SavageLockTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds()+1200;
+            f.Full.CharacterData.ScavData = next;
+            return ValueTask.FromResult("native-response");
+        }
+        Assert.Equal("native-response", await f.Service.FinishTransfer(f.Session, Regenerate, f.WriteProfile, default));
+        var after = f.Json.Serialize(f.Full);
+        Assert.Equal("native-response", await f.Service.FinishTransfer(f.Session, Regenerate, f.WriteProfile, default));
+        Assert.Equal(1, generations); Assert.Equal(2, f.Writes); Assert.Equal(after, f.Json.Serialize(f.Full));
+        Assert.True(f.Service.BlocksScavSave(f.Session, entry.ScavEquipmentId));
+        Assert.False(f.Service.BlocksScavSave(f.Session, f.Full.CharacterData.ScavData.Inventory!.Equipment.ToString()));
+        f.Service.BeforeStart(f.Session);
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "scav" }, new() { ServerId = "factory4_day.scav 2" });
+        Assert.False(f.Service.OwnsRegeneration(f.Session));
+        Assert.True(f.Service.BlocksScavSave(f.Session, entry.ScavEquipmentId));
+    }
+
+    [Theory] [InlineData(ScavPhase.Prepared)] [InlineData(ScavPhase.Active)]
+    public async Task RegenerationCannotChangeAReservedScav(ScavPhase phase)
+    {
+        using var f = new Fixture(); var entry = f.Entry(); entry.Phase = phase; f.Journal.Write(entry);
+        Assert.True(f.Service.OwnsRegeneration(f.Session));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await f.Service.FinishTransfer(f.Session,
+            () => throw new Exception("native must not run"), f.WriteProfile, default));
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task TransferWriteFailureIsQuarantinedAndNeverRegeneratesTwice()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        int generations = 0;
+        ValueTask<string> Regenerate()
+        {
+            generations++; var next = Profile(); next.Id = f.Scav.Id; f.Full.CharacterData!.ScavData = next;
+            return ValueTask.FromResult("next");
+        }
+        await Assert.ThrowsAsync<IOException>(async () => await f.Service.FinishTransfer(f.Session, Regenerate,
+            () => throw new IOException("disk full"), default));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await f.Service.FinishTransfer(f.Session, Regenerate, f.WriteProfile, default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.Save(f.Session, f.WriteProfile, default));
+        Assert.Equal(1, generations);
+    }
+
+    [Fact] public async Task LegacyPendingJournalCannotBeReinterpretedOrMutated()
+    {
+        using var f = new Fixture(); var entry = f.Entry(); entry.Version = 1; f.Journal.Write(entry);
+        Assert.Throws<InvalidOperationException>(() => f.Service.BeforeStart(f.Session));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default));
+        var result = await f.Service.Prepare(f.Session, f.PrepareRequest(), default);
+        Assert.False(result.Success); Assert.Equal(1, f.Journal.Read(f.Session.ToString(),f.Raid)!.Version);
+        Assert.Equal(0, f.Writes); Assert.Empty(f.NativeStages);
+    }
+
+    [Fact] public async Task SavedProfileReadbackMustContainBothResults()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await f.WriteProfile(); f.Writes = 0;
+        await Assert.ThrowsAsync<IOException>(() => f.Service.End(f.Session, f.Final, async request =>
+        {
+            await f.NativeEnd(request);
+            await f.Service.Save(f.Session, () => Task.FromResult(0L), default);
+        }, async (pmc, scav, request) =>
+        {
+            await f.NativeScavOutcome(pmc, scav, request);
+            await f.Service.Save(f.Session, () => Task.FromResult(0L), default);
+        }, default));
+        Assert.Equal(ScavPhase.RecoveryRequired, f.Journal.Read(f.Session.ToString(),f.Raid)!.Phase);
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task ReservedInventoryRefusesMenuMutations()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await f.Service.WithTransferInventory<int>(f.Session,
+            () => throw new Exception("native must not run"), default));
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task TransferMoveAndNestedSaveCompleteBeforeRegeneration()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool moved = false, generated = false;
+        var move = f.Service.WithTransferInventory(f.Session, async () =>
+        {
+            Assert.False(f.Service.OwnsInventoryWindow(f.Session)); entered.SetResult(); await release.Task;
+            moved = true; await f.Service.Save(f.Session, f.WriteProfile, default); return 42;
+        }, default).AsTask();
+        await entered.Task;
+        var finish = f.Service.FinishTransfer(f.Session, () =>
+        {
+            Assert.True(moved); generated = true;
+            var next = Profile(); next.Id = f.Scav.Id; f.Full.CharacterData!.ScavData = next;
+            return ValueTask.FromResult("next");
+        }, f.WriteProfile, default).AsTask();
+        Assert.False(finish.IsCompleted); Assert.False(generated);
+        release.SetResult(); Assert.Equal(42, await move); Assert.Equal("next", await finish);
+        Assert.Equal(3, f.Writes);
+    }
+
+    [Fact] public async Task ScavStandingDeltaIsAddedAfterPmcStandingSettlement()
+    {
+        using var f = new Fixture(); var fence = Traders.FENCE;
+        f.Pmc.TradersInfo = new() { [fence] = new() { Standing = 1 } };
+        f.Full.CharacterData!.ScavData!.TradersInfo = new() { [fence] = new() { Standing = 1 } };
+        f.Scav.TradersInfo = new() { [fence] = new() { Standing = 1.3 } };
+        f.Journal.Write(f.Entry());
+        await f.Service.End(f.Session, f.Final, async request =>
+        {
+            f.Pmc.TradersInfo[fence].Standing = 1.2;
+            await f.NativeEnd(request);
+        }, async (pmc, scav, request) =>
+        {
+            Assert.Equal(1.5, request.Results!.Profile!.TradersInfo![fence].Standing!.Value, 6);
+            await f.NativeScavOutcome(pmc, scav, request);
+        }, default);
+    }
+
+    [Fact] public async Task FinalScavSaveMustBeObservedNotOnlyPmcSave()
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => f.Service.End(f.Session, f.Final,
+            f.NativeEnd, (_, _, _) => Task.CompletedTask, default));
+        Assert.Equal(0, f.Writes); Assert.False(File.Exists(f.ProfilePath));
+    }
+
+    [Theory]
+    [InlineData(null)] [InlineData(-1d)] [InlineData(86401d)]
+    [InlineData(double.NaN)] [InlineData(double.PositiveInfinity)] [InlineData(double.NegativeInfinity)]
+    public async Task InvalidScavDurationCannotReachNativeSettlement(double? seconds)
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        f.Final.Results!.PlayTime = seconds;
+        await Assert.ThrowsAsync<InvalidDataException>(() => f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default));
+        Assert.Empty(f.NativeStages); Assert.Equal(0, f.Writes);
+        Assert.Equal(ScavPhase.Prepared, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+    }
+
+    [Theory] [InlineData(0)] [InlineData(188)] [InlineData(86400)]
+    public async Task ScavBodyDurationPassesThroughWithoutSubtractingPmcAgain(double seconds)
+    {
+        using var f = new Fixture(); f.Journal.Write(f.Entry());
+        f.Final.Results!.PlayTime = seconds;
+        await f.Service.End(f.Session, f.Final, f.NativeEnd, f.NativeScavOutcome, default);
+        Assert.Equal(new[] { "pmc", "scav" }, f.NativeStages);
+        Assert.Equal(1, f.Writes);
+    }
 
     private sealed class Fixture : IDisposable
     {
@@ -392,7 +667,8 @@ public sealed class ScavContinuationTests
         public Fixture()
         {
             Directory.CreateDirectory(DirectoryPath); Environment.CurrentDirectory = DirectoryPath;
-            Full = new() { ProfileInfo = new() { ProfileId = Session }, CharacterData = new() { PmcData = Pmc, ScavData = Profile() }, DialogueRecords = [] };
+            Pmc.Savage = Scav.Id;
+            Full = new() { ProfileInfo = new() { ProfileId = Session }, CharacterData = new() { PmcData = Pmc, ScavData = new ServerCloner().Clone(Scav) }, DialogueRecords = [] };
             var saves = new SaveServer(new FileUtil(), [], Json, null!, null!, null!, Logger<SaveServer>(), null!);
             saves.AddProfile(Full);
             var templates = new TemplateTable { Character = [], CustomisationStorage = [], Items = new() { [Template] = null! },
@@ -401,25 +677,63 @@ public sealed class ScavContinuationTests
             var inRaid = new InRaidHelper(Logger<InRaidHelper>(), templates, null!, null!,
                 new LostOnDeathConfig { Equipment = new() { FirstPrimaryWeapon = true, Backpack = true, PocketItems = true },
                     SpecialSlotItems = true, QuestItems = true }, new ServerCloner());
-            Service = new(saves, Json, new ServerCloner(), null!, null!, null!, inRaid, templates, Logger<ScavContinuationService>());
+            Service = new(saves, Json, new ServerCloner(), inRaid, templates, Logger<ScavContinuationService>());
             Journal = new ScavJournal(JournalDirectory);
             typeof(ScavContinuationService).GetField("journal", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(Service, Journal);
             Frozen = new() { ServerId = Raid, LostInsuredItems = [], Results = new() { Profile = Pmc, Result = ExitStatus.KILLED, PlayTime = 12 } };
             Scav.Inventory!.Items!.Add(Item(Scav.Inventory.Equipment.ToString(), "FirstPrimaryWeapon"));
             Scav.Info!.Experience = 99999;
             Final = new() { ServerId = Raid, LostInsuredItems = [], Results = new() { Profile = Scav, Result = ExitStatus.SURVIVED,
-                PlayTime = 200, ExitName = "car-extract" } };
+                PlayTime = 188, ExitName = "car-extract" } };
         }
         public ScavJournalEntry Entry() => new()
         {
-            SessionId = Session.ToString(), InitialServerId = Raid, PmcProfileId = Pmc.Id.ToString()!, ScavProfileId = Scav.Id.ToString()!,
+            SessionId = Session.ToString(), InitialServerId = Raid, PmcProfileId = Pmc.Id.ToString()!, ScavProfileId = Scav.Id.ToString()!, ScavEquipmentId = Scav.Inventory!.Equipment.ToString()!,
             RequestId = Guid.NewGuid().ToString("N"), PrepareHash = ScavJournal.Hash(Json.Serialize(Frozen)!),
-            FrozenPmcJson = Json.Serialize(Frozen)!, OriginalInsuredJson = "[]", ScavJson = Json.Serialize(Scav)!,
-            GenerationHash = "generation", Token = new string('0',64), ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()+600,
-            ReceiptId = new MongoId().ToString(), Phase = ScavPhase.Prepared
+            FrozenPmcJson = Json.Serialize(Frozen)!, OriginalInsuredJson = "[]", ScavJson = Json.Serialize(Full.CharacterData!.ScavData)!,
+            GenerationHash = ScavJournal.Hash(Json.Serialize(Full.CharacterData!.ScavData)!), Token = new string('0',64), ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()+600,
+            Phase = ScavPhase.Prepared
         };
+        public ScavPrepareRequest PrepareRequest() => new() { ProtocolVersion = 2, InitialServerId = Raid,
+            ClientRequestId = Guid.NewGuid().ToString("N"), FrozenPmcDeath = Frozen };
+        public readonly List<string> NativeStages = [];
+        public int Writes;
+        public async Task NativeEnd(EndLocalRaidRequestData request)
+        {
+            Assert.Equal(Raid, request.ServerId);
+            NativeStages.Add("pmc");
+            Assert.Equal(Pmc.Id, request.Results!.Profile!.Id);
+            Assert.Equal(ExitStatus.KILLED, request.Results.Result);
+            Assert.Equal(12, request.Results.PlayTime);
+            Assert.Equal(123, request.Results.Profile.Info!.Experience);
+            Assert.Null(request.Results.ExitName);
+            Service.NativePmcHandled(Session, Full);
+            await Service.Save(Session, WriteProfile, default);
+            Assert.Equal(0, Writes);
+        }
+        public async Task NativeScavOutcome(PmcData pmc, PmcData scav, EndLocalRaidRequestData request)
+        {
+            Assert.Equal(Raid, request.ServerId);
+            Assert.Same(Full.CharacterData!.PmcData, pmc);
+            Assert.Same(Full.CharacterData.ScavData, scav);
+            NativeStages.Add("scav");
+            Assert.Equal(Final.Results!.PlayTime, request.Results!.PlayTime);
+            Assert.Equal(Scav.Id, request.Results!.Profile!.Id);
+            Assert.Null(request.LostInsuredItems);
+            scav.Info!.Experience = request.Results.Profile.Info!.Experience;
+            if (!ScavInventoryPolicy.Extracted(request.Results.Result))
+            {
+                var next = Profile(); next.Id = Scav.Id;
+                next.Info!.Experience = request.Results.Profile.Info.Experience;
+                next.Info.SavageLockTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 1200;
+                Full.CharacterData.ScavData = next;
+            }
+            await Service.Save(Session, WriteProfile, default);
+            Assert.Equal(0, Writes); // Both handlers' saves are deferred.
+        }
         public async Task<long> WriteProfile()
         {
+            Writes++;
             Directory.CreateDirectory(Path.GetDirectoryName(ProfilePath)!);
             await new FileUtil().WriteFileAsync(ProfilePath, Json.Serialize(Full)!);
             return 1;
