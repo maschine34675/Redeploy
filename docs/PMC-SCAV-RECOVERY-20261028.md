@@ -92,7 +92,7 @@ independently required the exact single-player LocalGame/current adopted body.
   retirement, Sell All duplication and outer Arena callback ordering findings.
 - Probe builds: zero warnings/errors. Parent reverified its bounded-state rules.
 - Gitleaks 8.30.1 scanned the 15 commits ahead of `origin/main` through `1c76459`:
-  no findings. Final documentation scanning is recorded at consolidation.
+  no findings. Final source/documentation and commit scans are recorded below.
 - The native fixture contained no insured items. Insurance filtering and
   exact-once handling have offline coverage, not a new native insurance claim.
 
@@ -142,3 +142,17 @@ Private profiles, journals and raw logs live
 outside the repository/synchronized tree under
 `C:\Temp\RedeployRecoveryEvidence-20261028` and
 `C:\Temp\RedeployRecovery-20261028` on SPT-GPU-1; they are not committed.
+
+## Consolidation
+
+The complete feature history through `703401f` was fast-forwarded into `main`.
+The merged `feature/pmc-to-scav` branch and its separate checkout were removed.
+Before removal, all 55 ignored non-build files were copied and hash-verified
+under the private evidence directory's `feature-worktree-archive`; a verified
+Git bundle preserves the prior refs. Rebuildable `bin`/`obj` trees were not kept;
+the exact tested candidate DLLs/PDBs had already been preserved separately.
+
+Gitleaks found no secrets in the final tracked source/documentation export or
+the new commits checked before pushing. Documentation review checked 55 local
+file links and four anchors; all resolved. Client/Server version numbers and
+the existing public release remain unchanged.

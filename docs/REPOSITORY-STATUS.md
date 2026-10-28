@@ -1,16 +1,19 @@
 # Redeploy repository status
 
-## Own-Scav validation — 2026-10-28
+## Own-Scav validation and consolidation — 2026-10-28
 
-- `feature/pmc-to-scav`, based on `ecf40d9`, is developed separately in
-  `D:\SPT41\Development\Redeploy-pmc-scav`.
-- Client/Server remain 1.0.2; this branch requires shared Core 1.0.16.
+- Current checkout: `D:\SPT41\Development\Redeploy`, branch `main`.
+- The complete `feature/pmc-to-scav` history through `703401f` was fast-forwarded
+  into `main`; the merged branch and its separate checkout were removed.
+  All 55 ignored non-build files were preserved and hash-verified in the private
+  evidence archive, together with a verified Git bundle. No history was rewritten.
+- Client/Server remain 1.0.2; current development requires shared Core 1.0.16.
 - Default-on additional own-Scav choice alongside naked PMC respawn, using the
   regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
-- The readiness checks are complete. Main-branch consolidation and removal of
-  this feature checkout follow the user's earlier instruction; their completion
-  will be recorded here. No new public release is part of these corrections.
+- The readiness checks and requested local consolidation are complete.
+  No new public release is part of these corrections. The published 1.0.2 package
+  is unchanged; publication work is listed in the release review below.
 - Candidate `6a1332d` implements the interruption recovery, post-switch BTR
   delivery restriction and pre-selection availability fixes identified at
   `7037a25`. Recovery uses current inventories, explicit unfinished-life abandon
