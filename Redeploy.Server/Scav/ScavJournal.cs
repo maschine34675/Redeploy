@@ -23,6 +23,9 @@ public sealed record ScavJournalEntry
     public string ScavJson { get; set; } = "";
     public string FrozenPmcJson { get; set; } = "";
     public string OriginalInsuredJson { get; set; } = "";
+    public bool PmcInsuranceCaptured { get; set; }
+    public bool RecoveryAbandoned { get; set; }
+    public string? OuterEndReplayJson { get; set; }
     public long ExpiresAt { get; set; }
     public ScavPhase Phase { get; set; }
     public string? FinalHash { get; set; }
@@ -31,12 +34,18 @@ public sealed record ScavJournalEntry
     public string? ReceiptJson { get; set; }
     public string ReceiptId { get; set; } = "";
     public string? ExpectedProfileHash { get; set; }
+    public string? ExpectedProfileJson { get; set; }
     public bool Extracted { get; set; }
     public bool PmcOnly { get; set; }
     public ScavTransferPhase TransferPhase { get; set; }
     public string? TransferBeforeProfileJson { get; set; }
     public string? TransferExpectedProfileHash { get; set; }
+    public string? TransferExpectedProfileJson { get; set; }
     public string? TransferResponse { get; set; }
+    public bool InventoryMutationPending { get; set; }
+    public string? InventoryBeforeProfileJson { get; set; }
+    public string? InventoryExpectedProfileJson { get; set; }
+    public string? InventoryExpectedProfileHash { get; set; }
     public string? Error { get; set; }
 }
 
@@ -89,6 +98,7 @@ public static class ScavStatePolicy
         if (entry.Phase != ScavPhase.Committed) throw new InvalidOperationException("Only a verified commit can be compacted.");
         entry.Token = entry.ScavJson = entry.FrozenPmcJson = entry.OriginalInsuredJson = "";
         entry.FinalJson = entry.BeforeProfileJson = entry.ReceiptJson = null;
+        entry.ExpectedProfileJson = null;
     }
     public static bool CanCancel(ScavPhase phase) => phase is ScavPhase.Prepared or ScavPhase.Cancelled;
     public static bool NeedsRecovery(ScavPhase phase) => phase is ScavPhase.Settling or ScavPhase.RecoveryRequired;
@@ -96,7 +106,8 @@ public static class ScavStatePolicy
     // Expiry stops another generation response; it cannot prove that no body was committed.
     public static bool BlocksNewRaid(ScavPhase phase) => phase is ScavPhase.Prepared or ScavPhase.Active or ScavPhase.Settling or ScavPhase.RecoveryRequired;
     public static bool BlocksNewRaid(ScavJournalEntry entry) => BlocksNewRaid(entry.Phase)
-        || entry.Version == 2 && entry.TransferPhase is ScavTransferPhase.Pending or ScavTransferPhase.Completing;
+        || entry.Version == 2 && (entry.TransferPhase is ScavTransferPhase.Pending or ScavTransferPhase.Completing
+            || entry.OuterEndReplayJson != null);
     public static bool SamePreparedRequest(ScavJournalEntry entry, string requestId, string hash)
         => entry.RequestId == requestId && entry.PrepareHash == hash;
     public static bool MatchesToken(ScavJournalEntry entry, string token)

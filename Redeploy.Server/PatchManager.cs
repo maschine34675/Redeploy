@@ -21,6 +21,7 @@ public sealed class PatchManager(ScavContinuationService scavContinuations) : IO
         new ScavResultUploadPatch().Enable();
         new ScavTransferFinishPatch().Enable();
         new ScavTransferInventoryPatch().Enable();
+        new ScavRecoveryGameStartPatch().Enable();
         return Task.CompletedTask;
     }
 }

@@ -22,7 +22,7 @@ using ServerCloner = SPTarkov.Server.Core.Utils.Cloners.FastCloner;
 
 namespace Redeploy.Server.Tests;
 
-public sealed class ScavContinuationTests
+public sealed partial class ScavContinuationTests
 {
     private static readonly MongoId Template = new("55d7217a4bdc2d86028b456d");
     private static Item Item(string? parent = null, string? slot = null) => new()
@@ -739,14 +739,17 @@ public sealed class ScavContinuationTests
         public readonly MongoId Session = new(); public readonly string Raid = "factory4_day.pmc 123456789";
         public readonly JsonUtil Json = new([new SptJsonConverterRegistrator()]);
         public readonly PmcData Pmc = Profile("Usec"); public readonly PmcData Scav = Profile();
-        public readonly SptProfile Full; public readonly ScavJournal Journal; public readonly ScavContinuationService Service;
+        public readonly SptProfile Full; public readonly ScavJournal Journal; public ScavContinuationService Service;
         public readonly EndLocalRaidRequestData Frozen; public readonly EndLocalRaidRequestData Final;
         public Fixture()
         {
             Directory.CreateDirectory(DirectoryPath); Environment.CurrentDirectory = DirectoryPath;
             Pmc.Savage = Scav.Id;
             Full = new() { ProfileInfo = new() { ProfileId = Session }, CharacterData = new() { PmcData = Pmc, ScavData = new ServerCloner().Clone(Scav) }, DialogueRecords = [] };
-            var saves = new SaveServer(new FileUtil(), [], Json, null!, null!, null!, Logger<SaveServer>(), null!);
+            var coreConfig = (CoreConfig)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(CoreConfig));
+            coreConfig.Features = (ServerFeatures)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(ServerFeatures));
+            coreConfig.Features.CompressProfile = true;
+            var saves = new SaveServer(new FileUtil(), [], Json, new HashUtil(null!), null!, null!, Logger<SaveServer>(), coreConfig);
             saves.AddProfile(Full);
             var templates = new TemplateTable { Character = [], CustomisationStorage = [], Items = new() { [Template] = null! },
                 Prestige = null!, Quests = [], RepeatableQuests = null!, Handbook = null!, Customization = [], Dialogue = null!,
@@ -814,6 +817,20 @@ public sealed class ScavContinuationTests
             Directory.CreateDirectory(Path.GetDirectoryName(ProfilePath)!);
             await new FileUtil().WriteFileAsync(ProfilePath, Json.Serialize(Full)!);
             return 1;
+        }
+        public void RestartService(bool reloadProfile = false)
+        {
+            if (reloadProfile)
+            {
+                var saved = Json.DeserializeFromFile<SptProfile>(ProfilePath)!;
+                foreach (var property in typeof(SptProfile).GetProperties().Where(x => x.CanRead && x.CanWrite))
+                    property.SetValue(Full, property.GetValue(saved));
+            }
+            T Dependency<T>(string name) => (T)typeof(ScavContinuationService)
+                .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Service)!;
+            Service = new(Dependency<SaveServer>("saves"), Json, new ServerCloner(),
+                Dependency<InRaidHelper>("inRaid"), Dependency<TemplateTable>("templates"), Logger<ScavContinuationService>());
+            typeof(ScavContinuationService).GetField("journal", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(Service, Journal);
         }
         public void Dispose()
         {

@@ -11,6 +11,24 @@ public sealed record ScavPrepareRequest : IRequestData
     [JsonPropertyName("initialServerId")] public string InitialServerId { get; set; } = "";
     [JsonPropertyName("clientRequestId")] public string ClientRequestId { get; set; } = "";
     [JsonPropertyName("frozenPmcDeath")] public EndLocalRaidRequestData? FrozenPmcDeath { get; set; }
+    [JsonPropertyName("pmcInsuranceCaptured")] public bool PmcInsuranceCaptured { get; set; }
+}
+
+public sealed record ScavRecoveryRequest : IRequestData
+{
+    [JsonPropertyName("recoveryId")] public string RecoveryId { get; set; } = "";
+}
+
+public sealed record ScavRecoveryResponse
+{
+    [JsonPropertyName("success")] public bool Success { get; set; }
+    [JsonPropertyName("error")] public string? Error { get; set; }
+    [JsonPropertyName("state")] public string State { get; set; } = "none";
+    [JsonPropertyName("recoveryId")] public string? RecoveryId { get; set; }
+    [JsonPropertyName("message")] public string Message { get; set; } = "";
+    [JsonPropertyName("action")] public string? Action { get; set; }
+    [JsonPropertyName("scavProfileId")] public string? ScavProfileId { get; set; }
+    [JsonPropertyName("scavEquipmentId")] public string? ScavEquipmentId { get; set; }
 }
 
 public sealed record ScavControlRequest : IRequestData

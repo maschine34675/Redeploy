@@ -14,6 +14,7 @@ using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Utils;
 using SPTarkov.Server.Core.Utils.Cloners;
+using SPTarkov.Server.Core.Callbacks;
 using Path = System.IO.Path;
 
 namespace Redeploy.Server.Scav;
@@ -21,13 +22,14 @@ namespace Redeploy.Server.Scav;
 /// <summary>Reserves the account Player-Scav. Both native outcomes persist together;
 /// the surviving Scav then owns the native transfer. No independent profile or loot mail.</summary>
 [Injectable(InjectionType.Singleton)]
-public sealed class ScavContinuationService
+public sealed partial class ScavContinuationService
 {
     public static ScavContinuationService? Current { get; private set; }
     public static readonly AsyncLocal<bool> RawSave = new();
     public static readonly AsyncLocal<bool> RawRegenerate = new();
     public static readonly AsyncLocal<bool> RawItemEvent = new();
     private static readonly AsyncLocal<string?> CurrentInventoryMutation = new();
+    private static readonly AsyncLocal<InventorySave?> CurrentInventorySave = new();
     private static readonly AsyncLocal<bool> RawEnd = new();
     private static readonly AsyncLocal<Settlement?> CurrentSettlement = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> gates = new();
@@ -41,6 +43,12 @@ public sealed class ScavContinuationService
     private readonly TemplateTable templates;
     private readonly ISptLogger<ScavContinuationService> logger;
     private readonly ScavJournal journal;
+    private readonly MatchCallbacks? matchCallbacks;
+
+    private sealed class InventorySave
+    {
+        public Func<Task<long>>? NativeSave;
+    }
 
     private sealed class Settlement(ScavJournalEntry entry)
     {
@@ -53,10 +61,11 @@ public sealed class ScavContinuationService
     }
 
     public ScavContinuationService(SaveServer saves, JsonUtil json, ICloner cloner,
-        InRaidHelper inRaid, TemplateTable templates, ISptLogger<ScavContinuationService> logger)
+        InRaidHelper inRaid, TemplateTable templates, ISptLogger<ScavContinuationService> logger, MatchCallbacks? matchCallbacks = null)
     {
         this.saves = saves; this.json = json; this.cloner = cloner;
         this.inRaid = inRaid; this.templates = templates; this.logger = logger;
+        this.matchCallbacks = matchCallbacks;
         journal = new ScavJournal(Path.Combine(Path.GetDirectoryName(typeof(ScavContinuationService).Assembly.Location)!, "data", "pmc-scav"));
         Current = this;
     }
@@ -71,20 +80,40 @@ public sealed class ScavContinuationService
 
     public void BeforeStart(MongoId sessionId)
     {
+        string id = sessionId.ToString();
+        Gate(id).Wait();
+        try
+        {
+            SaveGate(id).Wait();
+            try { BeforeStartCore(sessionId); }
+            finally { SaveGate(id).Release(); }
+        }
+        finally { Gate(id).Release(); }
+    }
+
+    private void BeforeStartCore(MongoId sessionId)
+    {
+        if (outerRecoveries.ContainsKey(sessionId.ToString()))
+            throw new InvalidOperationException("The exact recovered outer raid callback is still completing.");
         foreach (var entry in journal.ForSession(sessionId.ToString()))
         {
             if (!ScavStatePolicy.BlocksNewRaid(entry)) continue;
             RequireCurrentVersion(entry);
-            if (entry.Phase is ScavPhase.Settling or ScavPhase.RecoveryRequired && DiskMatches(entry, entry.ExpectedProfileHash))
-                MarkCommitted(entry);
-            if (entry.TransferPhase == ScavTransferPhase.Completing && DiskMatches(entry, entry.TransferExpectedProfileHash))
-                MarkTransferComplete(entry);
+            ReconcileRecovery(sessionId, entry);
             if (ScavStatePolicy.BlocksNewRaid(entry))
                 throw new InvalidOperationException("Redeploy: finish the Scav loot transfer or recover the pending PMC-to-Scav raid before starting another raid.");
         }
     }
 
     public void RegisterStart(MongoId sessionId, StartLocalRaidRequestData request, StartLocalRaidResponseData response)
+    {
+        string id = sessionId.ToString();
+        Gate(id).Wait();
+        try { RegisterStartCore(sessionId, request, response); }
+        finally { Gate(id).Release(); }
+    }
+
+    private void RegisterStartCore(MongoId sessionId, StartLocalRaidRequestData request, StartLocalRaidResponseData response)
     {
         // A real admitted raid retires the previous completed transfer. Old root
         // tombstones remain, so late scavsave cannot resurrect transferred inventory.
@@ -102,6 +131,13 @@ public sealed class ScavContinuationService
         logger.Debug($"Redeploy Scav raid registration: {rejected ?? "issued"}; "
             + $"transitFlags={(int?)request.TransitionType}, incomingTransition={request.Transition != null}, "
             + $"transitionCount={response.Transition?.TransitionCount}, visitedCount={response.Transition?.VisitedLocations?.Count}.");
+    }
+
+    public async Task<StartLocalRaidResponseData> WithRaidStart(MongoId sessionId, StartLocalRaidRequestData request,
+        Func<Task<StartLocalRaidResponseData>> native, CancellationToken ct)
+    {
+        using var lease = await AcquireRaidStart(sessionId, request, ct);
+        return await lease.CompleteRaidStart(native());
     }
 
     private static string? StartRejection(StartLocalRaidRequestData request, StartLocalRaidResponseData response)
@@ -137,13 +173,14 @@ public sealed class ScavContinuationService
                 return ScavResponse.Rejected("invalid-prepare-request");
             string frozenJson = Serialize(request.FrozenPmcDeath);
             if (frozenJson.Length > 16_000_000) return ScavResponse.Rejected("profile-too-large");
-            string hash = ScavJournal.Hash(frozenJson);
+            string hash = ScavJournal.Hash((request.PmcInsuranceCaptured ? "insurance-captured\n" : "") + frozenJson);
             var existing = journal.Read(id, request.InitialServerId);
             if (existing != null)
             {
                 RequireCurrentVersion(existing);
                 if (!ScavStatePolicy.SamePreparedRequest(existing, request.ClientRequestId, hash))
                     return ScavResponse.Rejected("continuation-already-prepared");
+                if (existing.RecoveryAbandoned) return ScavResponse.Rejected("recovery-already-requested");
                 if (existing.Phase is not (ScavPhase.Prepared or ScavPhase.Active))
                     return ScavResponse.Rejected("continuation-closed");
                 if (existing.Phase == ScavPhase.Prepared && existing.ExpiresAt < Now)
@@ -179,6 +216,8 @@ public sealed class ScavContinuationService
             if (scavItems.Any(x => pmcIds.Contains(x.Id.ToString())) || pmcIds.Contains(scav.Inventory.Equipment.ToString()!))
                 return ScavResponse.Rejected("regular-scav-shares-pmc-items");
             frozenPmc.InsuredItems = cloner.Clone(pmc.InsuredItems ?? []);
+            if (request.PmcInsuranceCaptured)
+                ValidateInsuranceCapture(frozen.LostInsuredItems, frozenPmc.InsuredItems ?? []);
             frozen.Results.ExitName = null; frozen.Results.InSession = false;
             frozen.LocationTransit = null; frozen.TransferItems = null;
             // A serialization roundtrip separates mutable state, preserving real account
@@ -192,6 +231,7 @@ public sealed class ScavContinuationService
                 Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
                 ScavJson = scavJson, GenerationHash = ScavJournal.Hash(scavJson),
                 FrozenPmcJson = Serialize(frozen), OriginalInsuredJson = Serialize(pmc.InsuredItems ?? []),
+                PmcInsuranceCaptured = request.PmcInsuranceCaptured,
                 ExpiresAt = Now + 600, Phase = ScavPhase.Prepared
             };
             journal.Write(entry);
@@ -220,6 +260,7 @@ public sealed class ScavContinuationService
             var entry = journal.Read(id, request.InitialServerId);
             if (entry == null || entry.Version != 2 || !ScavStatePolicy.MatchesToken(entry, request.Token))
                 return ScavResponse.Rejected("unknown-continuation");
+            if (entry.RecoveryAbandoned) return ScavResponse.Rejected("recovery-already-requested");
             if (cancel)
             {
                 if (!ScavStatePolicy.CanCancel(entry.Phase)) return ScavResponse.Rejected("body-already-activated");
@@ -252,9 +293,14 @@ public sealed class ScavContinuationService
     public async Task End(MongoId sessionId, EndLocalRaidRequestData request,
         Func<EndLocalRaidRequestData, Task> nativeEnd,
         Func<PmcData, PmcData, EndLocalRaidRequestData, Task> nativeScavOutcome, CancellationToken ct)
+        => await EndCore(sessionId, request, nativeEnd, nativeScavOutcome, ct, false);
+
+    private async Task EndCore(MongoId sessionId, EndLocalRaidRequestData request,
+        Func<EndLocalRaidRequestData, Task> nativeEnd,
+        Func<PmcData, PmcData, EndLocalRaidRequestData, Task> nativeScavOutcome, CancellationToken ct, bool gateHeld)
     {
         string id = sessionId.ToString();
-        await Gate(id).WaitAsync(ct);
+        if (!gateHeld) await Gate(id).WaitAsync(ct);
         bool acquiredSave = false;
         ScavJournalEntry? entry = null;
         try
@@ -283,7 +329,7 @@ public sealed class ScavContinuationService
             if (entry.FinalHash != null && entry.FinalHash != finalHash)
                 throw new InvalidOperationException("Conflicting continuation end retry.");
             if (entry.Phase == ScavPhase.Committed) return;
-            if (DiskMatches(entry, entry.ExpectedProfileHash)) { MarkCommitted(entry); return; }
+            if (DiskMatches(entry, entry.ExpectedProfileHash)) { ReconcileRecovery(sessionId, entry); return; }
             if (entry.Phase == ScavPhase.Cancelled || ScavStatePolicy.NeedsRecovery(entry.Phase))
                 throw new InvalidOperationException("Continuation needs recovery; native settlement will not be replayed.");
             AssertReservedScav(sessionId, entry);
@@ -337,7 +383,8 @@ public sealed class ScavContinuationService
             context.ScavStage = true;
             await nativeScavOutcome(full.CharacterData!.PmcData!, full.CharacterData.ScavData!, scavEnd);
             if (!context.ScavSaveRequested || context.NativeSave == null) throw new InvalidOperationException("Native Scav outcome did not request persistence.");
-            entry.ExpectedProfileHash = ScavJournal.Hash(Serialize(full));
+            entry.ExpectedProfileJson = Serialize(full);
+            entry.ExpectedProfileHash = ScavJournal.Hash(entry.ExpectedProfileJson);
             journal.Write(entry);
             await SaveAndVerify(entry, context.NativeSave, entry.ExpectedProfileHash);
             MarkCommitted(entry); ForgetIssuedRaid(id, entry.InitialServerId);
@@ -348,7 +395,7 @@ public sealed class ScavContinuationService
         {
             if (entry?.Phase == ScavPhase.Settling)
             {
-                if (DiskMatches(entry, entry.ExpectedProfileHash)) { MarkCommitted(entry); return; }
+                if (DiskMatches(entry, entry.ExpectedProfileHash)) { ReconcileRecovery(sessionId, entry); return; }
                 Quarantine(entry, ex);
             }
             throw;
@@ -358,7 +405,7 @@ public sealed class ScavContinuationService
             if (CurrentSettlement.Value is { } context) context.Active = false;
             CurrentSettlement.Value = null;
             if (acquiredSave) SaveGate(id).Release();
-            Gate(id).Release();
+            if (!gateHeld) Gate(id).Release();
         }
     }
 
@@ -382,18 +429,20 @@ public sealed class ScavContinuationService
         var hash = ScavJournal.Hash(Serialize(request));
         if (entry.FinalHash != null && entry.FinalHash != hash) throw new InvalidOperationException("Conflicting cancelled continuation end retry.");
         if (entry.Phase == ScavPhase.Committed) return;
-        if (DiskMatches(entry, entry.ExpectedProfileHash)) { MarkCommitted(entry); return; }
+        if (DiskMatches(entry, entry.ExpectedProfileHash)) { ReconcileRecovery(sessionId, entry); return; }
         if (ScavStatePolicy.NeedsRecovery(entry.Phase)) throw new InvalidOperationException("Cancelled continuation needs recovery.");
         await SaveGate(entry.SessionId).WaitAsync(ct);
         try
         {
             entry.PmcOnly = true; entry.FinalHash = hash; entry.TransferPhase = ScavTransferPhase.Retired;
+            entry.FinalJson = Serialize(request);
             entry.BeforeProfileJson = Serialize(saves.GetProfile(sessionId)); entry.Phase = ScavPhase.Settling;
             journal.Write(entry);
             var context = new Settlement(entry); CurrentSettlement.Value = context;
             await InvokeNative(nativeEnd, request);
             if (!context.PmcHandled || context.NativeSave == null) throw new InvalidOperationException("Native PMC cancellation outcome did not complete.");
-            entry.ExpectedProfileHash = ScavJournal.Hash(Serialize(saves.GetProfile(sessionId)));
+            entry.ExpectedProfileJson = Serialize(saves.GetProfile(sessionId));
+            entry.ExpectedProfileHash = ScavJournal.Hash(entry.ExpectedProfileJson);
             journal.Write(entry);
             await SaveAndVerify(entry, context.NativeSave, entry.ExpectedProfileHash);
             MarkCommitted(entry);
@@ -417,18 +466,23 @@ public sealed class ScavContinuationService
         => ((ICollection<KeyValuePair<string, string>>)issuedRaids).Remove(new(session, raid));
     private void MarkCommitted(ScavJournalEntry entry)
     {
+        if (entry.OuterEndReplayJson != null && entry.FinalJson != null) entry.OuterEndReplayJson = entry.FinalJson;
         entry.Phase = ScavPhase.Committed; entry.Error = null;
         ScavStatePolicy.CompactCommitted(entry); journal.Write(entry);
+        quarantined.TryRemove(entry.SessionId, out _);
     }
     private void MarkTransferComplete(ScavJournalEntry entry)
     {
         entry.TransferPhase = ScavTransferPhase.Complete;
-        entry.TransferBeforeProfileJson = null; entry.Error = null; journal.Write(entry);
+        entry.TransferBeforeProfileJson = entry.TransferExpectedProfileJson = null;
+        entry.Phase = ScavPhase.Committed; entry.Error = null; journal.Write(entry);
+        quarantined.TryRemove(entry.SessionId, out _);
     }
     private void Quarantine(ScavJournalEntry entry, Exception ex)
     {
         quarantined[entry.SessionId] = true;
-        entry.Phase = ScavPhase.RecoveryRequired; entry.Error = ex.GetType().Name; journal.Write(entry);
+        if (entry.Phase != ScavPhase.Committed) entry.Phase = ScavPhase.RecoveryRequired;
+        entry.Error = ex.GetType().Name; journal.Write(entry);
         logger.Error("Redeploy: Scav settlement could not be verified. Profile saving is paused to prevent duplicate inventory or insurance; retain the private continuation journal for recovery.");
     }
     private static async Task InvokeNative(Func<EndLocalRaidRequestData, Task> native, EndLocalRaidRequestData request)
@@ -454,6 +508,11 @@ public sealed class ScavContinuationService
         }
         if (CurrentInventoryMutation.Value == id)
         {
+            if (CurrentInventorySave.Value is { } inventorySave)
+            {
+                inventorySave.NativeSave = nativeSave;
+                return 0; // Persist the complete item operation only after its outcome is journaled.
+            }
             RawSave.Value = true;
             try { return await nativeSave(); }
             finally { RawSave.Value = false; }
@@ -461,7 +520,9 @@ public sealed class ScavContinuationService
         await SaveGate(id).WaitAsync(ct);
         try
         {
-            if (quarantined.ContainsKey(id)) throw new InvalidOperationException("Redeploy continuation profile requires recovery before saving.");
+            if (quarantined.ContainsKey(id) || journal.ForSession(id).Any(x => ScavStatePolicy.NeedsRecovery(x.Phase)
+                || x.TransferPhase == ScavTransferPhase.Completing || x.InventoryMutationPending))
+                throw new InvalidOperationException("Redeploy continuation profile requires recovery before saving.");
             RawSave.Value = true; return await nativeSave();
         }
         finally { RawSave.Value = false; SaveGate(id).Release(); }
@@ -501,25 +562,46 @@ public sealed class ScavContinuationService
         .Where(x => x.Version == 2 && x.Phase != ScavPhase.Cancelled && x.TransferPhase != ScavTransferPhase.Retired)
         .OrderByDescending(x => x.ExpiresAt).FirstOrDefault();
 
-    public async ValueTask<T> WithTransferInventory<T>(MongoId sessionId, Func<ValueTask<T>> native, CancellationToken ct)
+    public async ValueTask<T> WithTransferInventory<T>(MongoId sessionId, Func<ValueTask<T>> native, CancellationToken ct,
+        Func<Task<long>>? nativeSave = null, string? action = null)
     {
         string id = sessionId.ToString();
         await Gate(id).WaitAsync(ct);
         bool acquiredSave = false;
+        ScavJournalEntry? entry = null;
         try
         {
-            var entry = FindTransfer(sessionId);
+            entry = FindTransfer(sessionId);
+            if (entry != null && action == ItemEventActions.SELL_ALL_FROM_SAVAGE)
+                throw new InvalidOperationException("Sell All is unavailable for this continuation. Move wanted items to your stash, then finish the transfer.");
             if (entry != null && (entry.Phase != ScavPhase.Committed
-                || entry.TransferPhase is ScavTransferPhase.Completing))
+                || entry.TransferPhase is ScavTransferPhase.Completing || entry.InventoryMutationPending || entry.OuterEndReplayJson != null))
                 throw new InvalidOperationException("The reserved Scav inventory is not available for menu operations before settlement.");
             await SaveGate(id).WaitAsync(ct); acquiredSave = true;
             if (quarantined.ContainsKey(id)) throw new InvalidOperationException("The Scav inventory requires recovery.");
             CurrentInventoryMutation.Value = id; RawItemEvent.Value = true;
-            return await native();
+            if (entry?.TransferPhase != ScavTransferPhase.Pending) return await native();
+            AssertRecoveryAccount(sessionId, entry);
+            AssertTransferScav(sessionId, entry);
+            entry.InventoryBeforeProfileJson = Serialize(saves.GetProfile(sessionId));
+            entry.InventoryMutationPending = true; journal.Write(entry);
+            var context = new InventorySave(); CurrentInventorySave.Value = context;
+            T result = await native();
+            entry.InventoryExpectedProfileJson = Serialize(saves.GetProfile(sessionId));
+            entry.InventoryExpectedProfileHash = ScavJournal.Hash(entry.InventoryExpectedProfileJson);
+            journal.Write(entry);
+            await SaveAndVerify(entry, context.NativeSave ?? nativeSave ?? (() => SaveNativeProfile(sessionId)), entry.InventoryExpectedProfileHash);
+            MarkInventoryComplete(entry);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            if (entry?.InventoryMutationPending == true) Quarantine(entry, ex);
+            throw;
         }
         finally
         {
-            CurrentInventoryMutation.Value = null; RawItemEvent.Value = false;
+            CurrentInventoryMutation.Value = null; CurrentInventorySave.Value = null; RawItemEvent.Value = false;
             if (acquiredSave) SaveGate(id).Release();
             Gate(id).Release();
         }
@@ -535,13 +617,15 @@ public sealed class ScavContinuationService
         try
         {
             entry = FindTransfer(sessionId) ?? throw new InvalidOperationException("No owned Scav transfer.");
+            if (entry.OuterEndReplayJson != null) throw new InvalidOperationException("The outer raid result still requires recovery acknowledgement.");
+            if (entry.InventoryMutationPending) throw new InvalidOperationException("An interrupted item transfer requires recovery before Scav regeneration.");
             if (entry.Phase != ScavPhase.Committed)
                 throw new InvalidOperationException("The reserved Player-Scav cannot regenerate before settlement.");
             if (entry.TransferPhase == ScavTransferPhase.Completing)
             {
-                if (!DiskMatches(entry, entry.TransferExpectedProfileHash))
+                ReconcileRecovery(sessionId, entry);
+                if (entry.TransferPhase != ScavTransferPhase.Complete)
                     throw new InvalidOperationException("Scav transfer completion needs recovery; regeneration will not be repeated.");
-                MarkTransferComplete(entry);
             }
             if (entry.TransferPhase == ScavTransferPhase.Complete)
             {
@@ -551,6 +635,8 @@ public sealed class ScavContinuationService
             if (!entry.Extracted || entry.TransferPhase != ScavTransferPhase.Pending
                 || saves.GetProfile(sessionId).CharacterData!.ScavData!.Inventory?.Equipment.ToString() != entry.ScavEquipmentId)
                 throw new InvalidOperationException("Scav transfer ownership changed.");
+            AssertRecoveryAccount(sessionId, entry);
+            AssertTransferScav(sessionId, entry);
             await SaveGate(id).WaitAsync(ct); acquiredSave = true;
             entry.TransferBeforeProfileJson = Serialize(saves.GetProfile(sessionId));
             entry.TransferPhase = ScavTransferPhase.Completing; journal.Write(entry);
@@ -560,7 +646,8 @@ public sealed class ScavContinuationService
             var successor = saves.GetProfile(sessionId).CharacterData!.ScavData!;
             if (successor.Id.ToString() != entry.ScavProfileId || successor.Inventory?.Equipment.ToString() == entry.ScavEquipmentId)
                 throw new InvalidOperationException("Native Scav regeneration did not produce a distinct next loadout.");
-            entry.TransferExpectedProfileHash = ScavJournal.Hash(Serialize(saves.GetProfile(sessionId)));
+            entry.TransferExpectedProfileJson = Serialize(saves.GetProfile(sessionId));
+            entry.TransferExpectedProfileHash = ScavJournal.Hash(entry.TransferExpectedProfileJson);
             journal.Write(entry);
             await SaveAndVerify(entry, nativeSave, entry.TransferExpectedProfileHash);
             MarkTransferComplete(entry);
@@ -570,7 +657,7 @@ public sealed class ScavContinuationService
         {
             if (entry?.TransferPhase == ScavTransferPhase.Completing)
             {
-                if (DiskMatches(entry, entry.TransferExpectedProfileHash)) { MarkTransferComplete(entry); return entry.TransferResponse!; }
+                if (DiskMatches(entry, entry.TransferExpectedProfileHash)) { ReconcileRecovery(sessionId, entry); return entry.TransferResponse!; }
                 Quarantine(entry, ex);
             }
             throw;

@@ -12,24 +12,41 @@ using SPTarkov.Server.Core.Models.Eft.InRaid;
 using SPTarkov.Server.Core.DI.Routing;
 using SPTarkov.Server.Core.Models.Eft.Common.Request;
 using SPTarkov.Server.Core.Models.Eft.ItemEvent;
+using HarmonyLib;
 
 namespace Redeploy.Server.Patches;
 
 public sealed class ScavRaidStartPatch : AbstractPatch
 {
     protected override MethodBase GetTargetMethod() => typeof(LocationLifecycleService).GetMethod(nameof(LocationLifecycleService.StartLocalRaidAsync))!;
-    [PatchPrefix] public static void Prefix(MongoId sessionId) => ScavContinuationService.Current?.BeforeStart(sessionId);
-    [PatchPostfix] public static void Postfix(MongoId sessionId, StartLocalRaidRequestData request, ref Task<StartLocalRaidResponseData> __result)
+    [PatchPrefix, HarmonyPriority(Priority.First)] public static void Prefix(MongoId sessionId,
+        StartLocalRaidRequestData request, CancellationToken cancellationToken, out ScavContinuationService.AccountOperationLease? __state)
     {
-        if (ScavContinuationService.Current is { } service) __result = Register(__result, service, sessionId, request);
+        // SPT HTTP handlers have no Unity synchronization context. Waiting here
+        // serializes this account without recursively invoking foreign patches.
+        __state = ScavContinuationService.Current?.AcquireRaidStart(sessionId, request, cancellationToken).GetAwaiter().GetResult();
     }
-    private static async Task<StartLocalRaidResponseData> Register(Task<StartLocalRaidResponseData> native,
-        ScavContinuationService service, MongoId sessionId, StartLocalRaidRequestData request)
+    [PatchPostfix] public static void Postfix(ScavContinuationService.AccountOperationLease? __state,
+        ref Task<StartLocalRaidResponseData> __result)
+    { if (__state != null) __result = __state.CompleteRaidStart(__result); }
+    [PatchFinalizer] public static void Finalizer(Exception? __exception, ScavContinuationService.AccountOperationLease? __state)
+    { if (__exception != null) __state?.AbortBeforeTask(); }
+}
+
+public sealed class ScavRecoveryGameStartPatch : AbstractPatch
+{
+    protected override MethodBase GetTargetMethod() => typeof(GameCallbacks).GetMethod(nameof(GameCallbacks.GameStart))!;
+    [PatchPrefix, HarmonyPriority(Priority.First)] public static void Prefix(MongoId sessionID,
+        out ScavContinuationService.AccountOperationLease? __state)
     {
-        var result = await native;
-        service.RegisterStart(sessionId, request, result);
-        return result;
+        // Only an account with an unresolved journal can perform a bounded
+        // recovery write here. Ordinary login neither waits nor changes data.
+        __state = ScavContinuationService.Current?.AcquireLogin(sessionID, CancellationToken.None).GetAwaiter().GetResult();
     }
+    [PatchPostfix] public static void Postfix(ScavContinuationService.AccountOperationLease? __state, ref ValueTask<string> __result)
+    { if (__state != null) __result = __state.CompleteLogin(__result); }
+    [PatchFinalizer] public static void Finalizer(Exception? __exception, ScavContinuationService.AccountOperationLease? __state)
+    { if (__exception != null) __state?.AbortBeforeTask(); }
 }
 
 public sealed class ScavRaidEndPatch : AbstractPatch
@@ -98,7 +115,7 @@ public sealed class ScavTransferInventoryPatch : AbstractPatch
         var service = ScavContinuationService.Current;
         if (service?.OwnsInventoryWindow(sessionID) != true) return true;
         __result = service.WithTransferInventory(sessionID,
-            () => __instance.HandleItemEvent(url, pmcData, body, sessionID, output, cancellationToken), cancellationToken);
+            () => __instance.HandleItemEvent(url, pmcData, body, sessionID, output, cancellationToken), cancellationToken, action: url);
         return false;
     }
 }
