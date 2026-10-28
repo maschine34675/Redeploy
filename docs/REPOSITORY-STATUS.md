@@ -1,6 +1,6 @@
 # Redeploy repository status
 
-## Experimental worktree — 2026-10-28
+## Own-Scav validation — 2026-10-28
 
 - `feature/pmc-to-scav`, based on `ecf40d9`, is developed separately in
   `D:\SPT41\Development\Redeploy-pmc-scav`.
@@ -8,26 +8,38 @@
 - Default-on additional own-Scav choice alongside naked PMC respawn, using the
   regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
-- No main-branch merge, push or release is part of this feature work.
-- Release review at `7037a25` found unresolved interruption recovery, post-switch
-  BTR delivery and pre-selection availability issues. The user's conditional
-  merge/branch removal/push is held until those are fixed and verified. See the
-  [release blockers and acceptance plan](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
-- Latest Client update adds an explicit naked-PMC / own-Scav death-menu choice
+- The readiness checks are complete. Main-branch consolidation and removal of
+  this feature checkout follow the user's earlier instruction; their completion
+  will be recorded here. No new public release is part of these corrections.
+- Candidate `6a1332d` implements the interruption recovery, post-switch BTR
+  delivery restriction and pre-selection availability fixes identified at
+  `7037a25`. Recovery uses current inventories, explicit unfinished-life abandon
+  and provable saved outcomes; owned-transfer Sell All is deliberately unavailable.
+  The native-assembly Client build, **469 client/Core tests** and **149 server
+  tests** passed. Independent source review resolved all actionable findings.
+  **Scoped native acceptance passed on SPT-GPU-1**, including client-only/server
+  restart, partial-transfer recovery, subsequent raids, continued-Scav death,
+  preflight/BTR controls and ordinary Scav Sell All. All 10,049 baseline files
+  were restored and hash-verified; the probe was removed and synchronization
+  restored. Exact tested Client/Server DLLs/PDBs are deployed in the development
+  installation and GPU1; Core remains unchanged. See the
+  [native report and remaining limits](PMC-SCAV-RECOVERY-20261028.md) and
+  [resolved release blockers](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
+- Earlier choice/menu update added an explicit naked-PMC / own-Scav death-menu choice
   and readable F12 settings with advanced diagnostics. It passed 394 unit tests,
   76 config checks and focused native choice/cooldown tests on SPT-GPU-1. The
-  exact tested Client/PDB are on disk in the development installation and both
-  GPU hosts; GPU-2 was not restarted or tested for this change. The test profile,
+  exact tested Client/PDB were installed in the development installation and both
+  GPU hosts at that stage; GPU-2 was not restarted or tested for that change. The test profile,
   configuration and original synchronization state were restored. See
   [choice and menu validation](PMC-TO-SCAV.md#explicit-respawn-choice-and-configuration-menu--2026-10-28).
-- Follow-up deployment: the feature remains installed with `RespawnAsScav=true`.
-  A server-only correction now allows fresh PMC starts with the native Common
+- Earlier follow-up deployment retained `RespawnAsScav=true`.
+  A server-only correction allowed fresh PMC starts with the native Common
   transit flag. It passed 103 server tests and a focused native PMC-to-Scav/death
-  run on SPT-GPU-1. The corrected server is on disk in the development installation
-  and both GPU hosts; GPU-2's previous locked-file deployment is no longer pending.
+  run on SPT-GPU-1. The corrected server was installed in the development installation
+  and both GPU hosts, resolving GPU-2's earlier locked-file deployment.
   See the [correction and validation record](PMC-TO-SCAV.md#fresh-raid-transit-registration-correction--2026-10-28).
 
-## Active development — 2026-10-25
+## Historical development snapshot — 2026-10-25
 
 - Checkout: `D:\SPT41\Development\Redeploy`, branch `main`.
 - Public repository: <https://github.com/maschine34675/Redeploy>.

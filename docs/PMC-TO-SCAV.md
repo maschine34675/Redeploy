@@ -1,14 +1,17 @@
 # PMC death followed by your regular Player-Scav
 
-Development work on `feature/pmc-to-scav`. This is an optional same-raid continuation
+Current development code provides an optional same-raid continuation
 using the account's regular Scav and cooldown. It is not released. The 2026-10-28
 revision replaces the earlier independent generated-Scav/mail prototype; that
 prototype's dated evidence below is historical and does not validate the new flow.
 
-**Release status:** the review of `7037a25` found three required fixes:
-interruption recovery, BTR delivery after switching, and availability checks
-before selection. The normal-flow tests below do not cover or resolve them.
-See [release review and required acceptance](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
+**Validation status:** candidate `6a1332d` resolves the three fixes identified at
+`7037a25`: interruption recovery, BTR delivery restrictions after switching, and
+availability checks before selection. **469 client/Core tests and 149 server
+tests passed. Focused native recovery and control tests passed on SPT-GPU-1.**
+See the [new native evidence and limitations](PMC-SCAV-RECOVERY-20261028.md) and
+[release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md). The earlier normal-flow
+tests below retain their original dated scope. No new public package is implied.
 
 ## Behavior
 
@@ -19,6 +22,8 @@ See [release review and required acceptance](PMC-TO-SCAV-RELEASE-REVIEW-20261028
 - Scav cooldown or unavailability known before selection disables only the Scav choice. Choosing PMC
   never reserves the Scav or starts its continuation transaction. Both choices
   respect the respawn limit and configured item cost. The PMC corpse stays lootable.
+  The same check now includes missing/unverified Scav exits and BTR/transit items
+  already sent during the PMC life; it is repeated immediately before preparation.
 - The Scav uses the account's current Scav identity, equipment and progression,
   separate from the PMC. The normal Scav cooldown must have expired; the prompt
   explains when it is unavailable, and the server independently enforces it.
@@ -33,6 +38,8 @@ See [release review and required acceptance](PMC-TO-SCAV-RELEASE-REVIEW-20261028
   There is no loot message. Run-through extraction uses normal found-in-raid rules.
   Completing the transfer generates the next Scav and its regular cooldown;
   dying as the Scav generates the successor through the native death handler.
+  **Sell All is unavailable for this continuation's transfer.** Move wanted items
+  to the stash, then finish the transfer. Ordinary Scav Sell All remains native.
 - Recovered insured items are excluded from the original PMC's lost-item claim
   before loot transfer. Retained PMC items must never also appear in Scav loot.
 - Scav lifetime and time-based exit conditions use the actual replacement body's
@@ -71,22 +78,82 @@ can end the raid.
 
 - A map must provide native Scav spawns and exits. BTR/transit item deliveries
   already made in the PMC phase prevent conversion; empty native transfer roots
-  do not. Transit is disabled and hidden during this first Scav implementation.
+  do not. Missing Scav exits or prior deliveries disable only the Scav choice
+  before preparation. Transit is disabled and hidden during this first Scav
+  implementation. BTR item delivery is blocked for the adopted Scav before items
+  can move, including late purchase completion during raid teardown. Other BTR
+  services and ordinary PMC/Scav delivery keep their native behavior.
 - Required respawn-item cost, health, delay and protection use Redeploy's existing
   settings. The new option does not enable Fika support.
 - Journal files live beside the server DLL in `data/pmc-scav/`. They can contain
   private profile snapshots and authorization tokens while a raid is pending.
   They are runtime state and must never be included in a release package.
 - An unresolved prepared/active raid or ambiguous save failure blocks new raids
-  for that profile instead of guessing whether to replay settlement. Automatic
-  recovery after a process/network failure is not implemented. Preserve the
-  journal, profile and logs for diagnosis; deleting only the journal is unsafe.
+  for that profile until supported recovery completes. The main-menu flow below
+  handles provable interrupted states. A partially applied native outcome with
+  no complete recorded result remains blocked; preserve the journal, profile
+  and logs for diagnosis. Deleting only the journal is unsafe.
 - Pending loot transfer also prevents a new raid until it is completed. Old
   independent-Scav journals from protocol 1 require their original build/recovery;
   they are never interpreted as regular-Scav reservations.
 - A final lost-insurance scan failure refuses settlement rather than inventing
   an empty claim. Ordinary PMC death remains available if preparation fails
   before the body switch.
+
+## Recovery and release-blocker fixes — 2026-10-28
+
+Implemented and tested in candidate `6a1332d`. The recovery check runs when the actual main menu becomes ready, outside
+raids. Accounts with no pending continuation see no recovery panel. Requests use
+the signed-in account, and responses contain no private profile snapshot or
+continuation token. Stale menu/session replies and repeated clicks cannot take
+ownership of a newer operation; errors offer a status retry.
+
+- **Unfinished Scav life:** choose **Abandon interrupted raid**, then confirm.
+  The PMC remains dead, unfinished Scav loot is forfeited, and native Scav death
+  and cooldown apply. This does not resume the abandoned raid. A fresh process
+  can perform it without the old client's private continuation token.
+- **Extracted loot:** choose **Resume loot transfer**. The native screen uses
+  current authoritative profiles and only the remaining Scav inventory. Items
+  already moved to the stash stay there; an old Scav snapshot is never uploaded
+  to reinstall them. Completed inventory moves persist before acknowledgement.
+- **Recorded save or acknowledgement:** a fully recorded outcome can be saved
+  without rerunning native death, insurance, item movement or Scav generation.
+  Exact memory/disk proof precedes native login changes. If further confirmation
+  is needed, the panel offers **Complete interrupted save**. The original outer
+  raid callback is completed with the exact recorded request so ArenaMode's
+  ordinary-raid transaction does not remain active after a client-only restart.
+- **After menu recovery:** the panel requires closing and restarting the game
+  before another raid, ensuring menu controllers reload the resulting PMC,
+  Scav and cooldown. **Close game** is available on the panel. Unproven partial
+  native outcomes, incompatible old journals or changed profiles remain blocked.
+
+The recovery path preserves the captured PMC insurance claim, including dropped
+insured items, while excluding protected or already delivered items. A legacy
+regular-Scav journal with insured gear but no provable insurance capture cannot
+be abandoned automatically. New raids, regeneration and transfer operations stay
+fenced while an outcome or outer acknowledgement remains unresolved. Concurrent
+recovery attempts share the same exact outer completion, and acknowledged or
+retired requests cannot be dispatched into a later raid.
+
+Native SPT Sell All mails payment while removing the Scav's gear only on the
+client. Allowing recovery between that payment and transfer completion would
+offer the same gear again. Both client and server therefore reject Sell All for
+the owned continuation transfer, with an explanation to move items to the stash.
+This is a deliberate limitation; ordinary Scav transfers retain Sell All.
+
+Source/build evidence: the integrated Client Release build against the installed
+EFT assemblies passed, **469 client/Core tests** passed, and **149 server tests**
+passed. Focused coverage includes eligibility/BTR/Sell All ownership, main-menu
+session and callback guards, native save-cache retry, exact outcome persistence,
+partial transfer, late control requests and outer-raid completion races. An
+independent four-pass review resolved the login-mutation, raid-start race, Sell
+All duplication and outer Arena lifecycle findings. The separate
+[native acceptance record](PMC-SCAV-RECOVERY-20261028.md) covers the actual menu,
+Prepared/Active restart recovery, partial transfer/resumption, subsequent raids,
+Scav death, preflight and BTR movement controls, and ordinary Scav Sell All.
+Native insurance, BTR rides/purchase UI, all maps and invited squads remain outside
+that run's scope. An initial non-completing switch was not reproduced by the
+clean multi-respawn repeat; its cause is not claimed resolved.
 
 ## Acceptance checks
 
@@ -103,6 +170,10 @@ native runs from offline tests and remaining limits.
 | Persistence | PMC death and original progression; Scav outcome, successor and cooldown saved |
 | Cooldown | Native expiry boundary is enforced in prompt and server; unavailable Scav cannot be used |
 | Retry | Duplicate prepare/activate/end and save ambiguity cannot duplicate effects |
+| Restart recovery | Prepared/Active and partial-transfer restart; explicit abandon/save/remaining transfer; no repeated loot, insurance or cooldown; new raids work afterward |
+| Client-only restart | Recovery clears the exact ordinary-raid transaction while the server and ArenaMode remain running |
+| Restrictions | Owned Scav BTR delivery and Sell All are denied before item/payment effects; ordinary controls remain native |
+| Preflight | Missing Scav exits/prior delivery disable only Scav; ordinary PMC respawn remains usable |
 | Regression | Normal PMC respawn works with the additional Scav choice enabled by default and explicitly disabled; normal Scav respawn remains functional |
 
 Native testing uses the dedicated SPT-GPU-1 test profile. Syncthing for its SPT41

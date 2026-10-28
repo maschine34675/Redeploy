@@ -7,7 +7,7 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
 contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
-## Experimental branch — PMC to Scav, Core 1.0.16
+## Unreleased — Own-Scav continuation, Core 1.0.16
 
 - Default-on `RespawnAsScav`: after a PMC death, choose naked PMC respawn or continue once in the same raid as
   your regular Player-Scav with its current gear, when its normal cooldown permits.
@@ -17,6 +17,22 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
   independent Scav and mailed-loot prototype.
 - Recovered insured items are excluded from the original insurance claim. Dying
   after switching to the Scav ends the raid; it does not offer another respawn.
+- Main-menu recovery for interrupted continuations: explicitly abandon an
+  unfinished Scav life, complete a provable recorded save, or resume the remaining
+  native loot transfer. The PMC remains dead; already transferred stash items
+  remain in place. Menu recovery requires a game restart before a new raid.
+- Persist completed transfer moves before acknowledgement and preserve exact
+  native-save/outer-raid completion across retry. Unproven partial outcomes stay
+  blocked. Client-only recovery also completes ArenaMode's ordinary-raid boundary.
+- Disable only the Scav choice when native Scav exits cannot be verified or
+  BTR/transit items were already sent in the PMC life. Recheck before preparation
+  while preserving the normal PMC choices.
+- Block BTR item delivery for the adopted Scav before item movement, including
+  late purchase completion. Other BTR services and ordinary PMC/Scav delivery
+  retain their native behavior.
+- Disable Sell All in the owned continuation loot transfer to prevent payment
+  and recovered-equipment duplication after interruption. Move wanted items to
+  the stash and finish the transfer; ordinary Scav Sell All is unchanged.
 - Shared Core accepts an explicitly separate replacement profile. Existing
   same-profile consumers retain their behavior and RespawnApi version 1.
 - The extraction timer now preserves remaining time across ordinary respawns
@@ -27,7 +43,10 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 - Replacement death callbacks follow native ordering, allowing PitFireTeam to
   handle the death before raid teardown disposes its registry. The death handler
   is also retained when bot rebind fails.
-- This branch is not a release. See [behavior, evidence and limits](PMC-TO-SCAV.md).
+- This development change is not a release. See [behavior, evidence and limits](PMC-TO-SCAV.md).
+- Candidate `6a1332d` passes 469 client/Core tests and 149 server tests. The
+  [native recovery checks](PMC-SCAV-RECOVERY-20261028.md) cover Prepared/Active
+  interruption, partial-transfer restart and scoped delivery/availability guards.
 - The configuration menu uses readable ordered labels and preserves existing
   saved settings. Detailed respawn measurements are an advanced setting.
 

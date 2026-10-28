@@ -17,23 +17,23 @@ Core version line.
 - **Insurance is preserved.** The mod keeps insurance records for gear left on corpses; returns still depend on SPT's normal insurance rules and your server settings.
 - **Kills are carried over.** Kills you scored before respawning still appear on the end-of-raid screen.
 - **Fails safe.** When the server component is missing, the mod stays inactive and death behaves exactly like vanilla.
-- **Experimental PMC-to-Scav continuation** on `feature/pmc-to-scav`: the optional
+- **Own-Scav continuation (unreleased):** the optional
   `RespawnAsScav` setting is enabled by default and adds a choice of one life as your regular Player-Scav in the same
   raid after PMC death, provided the normal Scav cooldown has expired. Successful
   extraction opens the usual Scav-to-stash transfer screen. A Scav cooldown only
   disables this choice; the normal PMC respawn remains available. See
-  [behavior and test scope](docs/PMC-TO-SCAV.md). This development feature is not
-  release-ready: interrupted sessions can require manual recovery, and delivery
-  and availability guards still need fixes. See the
-  [release readiness review](docs/PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
+  [behavior and test scope](docs/PMC-TO-SCAV.md) and
+  [recovery validation](docs/PMC-SCAV-RECOVERY-20261028.md). The own-Scav sections
+  below describe current development code; the published 1.0.2 package does not
+  contain this feature.
 
 ## Requirements and compatibility
 
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** This release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
-  This feature branch builds Core `1.0.16`; its rebuilt client requires that minimum. The published 1.0.2 package is unchanged.
+- **Version lines:** The published 1.0.2 release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
+  Current development uses Core `1.0.16`; its client requires that minimum. The published 1.0.2 package is unchanged.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -118,7 +118,7 @@ The old `BepInEx/config/com.maschine.CorpseRun.cfg` can be archived after copyin
 
 ## Uninstalling
 
-Finish the raid and close the game and server. Remove `maschine-Redeploy.Client.dll` and `SPT_Runtime/user/mods/Redeploy/`. Remove `maschine-Redeploy.Core.dll` only when no other installed mod, such as ArenaMode, needs it. The Redeploy configuration can be kept for a later reinstall or removed. Uninstalling does not restore equipment or statistics from earlier deaths.
+Finish the raid and resolve any interrupted Scav continuation or pending loot transfer before closing the game and server. Keep unresolved profile/journal files for diagnosis; deleting a journal is not a recovery procedure. Remove `maschine-Redeploy.Client.dll` and `SPT_Runtime/user/mods/Redeploy/`. Remove `maschine-Redeploy.Core.dll` only when no other installed mod, such as ArenaMode, needs it. The Redeploy configuration can be kept for a later reinstall or removed. Uninstalling does not restore equipment or statistics from earlier deaths.
 
 ## Usage
 
@@ -126,11 +126,25 @@ There are no hotkeys. When you die, the raid keeps running and a window opens wi
 
 - **PMC near corpse** — respawns without gear, searching around your body for a reachable position and checking walls, fences, sniper/mine boundaries and standing room. It tries closer positions, your body's own spot and then a regular player spawn if needed. If every validated option fails, the final fallback is 2 m above the body and is logged as a warning; safe placement cannot be guaranteed on every map.
 - **PMC at spawn point** — respawns without gear at one of the map's regular player spawns, not necessarily your original spawn. Falls back to the near-corpse search if no player spawn is found.
-- **Continue as Scav** — uses your own regular Scav and their equipment at a Scav spawn. This additional choice is enabled by default; its button is disabled while your Scav is unavailable or on cooldown. After switching, another death ends the raid; successful extraction opens the normal loot transfer screen.
+- **Continue as Scav** — uses your own regular Scav and their equipment at a Scav spawn. This additional choice is enabled by default; its button is disabled while your Scav is unavailable or on cooldown, if Scav exits cannot be verified, or after BTR/transit item delivery in the PMC life. The normal PMC choices remain available. After switching, another death ends the raid; successful extraction opens the normal loot transfer screen.
 - **End raid** — the raid ends as killed, exactly as it would without the mod.
 
 In a raid started as a Scav, the normal respawn buttons read **Scav near corpse**
 and **Scav at spawn point**. There is no separate own-Scav continuation choice.
+
+If an own-Scav continuation was interrupted, the main menu offers recovery.
+**Abandon interrupted raid** keeps the PMC death, forfeits the unfinished Scav
+loot and applies the normal Scav death/cooldown; it requires confirmation.
+After extraction, **Resume loot transfer** opens the remaining Scav inventory,
+preserving items already moved to the stash. A fully recorded result may instead
+offer **Complete interrupted save**. Follow the recovery screen's restart prompt
+before starting another raid. Unproven partial results remain blocked for diagnosis.
+
+During an own-Scav continuation, BTR item delivery is unavailable. In its loot
+transfer, **Sell All** is also unavailable: move wanted items into the stash and
+finish the transfer. Ordinary PMC/Scav BTR use and ordinary Scav Sell All keep
+their native behavior. See the [dated native checks](docs/PMC-SCAV-RECOVERY-20261028.md)
+for the tested scenarios and remaining limits.
 
 After respawning, run back to your body and loot your equipment from it. Redeploy leaves the corpse in the world, but does not protect its loot or prevent another mod from cleaning it up. The raid and its timer keep running while the prompt or replay is open; respawning does not restart the raid.
 
