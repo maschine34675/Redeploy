@@ -1,44 +1,56 @@
-# PMC death followed by a fresh Scav
+# PMC death followed by your regular Player-Scav
 
-Development work on `feature/pmc-to-scav`. This is an opt-in same-raid continuation,
-not a change to the normal Player-Scav queue or cooldown. It is not released.
+Development work on `feature/pmc-to-scav`. This is an opt-in same-raid continuation
+using the account's regular Scav and cooldown. It is not released. The 2026-10-28
+revision replaces the earlier independent generated-Scav/mail prototype; that
+prototype's dated evidence below is historical and does not validate the new flow.
 
 ## Behavior
 
 - With `RespawnAsScav` disabled, Redeploy retains its normal respawn choices.
-- With it enabled, a dead PMC can continue once as a newly generated Scav at a
+- With it enabled, a dead PMC can continue once as their regular Player-Scav at a
   Scav spawn on the same map. The PMC corpse remains in the world and can be looted.
-- The Scav has a distinct identity, equipment, health and statistics. Regular
-  Player-Scav equipment and cooldown are not used to generate this character.
+- The Scav uses the account's current Scav identity, equipment and progression,
+  separate from the PMC. The normal Scav cooldown must have expired; the prompt
+  explains when it is unavailable, and the server independently enforces it.
+  Preparation reserves this Scav without generating new gear. Refused preparation
+  does not consume a respawn-cost item or reset the Scav cooldown.
 - A subsequent death, leaving the raid or time expiry ends the raid. The Scav
   cannot respawn again. Transit to another map is outside this first version.
-- The PMC's outcome remains a death. PMC progression ends at that death; Scav
-  progression is not added to it.
-- Successful Scav extraction delivers carried loot by a system message using
-  the normal **Receive items** transfer. Run-through extraction can deliver loot,
-  with its found-in-raid status handled separately from successful extraction.
+- The PMC's outcome remains a death. PMC and Scav combat progression are handled
+  separately. Native shared effects, such as Fence reputation and Scav quests,
+  still apply as in an ordinary Scav raid.
+- Successful Scav extraction opens the native **Scav-to-stash transfer screen**.
+  There is no loot message. Run-through extraction uses normal found-in-raid rules.
+  Completing the transfer generates the next Scav and its regular cooldown;
+  dying as the Scav generates the successor through the native death handler.
 - Recovered insured items are excluded from the original PMC's lost-item claim
-  before message item IDs are generated. Retained PMC items must never also be
-  included in the Scav loot message.
+  before loot transfer. Retained PMC items must never also appear in Scav loot.
+- Scav lifetime and time-based exit conditions use the actual replacement body's
+  play time, excluding the PMC life and waiting at the death prompt. The shared
+  raid timer and native extraction/run-through policy are unchanged.
 
 ## Separation of responsibilities
 
 Shared Core gains an optional replacement-profile input. Existing same-profile
 callers, including ArenaMode, do not opt into the new flow. Core owns the body,
 camera, AI and optional-mod handover. The standalone client owns the choice,
-PMC snapshot, Scav extraction UI and original-PMC result presentation.
+PMC snapshot, Scav extraction UI and final Scav result presentation.
 
-The server binds a prepared Scav to an actual server-issued PMC raid. Preparation
-does not settle the PMC or alter the ordinary Scav. The final native raid-end
-request settles the frozen PMC death and, on extraction, the separate Scav loot.
-A persisted receipt and settlement journal prevent a retry from granting the
-same loot or processing the same PMC death again. An ambiguous save failure must
-stop for recovery rather than replaying native profile side effects.
+The server binds the reserved account Scav to an actual server-issued PMC raid.
+The final request settles the frozen PMC death and then the Scav outcome, saving
+both together. The complete native raid-end pipeline runs once for the PMC;
+the native Scav outcome handler then applies the second life within that same
+transaction. The original raid ID is preserved, including when ArenaMode's
+ordinary-raid protection is installed. A durable journal with full-profile disk readback prevents a retry
+from processing either outcome again. The native transfer moves items from the
+settled Scav inventory; completion and late inventory uploads are guarded against
+regeneration or item duplication. An ambiguous save failure stops for recovery.
 
 The SPT regular-Scav result-save hook is bypassed only for the owned hybrid
-result. Its normal path assumes that the final Savage profile is the account's
-Player-Scav; that is deliberately not true here. Ordinary Scav results still
-use the SPT handler.
+result. Combined settlement already stores the account Scav inventory, so this
+late client snapshot must not reinstall transferred items or overwrite the next
+Scav after death. Ordinary Scav results still use the SPT handler.
 
 Core registers the replacement's native death-stop callback after bot
 registration, matching initial native spawn. This lets integrations such as
@@ -60,6 +72,9 @@ can end the raid.
   for that profile instead of guessing whether to replay settlement. Automatic
   recovery after a process/network failure is not implemented. Preserve the
   journal, profile and logs for diagnosis; deleting only the journal is unsafe.
+- Pending loot transfer also prevents a new raid until it is completed. Old
+  independent-Scav journals from protocol 1 require their original build/recovery;
+  they are never interpreted as regular-Scav reservations.
 - A final lost-insurance scan failure refuses settlement rather than inventing
   an empty claim. Ordinary PMC death remains available if preparation fails
   before the body switch.
@@ -71,12 +86,13 @@ native runs from offline tests and remaining limits.
 
 | Case | Evidence required |
 | --- | --- |
-| Switch | Different profile IDs; actual Savage side; independent gear; controllable body, camera and inventory |
+| Switch | Different PMC/Scav profile IDs; actual account Scav identity and gear; controllable body, camera and inventory |
 | AI and corpse | Scav AI relationship after the switch; old PMC corpse remains lootable |
 | Extract | Scav exit really extracts; PMC-only exit is disabled; original raid time remains |
-| Loot | One receipt; Receive items succeeds; recovered insured item is not also insured for return |
-| Failure | Second death/give-up/MIA ends; no successful-loot message; no third body |
-| Persistence | PMC death and original progression; ordinary Scav gear/cooldown unchanged |
+| Loot | Native transfer succeeds; no loot message; recovered insured item is not also insured for return |
+| Failure | Second death/give-up/MIA ends; no loot transfer; no third body |
+| Persistence | PMC death and original progression; Scav outcome, successor and cooldown saved |
+| Cooldown | Native expiry boundary is enforced in prompt and server; unavailable Scav cannot be used |
 | Retry | Duplicate prepare/activate/end and save ambiguity cannot duplicate effects |
 | Regression | Default-off normal PMC respawn and normal Scav respawn remain functional |
 
@@ -86,7 +102,104 @@ configuration and profiles are backed up with hashes and restored before the
 previous synchronization state is resumed. Source checks, offline builds,
 installed hashes and running-process gameplay evidence are recorded separately.
 
-## Validation — 2026-10-27
+## Regular-Scav validation — 2026-10-28
+
+Candidate 3 uses SPT-GPU-1, SPT 4.1.6 / EFT 40743 and Factory. The installed
+ArenaMode ordinary-raid protection and PitFireTeam 1.0.0 remain present, with
+no invited companions. Focused persistence runs disable bots; they do not prove
+combat AI behavior or companion handling. Deaths use the real health-controller
+kill hook, corpse recovery and transfer use native inventory operations, and
+extraction uses the actual Camera Bunker Door trigger.
+
+| Component | Version | Tested SHA-256 |
+| --- | --- | --- |
+| Client | 1.0.2, feature branch | `D5EA11E21D179769801997E83E0676F7748829BC8B9486C8C324F680C8017DC3` |
+| Core | 1.0.16 | `25DE9FB8F3853EFD1EC3B18EA650777ECFD6D21E02189D5AE6B3D2FEDBC4CA9C` |
+| Server | 1.0.2, feature branch | `BDC6B3D0CB2E12BBCA567E2995094F26CD547B2FB035800AC83FB91DFE93F96B` |
+
+These are pre-commit builds with informational Git stamp `9ecdb10`; the hashes
+identify the tested candidate, not a later rebuild. Candidate 3's first client
+process was `ff2be345eae64dc5a9db8a73be3302b6`, started at 09:46:42 UTC.
+
+Confirmed native extraction results:
+
+- The replacement uses the actual account Scav ID, equipment root and existing
+  loadout. The original PMC corpse remains lootable.
+- The insured PMC M4 was recovered and transferred through **ScavInventory**
+  into the PMC stash. Its original item ID appears once in the PMC inventory
+  and zero times in the Scav inventory. Remaining Scav gear was deliberately
+  discarded using the native confirmation.
+- The insurance queue contains only the abandoned insured backpack. Insurance
+  enrollment was an isolated two-item profile fixture, not a purchase-flow test.
+- The result shows the Scav nickname and **39 seconds** of Scav lifetime.
+  Persisted Scav sessions increased from 5 to 6 and lifetime from 487 to 526;
+  prior PMC time and prompt waiting were excluded.
+- Transfer completion generated a new Scav equipment root and a future normal
+  cooldown. There was no extracted-loot message.
+- In the immediately following PMC raid, the death prompt showed the remaining
+  24-minute Scav cooldown and offered only **End raid**, without a continuation
+  button. Ending that raid completed normally.
+- With the feature disabled, ordinary PMC respawn preserved the PMC identity
+  and left the Scav-continuation context empty. The second death at the configured
+  one-respawn limit ended the raid without another body or prompt.
+- Death of the adopted account Scav ended the raid without a third body or
+  another respawn prompt. The native result showed the Scav nickname, **Killed
+  in Action** and its own **15-second** life. This result transition took about
+  73 seconds on the test host but completed without a backend request timeout.
+  It returned to the menu without a transfer, generated a successor and future
+  cooldown, and persisted one Scav session plus 15 seconds of lifetime. Both
+  unrecovered insured PMC items remained in the insurance claim.
+- In an ordinary Scav raid with the feature disabled, respawn preserved the
+  account Scav ID and Savage side while producing the normal new equipment
+  root. The second death at the limit ended normally. The ordinary SPT
+  `/raid/profile/scavsave` request remained enabled and succeeded.
+
+The earlier candidates exposed two native failures that were corrected before
+this result: reusing the extraction panel left an `EventTimer` dictionary entry,
+and a second outer raid-end call with a fabricated Scav ID reentered ArenaMode's
+ordinary-raid semaphore. Candidate 3 rebuilds only the owned native timer
+instances and preserves one outer end with the real issued raid identity.
+An independent source review also corrected Scav time before native lifetime
+and exit-condition statistics run. No ArenaMode protection gate was weakened.
+
+Offline validation: **351 client/Core tests**, including 44 focused continuation
+tests, and **86 server tests** passed. Builds completed without warnings or
+errors. Negative controls cover early cost consumption, late time correction,
+duplicate custom timers and the former exact-raid gate reentry.
+
+Final client logs: `LogOutput-SPT-GPU-1-2026-10-28_10-46-26.log` (extraction,
+cooldown and ordinary PMC), `10-57-47.log` (own-Scav death) and `11-03-57.log`
+(ordinary Scav). Separate fresh client processes were used for the two final
+death scenarios. Private profile assertions independently verified extraction
+and death outcomes against the immutable baseline.
+
+Not established by these focused runs: combat AI/Scav karma from kills, invited
+companions, other maps, MIA timeout, process/network fault recovery or native
+respawn-cost-item failure injection. The inspected extraction was a run-through;
+survived outcomes and retry/failure boundaries also have offline test coverage.
+One death-result text snapshot included `EARLY EXTRACTION` alongside the correct
+`Killed in Action` result. Native status mapping was reviewed and remains
+`Killed`; without a screenshot, the subtitle's rendered presentation is not
+confirmed. No transfer or progression error accompanied it.
+
+### Test-host restoration — 2026-10-28
+
+At **10:12:33 UTC**, all **9,954** baseline entries were restored and verified by
+SHA-256 or their original absence. The backup covered the complete server user
+tree, client configuration and replaced Client/Core binaries. **151** files
+created during testing inside the managed directories were removed. Game and
+server were stopped throughout restoration. Only after verification was the
+original Syncthing state restored and confirmed as `paused=false`; the other
+sync folder was untouched. A separate final check confirmed that all three
+installed Redeploy DLLs match their original baseline.
+
+Private evidence and immutable backups remain outside synchronization under
+`C:\Temp\RedeployOwnScav-20261028`. No candidate binary remains installed on the
+test host or the development installation. Implementation commit: `0047ad5`.
+The feature remains on `feature/pmc-to-scav`; no main merge, push or release was
+performed.
+
+## Historical validation — independent-Scav prototype, 2026-10-27
 
 SPT 4.1.6 / EFT 40743, SPT-GPU-1, Factory. Deaths used UiBridge's real health
 controller kill hook; transfers used native UI actions, extraction used the
@@ -138,7 +251,7 @@ new Core, MIA timeout, real network/process fault recovery, or a long natural
 combat session. PMC statistics separation is covered by frozen-request source
 and server tests; the native extraction tests did not earn Scav combat XP.
 
-## Test-host restoration
+### Historical test-host restoration — 2026-10-27
 
 SPT-GPU-1's SPT41 Syncthing folder was paused before deployment/profile edits;
 the other sync folder was untouched. Game and server were stopped for final

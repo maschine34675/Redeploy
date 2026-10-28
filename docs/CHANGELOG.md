@@ -9,10 +9,12 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
 ## Experimental branch — PMC to Scav, Core 1.0.16
 
-- Optional `RespawnAsScav`: after a PMC death, continue once in the same raid as a
-  fresh Scav. The ordinary Player-Scav and its cooldown are not consumed.
+- Optional `RespawnAsScav`: after a PMC death, continue once in the same raid as
+  your regular Player-Scav with its current gear, when its normal cooldown permits.
 - The PMC corpse stays lootable. The PMC outcome remains a death; successful
-  Scav extraction sends carried loot through a system message and Receive items.
+  Scav extraction opens the normal Scav-to-stash transfer screen. Scav progression,
+  regeneration and cooldown follow the native Scav outcome. This replaces the
+  independent Scav and mailed-loot prototype.
 - Recovered insured items are excluded from the original insurance claim. A
   second death ends the raid; it does not offer another respawn.
 - Shared Core accepts an explicitly separate replacement profile. Existing

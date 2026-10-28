@@ -18,9 +18,10 @@ Core version line.
 - **Kills are carried over.** Kills you scored before respawning still appear on the end-of-raid screen.
 - **Fails safe.** When the server component is missing, the mod stays inactive and death behaves exactly like vanilla.
 - **Experimental PMC-to-Scav continuation** on `feature/pmc-to-scav`: the optional
-  `RespawnAsScav` setting offers one fresh Scav life in the same raid after PMC
-  death. Extracted loot is delivered by message. It does not consume the regular
-  Player-Scav cooldown. See [behavior and test scope](docs/PMC-TO-SCAV.md).
+  `RespawnAsScav` setting offers one life as your regular Player-Scav in the same
+  raid after PMC death, provided the normal Scav cooldown has expired. Successful
+  extraction opens the usual Scav-to-stash transfer screen. See
+  [behavior and test scope](docs/PMC-TO-SCAV.md).
 
 ## Requirements and compatibility
 
@@ -136,7 +137,7 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or close t
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | Master switch. When off, death behaves like vanilla. |
-| `RespawnAsScav` | `false` | Experimental: continue a dead PMC's raid once as a fresh Scav; successful extraction delivers carried loot by message. Regular Scav raids keep normal Redeploy behavior. |
+| `RespawnAsScav` | `false` | Experimental: continue a dead PMC's raid once as your regular Scav when its cooldown has expired; extraction opens the normal loot transfer. Regular Scav raids keep normal Redeploy behavior. |
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` or less means unlimited. |
 | `RespawnHealthPercent` | `100` | Starting health for each body part, clamped to 1–100%; old body-part effects are cleared. |
 | `RespawnCooldownSeconds` | `5` | Minimum seconds since death; time spent watching a replay counts. `0` or less removes the extra wait, but an active Killcam can still hold the respawn. |
