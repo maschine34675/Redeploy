@@ -218,6 +218,76 @@ the feature is used there. This deployment records disk hashes, not a new
 running-process or raid acceptance test. The feature branch remains unmerged
 and unpublished.
 
+## Fresh-raid transit registration correction — 2026-10-28
+
+The user's normal Factory PMC raid was rejected with `no-issued-pmc-raid` at
+13:25:15 local time. Its native transit log reported `Common`, `Count:0`; PFT
+also reported `continuation=False`. The prepare and ordinary final-death requests
+used the same server-issued raid identity. This was a Redeploy registration bug,
+not an expired Scav cooldown or an identity mismatch.
+
+`COMMON` and `EVENT` describe available map transitions on a fresh raid. The old
+registration guard accepted only null/`NONE`, so it never recorded this otherwise
+valid PMC start. Registration now accepts known flags for fresh starts, while
+rejecting an incoming request transition or a response with nonzero/missing hop
+count or nonempty/missing visited history. Arena and Scav starts remain excluded;
+preparation still requires the exact server-issued PMC raid ID. Registration and
+prepare rejection reasons are logged at Debug without profile IDs or tokens.
+
+Offline validation: **103/103 server tests**, including 17 added cases for fresh
+flags, actual/malformed transit, stale authorization removal, Arena/Scav exclusion
+and exact raid identity. Restoring the old guard in an isolated negative control
+reproduced the failure for `COMMON`, `EVENT` and their combination; the corrected
+source was then restored and the complete suite passed again. An independent
+source review checked the rule against native `StartLocalRaidAsync` and Arena's
+ordinary/start-marker paths. Client and Core were not changed or rebuilt.
+
+Corrected Server SHA-256:
+`CC70BB90D488022F49576DC1BA85281A1821F4037835F67F6815254B3061871F`.
+
+Native follow-up on SPT-GPU-1 passed with that Server DLL and the unchanged
+candidate 3 Client/Core. The real PMC Factory start at 13:46:41 local time logged
+`issued; transitFlags=1, incomingTransition=False, transitionCount=0, visitedCount=0`;
+EFT independently logged `Flag:Common, Count:0`. After a test-triggered PMC death,
+the native prompt offered **Continue as Scav**, prepare/activate succeeded and
+the live player's profile ID matched the baseline account Scav. The journal also
+matched its original equipment root. Eight AI bots were alive in the raid;
+PitFireTeam was installed without invited companions, and ArenaMode stayed inactive.
+
+A test-triggered Scav death ended the raid without another respawn, completed the
+native result screens and returned to the main menu. The journal was `Committed`
+with no error; the persisted profile had a successor Scav equipment root and a
+future regular cooldown. No client error was logged during this Common-raid
+continuation. Native extraction/loot transfer was not repeated in this focused
+registration test; its earlier candidate 3 coverage remains separate.
+
+Test setup matters: opening **GAME SETTINGS** in the pre-raid menu can lose the
+Common flag through EFT's settings-clone/apply path. The first automated attempt
+with `--bots as-online` still produced `None`, so it was exited and not counted as
+Common coverage. The successful `gpu-run raid --mode pmc --map factory` omitted
+`--bots` and kept Common; verify the actual start diagnostics in future tests.
+The squad helper also could not read PFT 1.0.0's new roster screen; the visible
+group contained only the local player. Neither issue required a Redeploy change.
+
+The corrected Server DLL/PDB were installed in `D:\SPT41` and on SPT-GPU-1 before
+the test. SPT-GPU-2 was later observed with game/server stopped and the corrected
+Server DLL already synchronized (`CC70BB90...`); no process there was interrupted
+or tested. A server restart and a newly started PMC raid are required wherever an
+older server process is still running. This fix cannot authorize a raid that the
+old process never registered.
+
+For this follow-up, Syncthing's SPT41 folder on SPT-GPU-1 was paused before any
+test and a new current baseline was captured after installing the corrected
+Server DLL/PDB. At **12:54:36 UTC**, all **10,092** baseline entries were restored
+and verified, and **76** newly created test files were removed from the managed
+directories. The original synchronization state was restored (`paused=false`);
+the other folder was untouched. Game/server were stopped for restoration. The
+test profile was independently hash-checked afterwards, and the corrected
+Server DLL/PDB matched the build on all three installations. No temporary mod
+was installed. Private evidence and this run's backups remain outside sync in
+`C:\Temp\RedeployScavCommon-20261028` on SPT-GPU-1 and
+`C:\Temp\RedeployScavCommonDeploy-20261028` on the development host.
+
 ## Historical validation — independent-Scav prototype, 2026-10-27
 
 SPT 4.1.6 / EFT 40743, SPT-GPU-1, Factory. Deaths used UiBridge's real health

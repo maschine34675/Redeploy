@@ -9,10 +9,12 @@
   cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
 - No main-branch merge, push or release is part of this feature work.
-- Follow-up deployment: the tested candidate is now persistently installed in
-  the development SPT installation and on SPT-GPU-1, with `RespawnAsScav=true`.
-  SPT-GPU-2 still needs its locked server DLL synchronized after the user stops
-  its running test. See the [deployment record](PMC-TO-SCAV.md#persistent-feature-deployment--2026-10-28).
+- Follow-up deployment: the feature remains installed with `RespawnAsScav=true`.
+  A server-only correction now allows fresh PMC starts with the native Common
+  transit flag. It passed 103 server tests and a focused native PMC-to-Scav/death
+  run on SPT-GPU-1. The corrected server is on disk in the development installation
+  and both GPU hosts; GPU-2's previous locked-file deployment is no longer pending.
+  See the [correction and validation record](PMC-TO-SCAV.md#fresh-raid-transit-registration-correction--2026-10-28).
 
 ## Active development — 2026-10-25
 

@@ -156,6 +156,83 @@ public sealed class ScavContinuationTests
         Assert.False(f.Service.ShouldInterceptEnd(f.Session, f.Frozen));
     }
 
+    [Theory]
+    [InlineData(null)] [InlineData(TransitionType.NONE)]
+    [InlineData(TransitionType.COMMON)] [InlineData(TransitionType.EVENT)]
+    [InlineData(TransitionType.COMMON | TransitionType.EVENT)]
+    public async Task FreshPmcWithAvailableTransitExitsCanReserveRegularScav(TransitionType? flags)
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "Pmc", TransitionType = flags }, new()
+        {
+            ServerId = f.Raid, TransitionType = flags,
+            Transition = new() { TransitionType = flags, TransitionRaidId = new MongoId().ToString(),
+                TransitionCount = 0, VisitedLocations = [] }
+        });
+
+        var result = await f.Service.Prepare(f.Session, f.PrepareRequest(), default);
+
+        Assert.True(result.Success, result.Error);
+        Assert.Equal(f.Scav.Id, result.ScavProfile!.Id);
+        Assert.Equal(ScavPhase.Prepared, f.Journal.Read(f.Session.ToString(), f.Raid)!.Phase);
+        Assert.True(f.Service.ShouldInterceptEnd(f.Session, f.Frozen));
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Theory]
+    [InlineData("incoming-transition")] [InlineData("positive-count")] [InlineData("visited-location")]
+    [InlineData("negative-count")] [InlineData("missing-count")] [InlineData("missing-history")]
+    [InlineData("unknown-flags")] [InlineData("scav")] [InlineData("request-arena")]
+    [InlineData("response-arena")] [InlineData("invalid-server")]
+    public async Task IneligibleStartRevokesPreviousIssuedAuthority(string reason)
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = f.Raid });
+        var request = new StartLocalRaidRequestData { PlayerSide = "pmc", TransitionType = TransitionType.COMMON };
+        var response = new StartLocalRaidResponseData { ServerId = f.Raid,
+            Transition = new() { TransitionCount = 0, VisitedLocations = [] } };
+        switch (reason)
+        {
+            // Even an incoming object claiming zero hops cannot authorize a fresh raid.
+            case "incoming-transition": request.Transition = new() { TransitionCount = 0, VisitedLocations = [] }; break;
+            case "positive-count": response.Transition.TransitionCount = 1; break;
+            case "visited-location": response.Transition.VisitedLocations = ["bigmap"]; break;
+            case "negative-count": response.Transition.TransitionCount = -1; break;
+            case "missing-count": response.Transition.TransitionCount = null; break;
+            case "missing-history": response.Transition.VisitedLocations = null; break;
+            case "unknown-flags": request.TransitionType = (TransitionType)4; break;
+            case "scav": request.PlayerSide = "Savage"; break;
+            case "request-arena": request.ServerId = "arenamode-start:test"; break;
+            case "response-arena": response.ServerId += "|arenamode:test"; break;
+            case "invalid-server": response.ServerId = "factory4_day.Savage 123456789"; break;
+            default: throw new ArgumentOutOfRangeException(nameof(reason));
+        }
+        f.Service.RegisterStart(f.Session, request, response);
+
+        var result = await f.Service.Prepare(f.Session, f.PrepareRequest(), default);
+
+        Assert.False(result.Success);
+        Assert.Equal("no-issued-pmc-raid", result.Error);
+        Assert.Empty(f.Journal.ForSession(f.Session.ToString()));
+        Assert.False(f.Service.ShouldInterceptEnd(f.Session, f.Frozen));
+        Assert.Equal(0, f.Writes);
+    }
+
+    [Fact] public async Task FreshTransitEnabledStartStillRequiresExactIssuedRaidIdentity()
+    {
+        using var f = new Fixture();
+        f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc", TransitionType = TransitionType.COMMON },
+            new() { ServerId = "factory4_day.pmc 123456790",
+                Transition = new() { TransitionCount = 0, VisitedLocations = [] } });
+
+        var result = await f.Service.Prepare(f.Session, f.PrepareRequest(), default);
+
+        Assert.False(result.Success);
+        Assert.Equal("no-issued-pmc-raid", result.Error);
+        Assert.Empty(f.Journal.ForSession(f.Session.ToString()));
+        Assert.Equal(0, f.Writes);
+    }
+
     [Fact] public async Task OrdinaryEndSerializesAndRejectsDelayedPrepareWithoutCreatingJournal()
     {
         using var f = new Fixture();

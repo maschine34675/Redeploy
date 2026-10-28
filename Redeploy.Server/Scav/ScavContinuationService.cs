@@ -95,14 +95,35 @@ public sealed class ScavContinuationService
                 previous.TransferPhase = ScavTransferPhase.Retired;
                 previous.TransferResponse = null; journal.Write(previous);
             }
-        string marker = request.ServerId ?? "";
-        bool arena = marker.StartsWith("arenamode-start:", StringComparison.OrdinalIgnoreCase)
-            || response.ServerId?.Contains("|arenamode:", StringComparison.OrdinalIgnoreCase) == true;
-        if (!arena && string.Equals(request.PlayerSide, "pmc", StringComparison.OrdinalIgnoreCase)
-            && (request.TransitionType == null || request.TransitionType == TransitionType.NONE)
-            && IsPmcServer(response.ServerId))
+        string? rejected = StartRejection(request, response);
+        if (rejected == null)
             issuedRaids[sessionId.ToString()] = response.ServerId!;
         else issuedRaids.TryRemove(sessionId.ToString(), out _);
+        logger.Debug($"Redeploy Scav raid registration: {rejected ?? "issued"}; "
+            + $"transitFlags={(int?)request.TransitionType}, incomingTransition={request.Transition != null}, "
+            + $"transitionCount={response.Transition?.TransitionCount}, visitedCount={response.Transition?.VisitedLocations?.Count}.");
+    }
+
+    private static string? StartRejection(StartLocalRaidRequestData request, StartLocalRaidResponseData response)
+    {
+        if (request.ServerId?.StartsWith("arenamode-start:", StringComparison.OrdinalIgnoreCase) == true
+            || response.ServerId?.Contains("|arenamode:", StringComparison.OrdinalIgnoreCase) == true)
+            return "arena-raid";
+        if (!string.Equals(request.PlayerSide, "pmc", StringComparison.OrdinalIgnoreCase)
+            || !IsPmcServer(response.ServerId))
+            return "not-issued-pmc";
+        // COMMON/EVENT describe available transit exits, including on a fresh raid.
+        // An incoming transfer instead supplies a transition object or receives
+        // nonzero count/history from the server's saved location-transit state.
+        if (request.TransitionType is { } flags
+            && (flags & ~(TransitionType.COMMON | TransitionType.EVENT)) != 0)
+            return "unknown-transit-flags";
+        if (request.Transition != null)
+            return "incoming-transition";
+        if (response.Transition is { } transition
+            && (transition.TransitionCount != 0 || transition.VisitedLocations is not { Count: 0 }))
+            return "non-fresh-transition";
+        return null;
     }
 
     public async Task<ScavResponse> Prepare(MongoId sessionId, ScavPrepareRequest request, CancellationToken ct)
@@ -130,7 +151,10 @@ public sealed class ScavContinuationService
                 return PreparedResponse(existing);
             }
             if (!issuedRaids.TryGetValue(id, out var issued) || issued != request.InitialServerId)
+            {
+                logger.Debug($"Redeploy Scav preparation rejected: no-issued-pmc-raid; registration={(issued == null ? "missing" : "identity-mismatch")}.");
                 return ScavResponse.Rejected("no-issued-pmc-raid");
+            }
             if (journal.ForSession(id).Any(ScavStatePolicy.BlocksNewRaid))
                 return ScavResponse.Rejected("previous-continuation-pending");
             var full = saves.GetProfile(sessionId);

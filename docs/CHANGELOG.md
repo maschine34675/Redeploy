@@ -21,6 +21,9 @@ contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
   same-profile consumers retain their behavior and RespawnApi version 1.
 - The extraction timer now preserves remaining time across ordinary respawns
   as well as the Scav switch.
+- Fresh PMC raids with available map transitions can reserve the regular Scav.
+  Previously the `Common` transit flag incorrectly caused `no-issued-pmc-raid`.
+  Actual incoming map transitions remain unsupported and are rejected.
 - Replacement death callbacks follow native ordering, allowing PitFireTeam to
   handle the death before raid teardown disposes its registry. The death handler
   is also retained when bot rebind fails.
