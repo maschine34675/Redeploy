@@ -84,9 +84,12 @@ that decide during construction must accept the profile the active replacement
 expects (`BodyReplacementContext.ExpectedProfile`) and not only the game's current
 one; `ReplacementProfileRule.CarriesRaidProfile` is that single rule. Recoil
 Rework Legacy and Fontaine FOV Fix compared against `game.Profile` alone in 1.1.0,
-so the Scav body was never handed over to them. The Recoil singletons then stayed
-with the PMC corpse and the mod's own `Awake` destroyed the new player object.
-This is fixed after 1.1.0 (Core 1.0.18). A source guard
+so the Scav body was never handed over to them. By the decompiled mod and the
+harness model, the Recoil singletons would then have stayed with the PMC corpse and
+the mod's own `Awake` would have destroyed the new player object; this was never
+observed in the game. For FOV Fix the foreign scale callback would have run against
+the old main player. This is fixed after 1.1.0 (Core 1.0.18). Both mods are verified
+offline only for the Scav switch (table below). A source guard
 (`SourceGuardTests`) now fails the test suite if any Compat adapter
 reads `game.Profile` for a body under construction outside that rule.
 

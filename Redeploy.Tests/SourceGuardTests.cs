@@ -254,8 +254,17 @@ public class SourceGuardTests
         var sources = CoreSources();
         Assert.Contains(sources, s => s.Path.EndsWith("RecoilLegacyCompat.cs") && s.Source.Contains("ReplacementProfileRule.CarriesRaidProfile("));
         Assert.Contains(sources, s => s.Path.EndsWith("FovFixCompat.cs") && s.Source.Contains("ReplacementProfileRule.CarriesRaidProfile("));
-        foreach (var (file, method) in SourceGuards.CommittedGameProfileReaders)
-            Assert.Contains(sources, s => Path.GetFileName(s.Path) == file && s.Source.Contains("Profile"));
+        // A stale whitelist entry (renamed method, removed read) would silently allow a future read there.
+        Assert.Empty(SourceGuards.StaleCommittedGameProfileReaders(sources));
+    }
+
+    [Fact]
+    public void ARenamedPostCommitReaderMakesItsWhitelistEntryStale()
+    {
+        var sources = CoreSources();
+        var renamed = sources.Select(s => Path.GetFileName(s.Path) == "HealingAutoCancelCompat.cs"
+            ? (s.Path, Replace(s.Source, " Current", " CurrentRenamed")) : s);
+        Assert.NotEmpty(SourceGuards.StaleCommittedGameProfileReaders(renamed));
     }
 
     [Theory]

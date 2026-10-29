@@ -82,4 +82,4 @@ foreach ($taskName in $taskNames) {
 }
 $taskHashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $taskEvidence 'production-sha256.json')
 $taskRows | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $taskEvidence 'results.json')
-Write-Output ("Recoil Legacy baseline and eleven behavioral mutants verified:" + $taskEvidence)
+Write-Output ("Recoil Legacy baseline and eleven behavioral mutants verified: " + $taskEvidence)

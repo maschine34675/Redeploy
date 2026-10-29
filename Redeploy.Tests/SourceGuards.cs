@@ -391,8 +391,28 @@ internal static class SourceGuards
     };
 
     public static List<string> GameProfileReadsOutsideTheReplacementRule(IEnumerable<(string Path, string Source)> files)
+        => GameProfileReads(files)
+            .Where(read => !read.InsideRule && !CommittedGameProfileReaders.Contains((read.File, read.Method)))
+            .Select(read => $"{read.File}:{read.Line} ({read.Method})")
+            .ToList();
+
+    /// <summary>
+    /// Entries of <see cref="CommittedGameProfileReaders"/> that no longer contain a read of the game's profile
+    /// (renamed method, moved file, read removed): a stale entry would otherwise silently allow a future read there.
+    /// </summary>
+    public static List<string> StaleCommittedGameProfileReaders(IEnumerable<(string Path, string Source)> files)
     {
-        var violations = new List<string>();
+        var reads = GameProfileReads(files).ToList();
+        return CommittedGameProfileReaders
+            .Where(entry => !reads.Any(read => read.File == entry.File && read.Method == entry.Method))
+            .Select(entry => $"{entry.File} ({entry.Method})")
+            .ToList();
+    }
+
+    // The receiver is recognised by name only (game, _game, Game, CurrentGame): a read through another alias
+    // (var g = Game; g.Profile) is not seen. The guard is a tripwire for the known pattern, not a proof.
+    private static IEnumerable<(string File, string Method, int Line, bool InsideRule)> GameProfileReads(IEnumerable<(string Path, string Source)> files)
+    {
         foreach (var (path, source) in files)
         {
             var parts = path.Split('\\', '/');
@@ -414,20 +434,16 @@ internal static class SourceGuards
 
                 if (receiver == null || !Regex.IsMatch(receiver, @"^(_?[gG]ame|CurrentGame)$"))
                     continue;
-                if (node.Ancestors().OfType<InvocationExpressionSyntax>().Any(call =>
-                        call.Expression is MemberAccessExpressionSyntax rule
-                        && rule.Name.Identifier.ValueText == "CarriesRaidProfile"
-                        && LastName(rule.Expression) == "ReplacementProfileRule"))
-                    continue;
+                var insideRule = node.Ancestors().OfType<InvocationExpressionSyntax>().Any(call =>
+                    call.Expression is MemberAccessExpressionSyntax rule
+                    && rule.Name.Identifier.ValueText == "CarriesRaidProfile"
+                    && LastName(rule.Expression) == "ReplacementProfileRule");
                 var method = node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText
                              ?? node.Ancestors().OfType<PropertyDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText;
-                if (CommittedGameProfileReaders.Contains((file, method)))
-                    continue;
 
-                violations.Add($"{file}:{node.GetLocation().GetLineSpan().StartLinePosition.Line + 1} ({method})");
+                yield return (file, method, node.GetLocation().GetLineSpan().StartLinePosition.Line + 1, insideRule);
             }
         }
-        return violations;
     }
 
     // ------------------------------------------------------------------ shared
