@@ -92,11 +92,11 @@ built, `body.Profile` therefore differs from `game.Profile`. Optional-mod adapte
 that decide during construction must accept the profile the active replacement
 expects (`BodyReplacementContext.ExpectedProfile`) and not only the game's current
 one; `ReplacementProfileRule.CarriesRaidProfile` is that single rule. Recoil
-Rework Legacy and Fontaine FOV Fix compared against `game.Profile` alone in 1.1.0,
-so the Scav body was never handed over to them. By the decompiled mod and the
-harness model, the Recoil singletons would then have stayed with the PMC corpse and
+Rework Legacy and Fontaine FOV Fix compared against `game.Profile` alone in 1.1.0.
+For Recoil Rework this meant that the Scav body was never handed over to it.
+By the decompiled mod and the harness model, the Recoil singletons would then have stayed with the PMC corpse and
 the mod's own `Awake` would have destroyed the new player object; this was never
-observed in the game. For FOV Fix the foreign scale callback would have run against
+observed in the game. FOV Fix still took over the body; its early foreign scale callback would have run, while the Scav body was built, against
 the old main player. This is fixed in 1.1.1 (Core 1.0.18). Both mods are verified
 offline only for the Scav switch (table below). A source guard
 (`SourceGuardTests`) now fails the test suite if any Compat adapter
@@ -233,7 +233,10 @@ error.
   the Scav are untouched. While the raid still runs and a PMC respawn is possible,
   the prompt is shown again; the Scav button stays disabled with the reason for
   the rest of that death, and a warning notification says that the PMC respawn
-  choices are still open. When the raid itself ended meanwhile, no prompt is
+  choices are still open. When the respawn-cost item itself is what vanished,
+  the prompt returns without respawn buttons and only "End raid" is left, as for
+  any death without the item; the notification's sentence about open PMC choices
+  does not hold in that case. When the raid itself ended meanwhile, no prompt is
   shown and the native ending runs.
 - **Anything after that point keeps the old fail-closed ending.** Once the session
   has been ended (the `prepare` request and everything after it, including the

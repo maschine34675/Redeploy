@@ -44,12 +44,12 @@ documentation commits do not move the verified tag or change the published packa
 
 ## Own-Scav validation and consolidation — 2026-10-28
 
-- Current checkout: `D:\SPT41\Development\Redeploy`, branch `main`.
+- Checkout at that date: `D:\SPT41\Development\Redeploy`, branch `main`.
 - The complete `feature/pmc-to-scav` history through `703401f` was fast-forwarded
   into `main`; the merged branch and its separate checkout were removed.
   All 55 ignored non-build files were preserved and hash-verified in the private
   evidence archive, together with a verified Git bundle. No history was rewritten.
-- Client/Server remain 1.0.2; current development requires shared Core 1.0.16.
+- At that date Client/Server remained 1.0.2; development required shared Core 1.0.16.
 - Default-on additional own-Scav choice alongside naked PMC respawn, using the
   regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
   generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).

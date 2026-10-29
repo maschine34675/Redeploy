@@ -6,19 +6,22 @@ For **SPT 4.1.x**. Hotfix for 1.1.0. Includes Client/Server **1.1.1** and shared
 ## Fixed
 
 - **Recoil Rework Legacy and Fontaine FOV Fix with Continue as Scav.** In 1.1.0
-  Core skipped these two mods when it built your own Scav, because the Scav body
-  carries a different profile than the PMC. With Recoil Rework installed this
-  could end the raid right after the switch, with the respawn item already spent.
+  Core did not hand Recoil Rework over to your own Scav, because the Scav body
+  carries a different profile than the PMC; this could end the raid right after
+  the switch, with the respawn item already spent. For FOV Fix, its early scale
+  callback could run against the old body while the Scav body was being built.
   Core 1.0.18 hands both mods over to the Scav body like an ordinary respawn.
 - **Raids reached by map transit.** Continue as Scav was offered in the second and
   later raid of a transit chain, and choosing it ended the raid. The button is now
   disabled there with a reason; the PMC choices work as usual.
 - **A refused Scav preparation no longer ends the raid.** The client now asks the
   server first whether the continuation is possible. If the server refuses, does
-  not answer or times out, or your respawn item is gone, the death prompt returns
-  with the PMC choices instead of ending the raid. Refusals are shown as readable
-  text; an unexpected error while the check starts shows a fixed sentence, and
-  the details go to the log.
+  not answer or times out, the death prompt returns with the PMC choices instead
+  of ending the raid. If your respawn item vanished from the corpse meanwhile,
+  the prompt returns without respawn choices and you can end the raid. Once the
+  dead PMC's session has been ended, failures end the raid as before. Refusals
+  are shown as readable text; an unexpected error while the check starts shows a
+  fixed sentence, and the details go to the log.
 - The Support section of the README explains how to enable the Debug log lines
   that describe respawn positions.
 

@@ -13,15 +13,17 @@ public `RespawnApi` contract remains version 1.
 
 ### Fixed
 
-- **Recoil Rework Legacy and Fontaine FOV Fix with Continue as Scav.** Core
-  handed these two mods over to the replacement body only when its profile was
-  already the game's current profile. The own Scav is built with its own profile,
-  so its body was skipped. By the decompiled mod, Recoil Rework would then have
-  destroyed the new player object, ending the raid after the respawn item was
-  spent; FOV Fix would have applied its callback to the old body. Core now uses
-  the profile the running replacement expects, so the Scav body is handed over
-  like an ordinary respawn. A source check fails the build's tests if an adapter
-  reintroduces the old comparison.
+- **Recoil Rework Legacy and Fontaine FOV Fix with Continue as Scav.** Both
+  adapters in Core compared the body's profile with the game's current profile.
+  The own Scav is built with its own profile, so Recoil Rework was not handed
+  over to the Scav body. By the decompiled mod, it would then have destroyed the
+  new player object, ending the raid after the respawn item was spent; this was
+  derived from the code and not observed in the game. FOV Fix still took over
+  the body, but its early scale callback could run against the old body while
+  the Scav body was being built. Core now uses the profile the running
+  replacement expects, so the Scav body is handed over like an ordinary respawn.
+  A source check fails the build's tests if an adapter reintroduces the old
+  comparison.
 - **Raids reached by map transit.** The Scav button was enabled although the
   server never registers such a raid for a continuation, and choosing it ended
   the raid. The button is now disabled with the reason "Scav continuation is
@@ -29,9 +31,11 @@ public `RespawnApi` contract remains version 1.
 - **A refused Scav preparation no longer ends the raid.** Before anything changes,
   the client now asks the server whether a continuation is possible (including
   whether your Scav shares items with the PMC). If the server refuses, does not
-  answer or times out, or the respawn-cost item is gone, the death prompt returns
-  with the PMC choices and the Scav choice disabled with a reason. Once the
-  continuation is reserved, failures stay fail-closed as before. A server restart
+  answer or times out, the death prompt returns with the PMC choices and the Scav
+  choice disabled with a reason. If the respawn-cost item has vanished from the
+  corpse meanwhile, the prompt returns without respawn choices and you can end
+  the raid. Once the dead PMC's session has been ended (the preparation request
+  and everything after it), failures stay fail-closed as before. A server restart
   in the few frames between this check and the preparation still ends the raid.
   If the raid is already ending when the check fails, Redeploy leaves its cleanup
   to the raid end instead of releasing the respawn guard early.
