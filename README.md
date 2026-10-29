@@ -4,8 +4,8 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-**Redeploy 1.1.0** for SPT 4.1.x bundles **Core 1.0.17**. See the
-[release notes](docs/RELEASE-1.1.0.md) and [changelog](docs/CHANGELOG.md).
+**Redeploy 1.1.1** for SPT 4.1.x bundles **Core 1.0.18**. See the
+[release notes](docs/RELEASE-1.1.1.md) and [changelog](docs/CHANGELOG.md).
 
 ## Features
 
@@ -31,9 +31,9 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; Redeploy.Core is included.
-- **Version lines:** Redeploy 1.1.0 contains Client/Server `1.1.0` and Core `1.0.17`.
+- **Version lines:** Redeploy 1.1.1 contains Client/Server `1.1.1` and Core `1.0.18`.
   Core has its own version and is a library, not a separate BepInEx plugin.
-  The client requires Core `1.0.17` or newer with a compatible API.
+  The client requires Core `1.0.18` or newer with a compatible API.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -115,7 +115,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.0 requires Core **1.0.17 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.1 requires Core **1.0.18 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 

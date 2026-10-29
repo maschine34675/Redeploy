@@ -5,6 +5,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
+| [Redeploy 1.1.1 release notes](RELEASE-1.1.1.md) | Hotfix: Recoil Rework / FOV Fix with Continue as Scav, transit arrivals, refused Scav preparation, Core 1.0.18. |
 | [Redeploy 1.1.0 release notes](RELEASE-1.1.0.md) | Own-Scav continuation and recovery, optional integrations, Core 1.0.17 and update instructions. |
 | [Native release check, 2026-10-29](RELEASE-CHECK-20261029.md) | Standalone respawn, corpse loot, own-Scav transfer, exact candidates and quieter routine logging. |
 | [Own-Scav continuation](PMC-TO-SCAV.md) | Regular-Scav choice, native loot transfer, recovery limits and dated validation. |

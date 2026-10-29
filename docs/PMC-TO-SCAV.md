@@ -1,6 +1,6 @@
 # PMC death followed by your regular Player-Scav
 
-Redeploy 1.1.0 provides an optional same-raid continuation
+Redeploy 1.1.0 and later provide an optional same-raid continuation
 using the account's regular Scav and cooldown. The 2026-10-28
 revision replaces the earlier independent generated-Scav/mail prototype; that
 prototype's dated evidence below is historical and does not validate the new flow.
@@ -97,7 +97,7 @@ so the Scav body was never handed over to them. By the decompiled mod and the
 harness model, the Recoil singletons would then have stayed with the PMC corpse and
 the mod's own `Awake` would have destroyed the new player object; this was never
 observed in the game. For FOV Fix the foreign scale callback would have run against
-the old main player. This is fixed after 1.1.0 (Core 1.0.18). Both mods are verified
+the old main player. This is fixed in 1.1.1 (Core 1.0.18). Both mods are verified
 offline only for the Scav switch (table below). A source guard
 (`SourceGuardTests`) now fails the test suite if any Compat adapter
 reads `game.Profile` for a body under construction outside that rule.

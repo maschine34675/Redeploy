@@ -1,5 +1,13 @@
 # Redeploy repository status
 
+## Release preparation — Redeploy 1.1.1, 2026-10-29
+
+- Hotfix source targets Client/Server **1.1.1** and shared Core **1.0.18**
+  (Recoil Rework / FOV Fix profile replacement, transit arrivals, refused Scav
+  preparation, Support log level). See [release notes](RELEASE-1.1.1.md) and the
+  [changelog](CHANGELOG.md#111---2026-10-29). ArenaMode 0.4.1 bundles the same Core.
+- Package evidence is added here once the release is published.
+
 ## Published 2026-10-29 — Redeploy 1.1.0
 
 [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0) is public,
@@ -14,9 +22,9 @@ See [release notes](RELEASE-1.1.0.md) for scanner links, install steps and nativ
 No live deployment/settings/synchronization changes were performed for publication. Later
 documentation commits do not move the verified tag or change the published package.
 
-## Release preparation — 2026-10-29
+## Release preparation — Redeploy 1.1.0, 2026-10-29
 
-- Current source targets Client/Server **1.1.0** and shared Core **1.0.17**.
+- The source then targeted Client/Server **1.1.0** and shared Core **1.0.17**.
   Existing assembly names, plugin identities and install paths are unchanged.
 - [Release notes](RELEASE-1.1.0.md) and the [versioned changelog](CHANGELOG.md)
   cover the changes since the published 1.0.2 package.

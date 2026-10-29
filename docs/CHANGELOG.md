@@ -2,8 +2,52 @@
 
 Notable changes since **v1.0.0**, reconstructed from Git history and published
 release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
-1.1.0 bundles Core 1.0.17; 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
-and 1.0.0 bundled Core 1.0.8.
+1.1.1 bundles Core 1.0.18; 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13,
+1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
+
+## [1.1.1] - 2026-10-29
+
+Client/Server **1.1.1**, bundled and minimum Core **1.0.18**. Hotfix for
+[v1.1.0](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0). The
+public `RespawnApi` contract remains version 1.
+
+### Fixed
+
+- **Recoil Rework Legacy and Fontaine FOV Fix with Continue as Scav.** Core
+  handed these two mods over to the replacement body only when its profile was
+  already the game's current profile. The own Scav is built with its own profile,
+  so its body was skipped. By the decompiled mod, Recoil Rework would then have
+  destroyed the new player object, ending the raid after the respawn item was
+  spent; FOV Fix would have applied its callback to the old body. Core now uses
+  the profile the running replacement expects, so the Scav body is handed over
+  like an ordinary respawn. A source check fails the build's tests if an adapter
+  reintroduces the old comparison.
+- **Raids reached by map transit.** The Scav button was enabled although the
+  server never registers such a raid for a continuation, and choosing it ended
+  the raid. The button is now disabled with the reason "Scav continuation is
+  unavailable in a raid you reached by map transit." The PMC choices work as usual.
+- **A refused Scav preparation no longer ends the raid.** Before anything changes,
+  the client now asks the server whether a continuation is possible (including
+  whether your Scav shares items with the PMC). If the server refuses, does not
+  answer or times out, or the respawn-cost item is gone, the death prompt returns
+  with the PMC choices and the Scav choice disabled with a reason. Once the
+  continuation is reserved, failures stay fail-closed as before. A server restart
+  in the few frames between this check and the preparation still ends the raid.
+  If the raid is already ending when the check fails, Redeploy leaves its cleanup
+  to the raid end instead of releasing the respawn guard early.
+- Server refusals are shown as readable text; the raw code stays in the log. An
+  unexpected error while the check starts shows a fixed sentence and logs the
+  exception.
+
+### Documentation
+
+- The Support section explains that the `Respawn position` details are written
+  at Debug and how to enable Debug logging in `BepInEx.cfg`.
+- Historical own-Scav review and recovery reports are marked as such, and a
+  link into the ArenaMode repository now points to its published v0.4.0 file.
+- The own-Scav guide states which parts of the 1.1.1 refusal path are verified
+  offline only, and that the client's transit check is a best-effort early
+  disable behind the server's authoritative refusal.
 
 ## [1.1.0] - 2026-10-29
 
