@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net472</TargetFramework><LangVersion>latest</LangVersion><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems><ProductionRoot Condition="'$(ProductionRoot)' == ''">../../Redeploy.Core/Compat</ProductionRoot></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Runtime.csproj" /><ProjectReference Include="QuestFixture.csproj" /><ProjectReference Include="AudioFixture.csproj" />
+    <Compile Include="Program.cs" /><Compile Include="PublishedMetadata.cs" />
+    <Compile Include="$(ProductionRoot)/QuestTracker/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="$(ProductionRoot)/AudioIndicators/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="$(ProductionRoot)/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Reference Include="Mono.Cecil"><HintPath>../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+<ItemGroup><Reference Include="0Harmony"><HintPath>../../../../BepInEx/core/0Harmony.dll</HintPath></Reference><Reference Include="MonoMod.RuntimeDetour"><HintPath>../../../../BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference><Reference Include="MonoMod.Utils"><HintPath>../../../../BepInEx/core/MonoMod.Utils.dll</HintPath></Reference></ItemGroup></Project>

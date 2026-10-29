@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net472</TargetFramework><LangVersion>latest</LangVersion><ImplicitUsings>enable</ImplicitUsings><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems><SptRoot Condition="'$(SptRoot)' == ''">../../../..</SptRoot><CompatSource Condition="'$(CompatSource)' == ''">../../Redeploy.Core/Compat/AiLimit/*.cs</CompatSource></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs;RuntimeDoubles.cs"/>
+    <Compile Include="$(CompatSource)" Link="Production/%(Filename)%(Extension)"/>
+    <Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs"/>
+    <Reference Include="Mono.Cecil"><HintPath>$(SptRoot)/BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

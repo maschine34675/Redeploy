@@ -78,9 +78,13 @@ public static class BodyReplacementCompatibility
         var quickCancel = QuickCancelCompat.GetRejectionReason();
         var pipDisabler = PipDisablerCompat.GetRejectionReason();
         var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
+        var aiLimit = AiLimitCompat.GetRejectionReason();
+        var healingAutoCancel = HealingAutoCancelCompat.GetRejectionReason();
+        var questTracker = QuestTrackerCompat.GetRejectionReason();
+        var audioIndicators = AudioIndicatorsCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -128,7 +132,11 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(EnemyMarkersContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(QuickCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
-           || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(AiLimitContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(HealingAutoCancelCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(QuestTrackerContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(AudioIndicatorsContract.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
     {
@@ -150,6 +158,10 @@ public static class BodyReplacementCompatibility
         QuickCancelCompat.Prepare(game, oldBody);
         PipDisablerCompat.Prepare(game, oldBody);
         AmandsGraphicsCompat.Prepare(game, oldBody);
+        AiLimitCompat.Prepare(game, oldBody);
+        HealingAutoCancelCompat.Prepare(game, oldBody);
+        QuestTrackerCompat.Prepare(game, oldBody);
+        AudioIndicatorsCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
@@ -189,6 +201,10 @@ public static class BodyReplacementCompatibility
         EnemyMarkersCompat.AbortPreparation();
         PipDisablerCompat.AbortPreparation();
         AmandsGraphicsCompat.AbortPreparation();
+        AiLimitCompat.AbortPreparation();
+        HealingAutoCancelCompat.AbortPreparation();
+        QuestTrackerCompat.AbortPreparation();
+        AudioIndicatorsCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -210,6 +226,10 @@ public static class BodyReplacementCompatibility
             EnemyMarkersCompat.Tick();
             PipDisablerCompat.Tick();
             AmandsGraphicsCompat.Tick();
+            AiLimitCompat.Tick();
+            HealingAutoCancelCompat.Tick();
+            QuestTrackerCompat.Tick();
+            AudioIndicatorsCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -245,6 +265,10 @@ public static class BodyReplacementCompatibility
         QuickCancelCompat.RetireWorld(world);
         PipDisablerCompat.RetireWorld(world);
         AmandsGraphicsCompat.RetireWorld(world);
+        AiLimitCompat.RetireWorld(world);
+        HealingAutoCancelCompat.RetireWorld(world);
+        QuestTrackerCompat.RetireWorld(world);
+        AudioIndicatorsCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();

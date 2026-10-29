@@ -33,7 +33,7 @@ Core version line.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
 - **Version lines:** The published 1.0.2 release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
-  Current development uses Core `1.0.16`; its client requires that minimum. The published 1.0.2 package is unchanged.
+  Current development uses Core `1.0.17`; its client requires that minimum. The published 1.0.2 package is unchanged.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -48,6 +48,10 @@ Core version line.
   - **Manimal's Quick Cancel 2.0.0+** (development Core 1.0.15) — retires pending medical controllers belonging to the old physical body and fences late callbacks without clearing unrelated controllers.
   - **Picture in Picture Disabler 2.1.0+** (development Core 1.0.15) — retires owned optic state and generated mesh caches across replacement while retaining foreign settings and unrelated optics. Native Arena tests with Fontaine FOV Fix 4.1.0 passed two actual scoped deaths and replacement-scope rendering; standalone testing also passed a scoped death and old-cache retirement.
   - **Amand's Graphics 1.8.0+** (development Core 1.0.15, limited) — binds graphics components to the replacement camera, preserving the ON/OFF choice and original scene/light defaults. Factory ON/OFF respawns passed, but the mod's initial Labyrinth scene activation fails before Core replacement. See the limitation below.
+  - **AI Limit 1.9.2+** (development Core 1.0.17) — moves its human-player distance reference from the old body to the replacement, preserving the bot list and distance settings.
+  - **Healing Autocancel, Forge 5.0.1 / plugin 1.1.0+** (development Core 1.0.17) — binds healing cancellation to the replacement health controller and prevents late old-body events from cancelling the current player's treatment. This is a separate integration from Continuous Healing and Quick Cancel.
+  - **Quest Tracker 1.7.0+** (development Core 1.0.17) — refreshes body-bound quest caches without replacing the panel or resetting tracked-quest preferences.
+  - **Audio Accessibility Indicators 2.1.0+** (development Core 1.0.17) — retains the existing directional HUD through a replacement; ordinary raid-end disposal still runs.
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
@@ -85,6 +89,14 @@ prove that timing window. See [remaining body integrations](docs/REMAINING-BODY-
 for exact scenarios, the Amand blocker and outstanding limits. Fast Grenade Throw's
 grenade-priority/input correction is Arena-specific and is not added to Core.
 
+Core 1.0.17 passed two standalone Factory PMC respawns and a subsequent own-Scav
+continuation with AI Limit, Healing Autocancel, Quest Tracker and Audio
+Accessibility Indicators installed. The current player/controller references,
+retained HUD objects, compass rotation and a post-respawn Salewa treatment were
+checked. The test profile had no active quests, so actual quest-objective progress
+was covered by the automated harness rather than by that raid. See
+[standalone compatibility evidence](docs/STANDALONE-COMPAT-20261029.md).
+
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
 **Older ArenaMode builds:** ArenaMode 0.1.3 still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. Use ArenaMode 0.2.0 or newer, which delegates these adapters to Core. Standalone Redeploy does not require ArenaMode.
@@ -103,7 +115,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. The published Redeploy 1.0.2 release requires Core **1.0.13 or newer**; this experimental `feature/pmc-to-scav` client still reports 1.0.2 but requires Core **1.0.16 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. The published Redeploy 1.0.2 release requires Core **1.0.13 or newer**; the current development client still reports 1.0.2 but requires Core **1.0.17 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 

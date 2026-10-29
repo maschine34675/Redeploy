@@ -7,6 +7,26 @@ Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
 Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
 contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
 
+## Unreleased — Standalone body compatibility, Core 1.0.17
+
+- AI Limit 1.9.2+: use the replacement body as the human-player distance origin,
+  retaining bot lists and mod settings.
+- Healing Autocancel (Forge 5.0.1, internal plugin 1.1.0): rebind healing events
+  and isolate delayed events from retired bodies. The previous Continuous Healing
+  and Quick Cancel adapters did not cover this separate mod.
+- Quest Tracker 1.7.0+: rebuild body-bound quest caches while keeping the panel
+  and the user's tracking preferences, including through own-Scav continuation.
+- Audio Accessibility Indicators 2.1.0+: preserve compass rotation across the
+  body handover without suppressing normal raid-end cleanup.
+- These integrations live in shared Core; no ArenaMode installation is required.
+  Newer versions require the expected APIs and receive an unverified-version
+  warning. Ordinary raids and absent mods retain their behavior.
+- Preserve compass updates when a failed living-body replacement restores the
+  original player; another replacement remains possible afterwards.
+- Standalone Factory validation: two PMC respawns, own-Scav continuation,
+  retained HUD/controller ownership and post-respawn healing. See
+  [test scope and limitations](STANDALONE-COMPAT-20261029.md).
+
 ## Unreleased — Own-Scav continuation, Core 1.0.16
 
 - Default-on `RespawnAsScav`: after a PMC death, choose naked PMC respawn or continue once in the same raid as

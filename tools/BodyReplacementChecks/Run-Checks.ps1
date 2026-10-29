@@ -46,8 +46,8 @@ if ($Mutations) {
         },
         @{
             Name = 'same-id-profile'; File = 'BodyReplacementContext.cs'; Case = 'exact-candidate'
-            Before = '!ReferenceEquals(body.Profile, PreviousBody.Profile) || !ReferenceEquals(body.Profile, CurrentGame.Profile)'
-            After = 'body.Profile.Id != PreviousBody.Profile.Id || body.Profile.Id != CurrentGame.Profile.Id'
+            Before = '!ReferenceEquals(body.Profile, _expectedProfile)'
+            After = 'body.Profile.Id != _expectedProfile.Id'
         },
         @{
             Name = 'cancel-leaks-provisional'; File = 'BodyReplacementContext.cs'; Case = 'cancel-first'

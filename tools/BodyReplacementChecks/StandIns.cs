@@ -156,7 +156,8 @@ namespace Redeploy.Core.Compat
     {
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers");
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands];
+        internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators];
         internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
@@ -178,6 +179,42 @@ namespace Redeploy.Core.Compat
         internal static void RetireWorld(EFT.GameWorld world) => Probes.ImpactCue.Retired.Add(world);
     }
     internal static class EnemyMarkersContract { internal const string PluginGuid = "fixture.EnemyMarkers"; }
+    internal static class AiLimitContract { internal const string PluginGuid = "fixture.AiLimit"; }
+    internal static class QuestTrackerContract { internal const string PluginGuid = "fixture.QuestTracker"; }
+    internal static class AudioIndicatorsContract { internal const string PluginGuid = "fixture.AudioIndicators"; }
+    internal static class AiLimitCompat
+    {
+        internal static string GetRejectionReason() => Probes.AiLimit.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.AiLimit.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.AiLimit.Abort();
+        internal static void Tick() => Probes.AiLimit.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.AiLimit.Retired.Add(world);
+    }
+    internal static class HealingAutoCancelCompat
+    {
+        internal const string PluginGuid = "fixture.HealingAutoCancel";
+        internal static string GetRejectionReason() => Probes.HealingAutoCancel.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.HealingAutoCancel.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.HealingAutoCancel.Abort();
+        internal static void Tick() => Probes.HealingAutoCancel.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.HealingAutoCancel.Retired.Add(world);
+    }
+    internal static class QuestTrackerCompat
+    {
+        internal static string GetRejectionReason() => Probes.QuestTracker.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.QuestTracker.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.QuestTracker.Abort();
+        internal static void Tick() => Probes.QuestTracker.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.QuestTracker.Retired.Add(world);
+    }
+    internal static class AudioIndicatorsCompat
+    {
+        internal static string GetRejectionReason() => Probes.AudioIndicators.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.AudioIndicators.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.AudioIndicators.Abort();
+        internal static void Tick() => Probes.AudioIndicators.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.AudioIndicators.Retired.Add(world);
+    }
     internal static class QuickCancelCompat
     {
         internal const string PluginGuid = "fixture.QuickCancel";
