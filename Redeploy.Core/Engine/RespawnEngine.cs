@@ -627,7 +627,7 @@ public static class RespawnEngine
                     {
                         // Never call SetEmptyHands mid hands-animation — that corrupts the
                         // HandsController (documented hard-won lesson in PlayerLives).
-                        CoreLog.LogInfo("Stowing auto-drawn weapon during spawn protection.");
+                        CoreLog.LogDebug("Stowing auto-drawn weapon during spawn protection.");
                         player.SetEmptyHands(null);
                         nextStowAttempt = elapsed + 1.5f;
                     }

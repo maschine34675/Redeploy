@@ -150,7 +150,7 @@ public sealed class NearPositionSpawnSelector : ISpawnSelector
             {
                 var chosen = candidates[result.Chosen];
                 var rejected = NearSpawnPolicy.DescribeRejections(result);
-                CoreLog.LogInfo($"Respawn position on {map}: {Describe(probe.Accepted)}, {chosen.RingMeters:0} m ring around the corpse at {Describe(origin)}"
+                CoreLog.LogDebug($"Respawn position on {map}: {Describe(probe.Accepted)}, {chosen.RingMeters:0} m ring around the corpse at {Describe(origin)}"
                                 + (rejected.Length > 0 ? $"; rejected before it: {rejected}." : "."));
                 return (probe.Accepted, facing);
             }
@@ -166,7 +166,7 @@ public sealed class NearPositionSpawnSelector : ISpawnSelector
                     if (probe.Safe(() => !probe.Blocked(anchor)))
                     {
                         // Expected in tight rooms: the player stood here, so it is inside the map.
-                        CoreLog.LogInfo($"Respawn position on {map}: the corpse's own spot {Describe(anchor)}; no point around it passed ({summary}).");
+                        CoreLog.LogDebug($"Respawn position on {map}: the corpse's own spot {Describe(anchor)}; no point around it passed ({summary}).");
                         return (anchor, facing);
                     }
                     break;

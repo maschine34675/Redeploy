@@ -87,7 +87,7 @@ public static class RespawnService
         try
         {
             deadPlayer.PlayerBody?.UpdatePlayerRenders(EPointOfView.ThirdPerson, deadPlayer.Side);
-            Plugin.ModLogger.LogInfo("Corpse renders switched to third person.");
+            Plugin.ModLogger.LogDebug("Corpse renders switched to third person.");
         }
         catch (Exception ex)
         {
@@ -179,7 +179,7 @@ public static class RespawnService
         var configured = Settings.RespawnCooldownSeconds.Value;
         var deadFor = RespawnSessionState.LastDeathTime >= 0f ? Time.time - RespawnSessionState.LastDeathTime : -1f;
         var cooldown = RespawnCooldown.Remaining(configured, RespawnSessionState.LastDeathTime, Time.time);
-        Plugin.ModLogger.LogInfo(deadFor >= 0f
+        Plugin.ModLogger.LogDebug(deadFor >= 0f
             ? $"Respawn chosen {deadFor:0.0}s after death; cooldown {configured:0.#}s leaves {cooldown:0.0}s."
             : $"Respawn chosen; death time unknown, full cooldown {cooldown:0.0}s.");
 
@@ -201,7 +201,7 @@ public static class RespawnService
             || RespawnSessionState.HasGivenUp
             || game.Status != GameStatus.Started)
         {
-            Plugin.ModLogger.LogInfo("Respawn cancelled: the raid ended during the cooldown.");
+            Plugin.ModLogger.LogDebug("Respawn cancelled: the raid ended during the cooldown.");
             yield break;
         }
 
@@ -273,7 +273,7 @@ public static class RespawnService
             // is the same race the cooldown check above catches, only later: a KillcamReplay
             // death replay may hold the respawn until it has faded out. No death screen either:
             // one on a stopping raid would only paint a Killed panel over the real exit status.
-            Plugin.ModLogger.LogInfo($"Respawn cancelled: {failure.Message}");
+            Plugin.ModLogger.LogDebug($"Respawn cancelled: {failure.Message}");
         }
         else if (failure != null)
         {

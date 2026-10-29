@@ -342,7 +342,7 @@ public static class DeathInterception
             if (!Any(d => d.ShouldHoldBlackScreen()))
                 return true;
 
-            CoreLog.LogInfo("Blocked raid-end black screen while respawn is pending.");
+            CoreLog.LogDebug("Blocked raid-end black screen while respawn is pending.");
             return false;
         }
     }

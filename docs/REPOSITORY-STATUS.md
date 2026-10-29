@@ -1,5 +1,15 @@
 # Redeploy repository status
 
+## Native release check and logging — 2026-10-29
+
+- Development remains Client/Server 1.0.2 with Core 1.0.17.
+- Nine routine messages moved to Debug; safety, protection and real failures
+  remain visible. All 469 client/Core tests passed.
+- Fresh GPU-2 checks cover naked PMC respawn, original corpse-weapon recovery and
+  firing, second-death give-up, own-Scav extraction and native partial transfer.
+  GPU-1 separately covers Core through Arena modes and a final TDM respawn/end.
+  See [candidate identities and exact limits](RELEASE-CHECK-20261029.md).
+
 ## Own-Scav validation and consolidation — 2026-10-28
 
 - Current checkout: `D:\SPT41\Development\Redeploy`, branch `main`.

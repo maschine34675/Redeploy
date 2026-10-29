@@ -5,6 +5,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
+| [Native release check, 2026-10-29](RELEASE-CHECK-20261029.md) | Standalone respawn, corpse loot, own-Scav transfer, exact candidates and quieter routine logging. |
 | [Own-Scav continuation](PMC-TO-SCAV.md) | Regular-Scav choice, native loot transfer, recovery limits and dated validation. |
 | [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Historical blockers, implemented fixes, acceptance and remaining publication work. |
 | [Own-Scav recovery validation](PMC-SCAV-RECOVERY-20261028.md) | Prepared/Active interruption, partial-transfer restart, BTR/preflight controls and isolated-host restoration. |

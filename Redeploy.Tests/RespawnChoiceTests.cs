@@ -173,7 +173,7 @@ public sealed class RespawnChoiceTests
             public sealed class WaitForSeconds { public WaitForSeconds(float seconds) { } }
             public static class RespawnCooldown { public static float Remaining(float configured, float death, float now) => configured; }
             public static class Plugin { public static Logger ModLogger = new Logger(); }
-            public sealed class Logger { public void LogInfo(object value) { } public void LogWarning(object value) { } public void LogError(object value) { } }
+            public sealed class Logger { public void LogDebug(object value) { } public void LogInfo(object value) { } public void LogWarning(object value) { } public void LogError(object value) { } }
             public interface ISpawnSelector { }
             public sealed class NearPositionSpawnSelector : ISpawnSelector { public NearPositionSpawnSelector(Func<float> position, Func<float> distance) { } }
             public sealed class InfilSpawnSelector : ISpawnSelector { public InfilSpawnSelector(ISpawnSelector fallback) { } }

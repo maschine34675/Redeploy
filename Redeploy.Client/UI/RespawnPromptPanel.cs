@@ -41,7 +41,7 @@ public class RespawnPromptPanel : MonoBehaviour
         _visible = true;
         _windowRect = default;
         SetGameCursor(true);
-        Plugin.ModLogger.LogInfo("Respawn prompt shown.");
+        Plugin.ModLogger.LogDebug("Respawn prompt shown.");
     }
 
     public void Hide()
