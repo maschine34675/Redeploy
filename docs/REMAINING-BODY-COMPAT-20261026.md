@@ -176,7 +176,7 @@ Native evidence resides in sibling ArenaMode
 The screenshot was visually inspected: the scene is visible, HUD health reads
 390/440 and MCX magazine ammo 27/30. HUD Breakout followed both replacements;
 this required no Core HUD adapter. The full item/HUD observations are in
-[Arena's report](../../ArenaMode/docs/REMAINING-MOD-COMPAT-20261026.md).
+[Arena's report](https://github.com/maschine34675/ArenaMode/blob/v0.4.0/docs/REMAINING-MOD-COMPAT-20261026.md).
 
 Candidate 3's scoped replacements changed body/camera
 `-1775842/-1775988` to `-1805414/-1805560`, then `-1815380/-1815526`.

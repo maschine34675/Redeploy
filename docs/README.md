@@ -8,7 +8,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | [Redeploy 1.1.0 release notes](RELEASE-1.1.0.md) | Own-Scav continuation and recovery, optional integrations, Core 1.0.17 and update instructions. |
 | [Native release check, 2026-10-29](RELEASE-CHECK-20261029.md) | Standalone respawn, corpse loot, own-Scav transfer, exact candidates and quieter routine logging. |
 | [Own-Scav continuation](PMC-TO-SCAV.md) | Regular-Scav choice, native loot transfer, recovery limits and dated validation. |
-| [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Historical blockers, implemented fixes, acceptance and remaining publication work. |
+| [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Historical (2026-10-28, superseded by the 1.1.0 release): blockers, implemented fixes and acceptance. |
 | [Own-Scav recovery validation](PMC-SCAV-RECOVERY-20261028.md) | Prepared/Active interruption, partial-transfer restart, BTR/preflight controls and isolated-host restoration. |
 | [Redeploy 1.0.2 release notes](RELEASE-1.0.2.md) | Client/Server 1.0.2, bundled Core 1.0.13, optional integrations and update instructions. |
 | [Respawn API](RESPAWN-API.md) | Core's observer contract, design decisions, implementation history and verification notes. German; dated status entries supersede earlier proposals. |

@@ -1,5 +1,10 @@
 # PMC-to-Scav release readiness — 2026-10-28
 
+> **Historical.** This report is a snapshot of 2026-10-28, before publication.
+> It is superseded by the 1.1.0 release; see [RELEASE-1.1.0.md](RELEASE-1.1.0.md).
+> Statements below about the published package or about no public release
+> describe that date.
+
 Original reviewed source: `7037a25` on `feature/pmc-to-scav`, against `main` at
 `ecf40d9`. The findings below describe that source, including its historical
 line references. Candidate `6a1332d` now implements their corrections.

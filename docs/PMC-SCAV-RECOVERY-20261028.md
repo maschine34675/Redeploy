@@ -1,5 +1,9 @@
 # Own-Scav recovery validation — 2026-10-28
 
+> **Historical.** This report is a snapshot of 2026-10-28, before publication.
+> It is superseded by the 1.1.0 release; see [RELEASE-1.1.0.md](RELEASE-1.1.0.md).
+> "This is not a public release" below describes that date.
+
 Status: scoped native acceptance passed; test-host restoration and consolidation
 are recorded below. This is not a public release.
 

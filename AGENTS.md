@@ -342,7 +342,7 @@ noch ungetestet.
   1,3 m Höhe gegen `PlayerStaticCollisionsMask` ohne Terrain, Türen, Interactive, Stehkapsel.
 - Neue Entscheidungen gehören in `NearSpawnPolicy` (rein, getestet), Weltabfragen in die `Probe`-Klasse.
   `Resolve` darf nicht werfen: Es läuft nach dem Abbau des alten Körpers.
-- Diagnose: eine Logzeile `Respawn position on <map>: ...` mit Leiche, Ziel und Ablehnungsgründen.
+- Diagnose: eine Logzeile `Respawn position on <map>: ...` mit Leiche, Ziel und Ablehnungsgründen (Debug; bei Ausweichpfaden Warning).
 - Konstruktoren von `NearPositionSpawnSelector`/`InfilSpawnSelector` nicht ändern: Die installierten
   Treiber binden sie (Old-Binary-Check).
 - Playtest 14.09. 17:32 auf Core 1.0.1: Platzierungen gültig, keine Fehler. Danach (`cdf2fca`, Client

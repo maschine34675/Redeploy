@@ -394,7 +394,7 @@ disk, while the running server kept the previous Server DLL locked. The user
 will stop/restart that host themselves; no raid was interrupted. The server
 update must finish synchronizing while both game and server are closed before
 the feature is used there. This deployment records disk hashes, not a new
-running-process or raid acceptance test. The feature branch remains unmerged
+running-process or raid acceptance test. As of 2026-10-28 the feature branch remained unmerged
 and unpublished.
 
 ## Fresh-raid transit registration correction — 2026-10-28
