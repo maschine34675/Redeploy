@@ -180,7 +180,10 @@ internal static class RecoilLegacyCompat
         if (_contract == null || __0 is not LocalPlayer body || !body.IsYourPlayer) return true;
         if (Scope.Find(body) != null) return false; // Includes delayed callbacks on retired bodies from a prior world.
         var game = Game; var world = World;
-        if (!Exact(game, world) || !ReferenceEquals(body.GameWorld, world) || !ReferenceEquals(body.Profile, game.Profile)) return true;
+        // An own-Scav replacement body carries the replacement profile while game.Profile still
+        // is the old one (the engine commits it after creation), so both profiles qualify.
+        if (!Exact(game, world) || !ReferenceEquals(body.GameWorld, world)
+            || !ReplacementProfileRule.CarriesRaidProfile(body.Profile, game.Profile, BodyReplacementContext.ExpectedProfile)) return true;
         try
         {
             // Initial ordinary spawning remains entirely upstream. Only a candidate

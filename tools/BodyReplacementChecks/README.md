@@ -21,8 +21,8 @@ builds then use `--no-restore --disable-build-servers -p:UseSharedCompilation=fa
 Outputs stay below this tool's `bin`, `obj`, and `artifacts` folders. The sibling
 ArenaMode checkout is required for the production scope file.
 
-The 19 scenarios cover absent optional mods, admission of every adapter family,
-exact game/world/profile/body ownership (including same-ID impostors), preparation
+The 20 scenarios cover absent optional mods, admission of every adapter family,
+exact game/world/profile/body ownership (including same-ID impostors and the own-Scav replacement profile), preparation
 order, cancellation before any success and after a successful replacement,
 post-construction contract faults, stale candidates, cached UI reads, current and
 late old-world pumps, missed-end and normal raid cleanup, ordinary second raids,
@@ -34,16 +34,16 @@ instance becomes available. The fixture does not bypass the real assembly check.
 The Unity stand-in models destroyed-object equality so managed tombstones and
 world disposal are checked even when Unity would compare the object to null.
 
-`-Mutations` additionally compiles nine deliberately damaged copies into unique
+`-Mutations` additionally compiles ten deliberately damaged copies into unique
 configurations. Each must build successfully and then fail the targeted behavior
-assertion: profile-object identity, provisional lease removal, committed lease
+assertion: profile-object identity, the expected replacement profile, provisional lease removal, committed lease
 preservation, no-mod inactivity, legacy Arena double hooks, ordinary-bot exclusion, null-scope quarantine,
 late-world disposal, and current-world cleanup. A compile error or missing success token never counts as
 a killed mutant. The script hashes all three production sources before and after
 the run and retains bounded test/build logs plus hashes in `artifacts/<run-id>`.
 
 Success tokens are `BODY_REPLACEMENT_CHECKS_PASSED`,
-`BODY_REPLACEMENT_MUTATIONS_PASSED killed=9`, and the final
+`BODY_REPLACEMENT_MUTATIONS_PASSED killed=10`, and the final
 `BODY_REPLACEMENT_COMPOSITION_VERIFIED`. Individual cases can be selected on the
 built executable with `--case <name>`; unknown names fail rather than skip checks.
 

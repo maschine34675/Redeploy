@@ -35,7 +35,7 @@ Invoke-DotnetChecked -Arguments @('build', $project, '--no-restore', '--disable-
 $baselineDll = Join-Path $PSScriptRoot 'bin/Release/net10.0/BodyReplacementChecks.dll'
 Invoke-DotnetChecked -Arguments @($baselineDll) -LogName 'baseline-checks.log'
 $baselineText = Get-Content -LiteralPath (Join-Path $artifacts 'baseline-checks.log') -Raw
-if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=19 assertions=\d+') { throw 'Baseline success token missing' }
+if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=20 assertions=\d+') { throw 'Baseline success token missing' }
 
 if ($Mutations) {
     $mutants = @(
@@ -48,6 +48,11 @@ if ($Mutations) {
             Name = 'same-id-profile'; File = 'BodyReplacementContext.cs'; Case = 'exact-candidate'
             Before = '!ReferenceEquals(body.Profile, _expectedProfile)'
             After = 'body.Profile.Id != _expectedProfile.Id'
+        },
+        @{
+            Name = 'expected-profile-ignores-replacement'; File = 'BodyReplacementContext.cs'; Case = 'profile-replacement'
+            Before = '_expectedProfile = replacementProfile ?? oldBody.Profile;'
+            After = '_expectedProfile = oldBody.Profile; // MUTANT: the Scav replacement profile is never expected.'
         },
         @{
             Name = 'cancel-leaks-provisional'; File = 'BodyReplacementContext.cs'; Case = 'cancel-first'

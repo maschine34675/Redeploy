@@ -374,6 +374,62 @@ internal static class SourceGuards
             .Any(child => child is ThrowStatementSyntax || child is ThrowExpressionSyntax);
     }
 
+    // ------------------------------------------------------------------ replacement profile
+
+    /// <summary>
+    /// Compat adapters that ask whether a body carries "the game's profile". During an own-Scav
+    /// replacement the engine creates the body with the replacement profile and commits
+    /// <c>game.Profile</c> only afterwards, so such a comparison is false for the very body being
+    /// built. A read of <c>game.Profile</c> (<c>_game</c>, <c>Game</c>, <c>CurrentGame</c>) is allowed only inside
+    /// <c>ReplacementProfileRule.CarriesRaidProfile(...)</c>, in <c>BodyReplacementContext</c> (the owner
+    /// of the expected profile), or in the listed methods that run after the commit.
+    /// </summary>
+    public static readonly (string File, string Method)[] CommittedGameProfileReaders =
+    {
+        ("HealingAutoCancelCompat.cs", "Current"),      // Never true while IsCreating: also needs game.LocalPlayer == body.
+        ("PipDisablerCompat.cs", "ObserveLocalOptic"),  // Same: Game.LocalPlayer must already be the observed body.
+    };
+
+    public static List<string> GameProfileReadsOutsideTheReplacementRule(IEnumerable<(string Path, string Source)> files)
+    {
+        var violations = new List<string>();
+        foreach (var (path, source) in files)
+        {
+            var parts = path.Split('\\', '/');
+            var file = parts[^1];
+            if (!parts.Contains("Compat") || file == "BodyReplacementContext.cs")
+                continue;
+
+            var root = Parse(source, path).GetCompilationUnitRoot();
+            foreach (var node in root.DescendantNodes())
+            {
+                string receiver;
+                if (node is MemberAccessExpressionSyntax access && access.Name.Identifier.ValueText == "Profile")
+                    receiver = LastName(access.Expression);
+                else if (node is MemberBindingExpressionSyntax binding && binding.Name.Identifier.ValueText == "Profile")
+                    receiver = LastName(node.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
+                        .First(chain => chain.WhenNotNull.Span.Contains(node.Span)).Expression);
+                else
+                    continue;
+
+                if (receiver == null || !Regex.IsMatch(receiver, @"^(_?[gG]ame|CurrentGame)$"))
+                    continue;
+                if (node.Ancestors().OfType<InvocationExpressionSyntax>().Any(call =>
+                        call.Expression is MemberAccessExpressionSyntax rule
+                        && rule.Name.Identifier.ValueText == "CarriesRaidProfile"
+                        && LastName(rule.Expression) == "ReplacementProfileRule"))
+                    continue;
+                var method = node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText
+                             ?? node.Ancestors().OfType<PropertyDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText;
+                if (CommittedGameProfileReaders.Contains((file, method)))
+                    continue;
+
+                violations.Add($"{file}:{node.GetLocation().GetLineSpan().StartLinePosition.Line + 1} ({method})");
+            }
+        }
+        return violations;
+    }
+
     // ------------------------------------------------------------------ shared
 
     private static SyntaxTree Parse(string source, string path = "")

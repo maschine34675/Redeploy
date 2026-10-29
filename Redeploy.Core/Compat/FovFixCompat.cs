@@ -225,7 +225,7 @@ internal static class FovFixCompat
         // than let the foreign prefix redirect its work to the old global MainPlayer.
         if (Scope.Enabled && BodyReplacementContext.IsCreating && body.IsYourPlayer
             && BodyReplacementContext.OwnsRaid(Game, World) && ReferenceEquals(body.GameWorld, World)
-            && ReferenceEquals(body.Profile, Game?.Profile)) return false;
+            && ReplacementProfileRule.CarriesRaidProfile(body.Profile, Game?.Profile, BodyReplacementContext.ExpectedProfile)) return false;
         return true;
     }
 

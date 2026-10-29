@@ -56,9 +56,9 @@ public static class Program
         Singleton<IBotGame>.Instance=loading?null:g;
         return g;
     }
-    static LocalPlayer Body(LocalGame g,float weapon=5)
+    static LocalPlayer Body(LocalGame g,float weapon=5,Profile profile=null)
     {
-        var b=new GameObject().Attach(new LocalPlayer{GameWorld=g.GameWorld,Profile=g.Profile});
+        var b=new GameObject().Attach(new LocalPlayer{GameWorld=g.GameWorld,Profile=profile??g.Profile});
         g.GameWorld.MainPlayer=b; // Native Init registers before the foreign postfix.
         var hands=b.gameObject.Attach(new Player.FirearmController{Template=new(){Value=weapon}});
         b.HandsController=hands;
@@ -72,15 +72,16 @@ public static class Program
         Calculate(b,(Player.FirearmController)b.HandsController); // The ordinary original weapon draw.
         return b;
     }
-    static void Prepare(LocalGame g)
+    static void Prepare(LocalGame g,Profile replacement=null)
     {
-        BodyReplacementContext.Begin(g,g.LocalPlayer);
+        BodyReplacementContext.Begin(g,g.LocalPlayer,replacement);
         RecoilLegacyCompat.Prepare(g,g.LocalPlayer);
         RecoilLegacyCompat.CompletePreparation();
         RespawnApi.IsReplacing=true;
     }
-    static void Complete(LocalGame g,LocalPlayer old,LocalPlayer next)
+    static void Complete(LocalGame g,LocalPlayer old,LocalPlayer next,Profile replacement=null)
     {
+        if(replacement!=null)g.Profile=replacement; // The engine commits the profile right before LocalPlayer.
         g.LocalPlayer=next;RespawnApi.Replace(old,next);RespawnApi.IsReplacing=false;BodyReplacementContext.EndAttempt();
     }
     static void Fail(Player old)
@@ -262,11 +263,47 @@ public static class Program
         Rejects(()=>RecoilLegacyCompat.Prepare(g,body),"adoption without exact engine operation rejected");
         BodyReplacementContext.Begin(g,body);g.GameWorld.MainPlayer=new LocalPlayer();
         Rejects(()=>RecoilLegacyCompat.Prepare(g,body),"adoption with wrong authoritative main rejected");
-        f=Reset();g=Game();body=Initial(g);Prepare(g);nextBody=Body(g);nextBody.Profile=new object();
+        f=Reset();g=Game();body=Initial(g);Prepare(g);nextBody=Body(g);nextBody.Profile=new Profile();
         Need(!BodyReplacementContext.TryOwnCandidate(nextBody),"different profile never receives Core construction lease");
         Need(!RecoilLegacyScope.MayCreate(true,false,true,false)&&!RecoilLegacyScope.MayCreate(true,true,false,false)
             &&!RecoilLegacyScope.MayCreate(false,true,true,false)&&!RecoilLegacyScope.MayCreate(true,true,true,true),
             "new components require exact active candidate and adopted prior body");
+
+        // Own-Scav continuation: the engine creates the body with the replacement profile and only
+        // afterwards commits game.Profile, so body.Profile differs from game.Profile during Init.
+        f=Reset();g=Game();body=Initial(g);var pmcProfile=g.Profile;var scavProfile=new Profile();
+        oldRecoil=body.GetComponent(f.Recoil);oldCamera=body.GetComponent(f.Camera);
+        Prepare(g,scavProfile);var scavBody=Body(g,21,scavProfile);
+        Need(!ReferenceEquals(scavBody.Profile,g.Profile),"replacement body is created under the old game profile");
+        try{Init(scavBody);}catch(Exception){Need(false,"own-Scav replacement initialized without singleton destruction");}
+        Need(!scavBody.gameObject.Destroyed&&!body.gameObject.Destroyed,"own-Scav replacement and old body survive foreign initialization");
+        var scavRecoil=scavBody.GetComponent(f.Recoil);var scavCamera=scavBody.GetComponent(f.Camera);
+        Need(scavRecoil!=null&&scavCamera!=null&&ReferenceEquals(f.Instance(f.Recoil),scavRecoil)&&ReferenceEquals(f.Instance(f.Camera),scavCamera),
+            "own-Scav replacement owns both singleton guards");
+        Need(!((Behaviour)oldRecoil).enabled&&!((Behaviour)oldCamera).enabled&&!((Behaviour)scavRecoil).enabled,"own-Scav handover stays pending until commit");
+        Update(scavRecoil);Need(scavBody.Rotations==0,"uncommitted own-Scav body cannot rotate");
+        Complete(g,body,scavBody,scavProfile);
+        Need(oldRecoil.Destroyed&&oldCamera.Destroyed&&!body.gameObject.Destroyed,"own-Scav commit releases only the old components");
+        Update(scavRecoil);Need(scavBody.Rotations==1&&((Vector2)f.Cache("CurrentRecoilVals")).x==21,"own-Scav recoil active after commit");
+        // Scav back to PMC is the same operation with the PMC profile as replacement.
+        Prepare(g,pmcProfile);var backBody=Body(g,22,pmcProfile);Init(backBody);Complete(g,scavBody,backBody,pmcProfile);
+        Need(!backBody.gameObject.Destroyed&&scavRecoil.Destroyed&&ReferenceEquals(f.Instance(f.Recoil),backBody.GetComponent(f.Recoil)),
+            "own-Scav chain back to the PMC profile keeps the new body");
+
+        // A replacement that fails after the Scav body initialized restores the old pair.
+        f=Reset();g=Game();body=Initial(g);oldRecoil=body.GetComponent(f.Recoil);oldCamera=body.GetComponent(f.Camera);
+        var failedScav=new Profile();Prepare(g,failedScav);failed=Body(g,23,failedScav);Init(failed);g.GameWorld.MainPlayer=body;Fail(body);RecoilLegacyCompat.Tick();
+        Need(ReferenceEquals(f.Instance(f.Recoil),oldRecoil)&&ReferenceEquals(f.Instance(f.Camera),oldCamera)&&!failed.gameObject.Destroyed&&!body.gameObject.Destroyed,
+            "failed own-Scav replacement restores the old pair");
+
+        // A local player body that is not the engine's replacement keeps the foreign initializer untouched,
+        // even while a replacement is being created.
+        f=Reset();g=Game();body=Initial(g);oldRecoil=body.GetComponent(f.Recoil);oldCamera=body.GetComponent(f.Camera);
+        Prepare(g,new Profile());var stranger=Body(g,31,new Profile());
+        try{Init(stranger);}catch(Exception){Need(false,"unrelated profile body stays outside the recoil handoff");}
+        Need(stranger.gameObject.Destroyed&&!body.gameObject.Destroyed&&ReferenceEquals(f.Instance(f.Recoil),oldRecoil)
+            &&ReferenceEquals(f.Instance(f.Camera),oldCamera)&&((Behaviour)oldRecoil).enabled&&((Behaviour)oldCamera).enabled,
+            "unrelated profile body leaves the old recoil pair untouched");
 
         f=Reset("1.10.0");Need(RecoilLegacyCompat.GetRejectionReason()!=null,"old release rejected");
         f=Reset("2.1.0");Need(RecoilLegacyCompat.GetRejectionReason()==null,"forward API validated version admitted");
