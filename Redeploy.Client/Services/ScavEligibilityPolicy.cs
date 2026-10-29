@@ -44,6 +44,7 @@ internal static class ScavEligibilityPolicy
     public const string BtrDeliveryReason = "BTR item delivery is unavailable while continuing as your own Scav. Extract to transfer your loot to the stash.";
     public const string TransitArrivalReason = "Scav continuation is unavailable in a raid you reached by map transit.";
     public const string ServerUnreachableReason = "The server did not answer the Scav check (connection problem, or an older Redeploy server mod).";
+    public const string SetupFailedReason = "The Scav check could not start.";
 
     // The raid the server registered for a Scav continuation is a fresh one; StartRejection
     // refuses an arrival from another map by its nonzero count or non-empty history. Mirror that
@@ -71,6 +72,14 @@ internal static class ScavEligibilityPolicy
     /// <summary>Wraps a pre-change blocker: a held or unsafe continuation is never a clean state to return from.</summary>
     public static InvalidOperationException Block(string reason, bool continuationHeld)
         => continuationHeld ? new InvalidOperationException(reason) : new ScavPreparationRefused(reason);
+
+    /// <summary>
+    /// The read-only setup of the probe failed (cost item, raid settings, request). Only an
+    /// InvalidOperationException carries text meant for the player (the missing cost item); any other
+    /// exception (a null reference, a bad argument) gets a fixed sentence, and the caller logs it.
+    /// </summary>
+    public static ScavPreparationRefused SetupRefusal(Exception failure)
+        => new ScavPreparationRefused(failure is InvalidOperationException ? failure.Message : SetupFailedReason, null, failure);
 
     // Only a failure that provably changed nothing may hand the PMC choices back. Every other
     // failure keeps the old fail-closed ending, so a respawn item or a half-ended session is

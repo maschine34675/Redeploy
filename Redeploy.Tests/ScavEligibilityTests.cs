@@ -108,6 +108,7 @@ public sealed class ScavEligibilityTests
     [InlineData("transit-rule")]
     [InlineData("decision")]
     [InlineData("probe-failure")]
+    [InlineData("setup-refusal")]
     public void PolicyTablesMatchTheServerRulesAndKeepRawCodesOutOfPlayerText(string scenario)
         => Assert.Equal("PASS", Run(Harness.Value, "policy", scenario));
 
@@ -261,6 +262,29 @@ public sealed class ScavEligibilityTests
     {
         var mutant = BuildHarness(source => source.Replace("OperationCanceledException when !raidCanContinue => failure,", "OperationCanceledException => failure,"));
         Assert.NotEqual("PASS", Run(mutant, "policy", "probe-failure"));
+    }
+
+    [Fact]
+    public void RaidEndedClearingTheRespawnFlagNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => System.Text.RegularExpressions.Regex.Replace(source,
+            @"NotifyUnavailable\(failure\?\.Message\);\s*return;", "NotifyUnavailable(failure?.Message); break;"));
+        Assert.NotEqual("PASS", Run(mutant, "prepare-failure", "raid-ended"));
+    }
+
+    [Fact]
+    public void RawSetupExceptionTextNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("failure is InvalidOperationException ? failure.Message : SetupFailedReason", "failure.Message"));
+        Assert.NotEqual("PASS", Run(mutant, "policy", "setup-refusal"));
+    }
+
+    [Fact]
+    public void PrepareWordsASetupFailureThroughThePolicy()
+    {
+        var prepare = PrepareSource();
+        Assert.Contains("ScavEligibilityPolicy.SetupRefusal(ex)", prepare);
+        Assert.DoesNotContain("new ScavPreparationRefused(ex.Message", prepare);
     }
 
     [Fact]
@@ -672,7 +696,8 @@ public sealed class ScavEligibilityTests
                     bool reopen = scenario == "refused", end = scenario is "committed" or "server-refusal-after-body" or "no-respawns-left";
                     Check(RespawnPromptPanel.Instance.Shows == (reopen ? 1 : 0), "Prompt visibility mismatch: " + scenario);
                     Check(RespawnService.GiveUps == (end ? 1 : 0), "End-raid mismatch: " + scenario);
-                    Check(!RespawnSessionState.IsRespawnInProgress, "Respawn flag left set.");
+                    // A raid that is already stopping keeps the flag (owner-cleanup guard) until the GameEnd reset.
+                    Check(RespawnSessionState.IsRespawnInProgress == (scenario == "raid-ended"), "Respawn flag mismatch: " + scenario);
                     Check(PmcScavSession.Notices == 1, "Missing player notice.");
                     Check(!PmcScavSession.LastNotice.Contains("no-issued-pmc-raid"), "Raw server code reached the player.");
                     if (end || scenario == "raid-ended") Check(PmcScavSession.LastNotice.Contains("will end normally"), "Wrong ending notice.");
@@ -736,6 +761,18 @@ public sealed class ScavEligibilityTests
                         Check(server is ScavPreparationRefused { Code: "no-issued-pmc-raid" }, "A server refusal lost its code.");
                         var held = new ScavPreparationRefused("The required respawn item is no longer available.");
                         Check(ReferenceEquals(ScavEligibilityPolicy.ClassifyProbeFailure(held, true), held), "An existing refusal was rewrapped.");
+                        return;
+                    }
+                    if (scenario == "setup-refusal") {
+                        // Only the cost item's own InvalidOperationException is worded for the player.
+                        var missing = new InvalidOperationException("The required respawn item is no longer available.");
+                        var known = ScavEligibilityPolicy.SetupRefusal(missing);
+                        Check(known.Message == missing.Message && ReferenceEquals(known.InnerException, missing), "The cost item text was lost.");
+                        foreach (Exception raw in new Exception[] { new NullReferenceException(), new ArgumentNullException("game"), new KeyNotFoundException("x") }) {
+                            var refusal = ScavEligibilityPolicy.SetupRefusal(raw);
+                            Check(refusal.Message == ScavEligibilityPolicy.SetupFailedReason, "Raw exception text reached the player: " + raw.GetType().Name);
+                            Check(ReferenceEquals(refusal.InnerException, raw), "The cause was dropped.");
+                        }
                         return;
                     }
                     throw new Exception("Unknown policy scenario");

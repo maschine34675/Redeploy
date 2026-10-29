@@ -213,7 +213,11 @@ error.
   a nonzero `transitionCount` or a visited-locations list that is not empty marks a
   transit arrival. No transition data at all is a fresh raid. The Scav button is
   then disabled with the reason "Scav continuation is unavailable in a raid you
-  reached by map transit." The PMC choices work as in any other raid.
+  reached by map transit." The PMC choices work as in any other raid. This check
+  is a best-effort early disable: the server also refuses a request that carries a
+  transition object even with count 0 and an empty history (`incoming-transition`),
+  which the client cannot see in the start response. The probe below is the
+  authoritative catch and returns the PMC choices with a readable reason either way.
 - **A new read-only server question precedes any local change.** Before the client
   ends the dead PMC's statistics session (which adds that life's experience and a
   Killed session to the profile and cannot be reopened) it posts
@@ -252,6 +256,13 @@ failure handling with the real `RespawnService`/`PmcScavSession` code, code map,
 ordering of the probe before the session end, planted-bug controls) and
 `ScavProbeTests` (server probe against the same states as `prepare`, nothing
 journaled or written).
+
+**Evidence limit.** The probe route, the refusal re-offer and the client-side
+transit detection (which reads `LocalRaidSettings.transition`) have so far been
+verified by these unit tests and the offline harness stubs only; none of them has
+run natively in a game yet. The "Refused preparation" row and the extended
+"Preflight" row of the table below are therefore requirements, not recorded
+evidence.
 
 ## Acceptance checks
 

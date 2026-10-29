@@ -315,8 +315,10 @@ public static class RespawnService
                 GiveUpRaid();
                 break;
             default:
+                // The raid is already stopping: like the cooldown check, leave IsRespawnInProgress
+                // set so the owner-cleanup guard stays armed; the GameEnd reset clears it.
                 PmcScavSession.NotifyUnavailable(failure?.Message);
-                break;
+                return;
         }
         RespawnSessionState.IsRespawnInProgress = false;
     }

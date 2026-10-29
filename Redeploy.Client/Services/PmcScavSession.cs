@@ -242,7 +242,12 @@ internal static class PmcScavSession
                 ["initialServerId"] = LocalGameAccessor.GetLocalRaidSettings(game).serverId,
             });
         }
-        catch (Exception ex) { failure = new ScavPreparationRefused(ex.Message, null, ex); }
+        catch (Exception ex)
+        {
+            if (ex is not InvalidOperationException)
+                Plugin.ModLogger.LogWarning($"Scav check setup failed: {ex}");
+            failure = ScavEligibilityPolicy.SetupRefusal(ex);
+        }
         if (failure != null)
         {
             completed(null, null, failure);
