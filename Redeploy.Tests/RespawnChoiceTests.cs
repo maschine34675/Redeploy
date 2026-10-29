@@ -21,6 +21,7 @@ public sealed class RespawnChoiceTests
     [InlineData("scav-from-scav")]
     [InlineData("captured-pmc-choice")]
     [InlineData("captured-scav-choice")]
+    [InlineData("scav-prepare-failure")]
     public void ExplicitChoiceUsesTheProductionEntryPointsAndCoroutine(string scenario)
         => Assert.Equal("PASS", Run(Harness.Value, scenario, false));
 
@@ -195,24 +196,29 @@ public sealed class RespawnChoiceTests
                 }
             }
             public static partial class PmcScavSession {
-                public static bool ForcedSwitched; public static string UnavailableReason;
+                public static bool ForcedSwitched, FailPrepare; public static string UnavailableReason;
                 public static int Preparations, Completions, Cancellations;
                 private static Profile selected;
                 public static bool HasSwitched(LocalGame game) => ForcedSwitched || (selected != null && ReferenceEquals(game.Profile, selected));
                 public static IEnumerator Prepare(LocalGame game, Action<Profile, ISpawnSelector, Exception> completed) {
-                    Preparations++; selected = new Profile(); selected.Info.Side = EPlayerSide.Savage;
+                    Preparations++;
+                    if (FailPrepare) { completed(null, null, new InvalidOperationException("prepare failed")); yield break; }
+                    selected = new Profile(); selected.Info.Side = EPlayerSide.Savage;
                     completed(selected, new ScavSpawnSelector(), null); yield break;
                 }
                 public static void CompleteSwitch(LocalGame game) { Completions++; }
                 public static void CancelPrepared() { Cancellations++; selected = null; }
                 public static void NotifyUnavailable(string message) { }
-                public static void Reset() { ForcedSwitched = false; selected = null; UnavailableReason = null; Preparations = Completions = Cancellations = 0; }
+                public static void Reset() { ForcedSwitched = FailPrepare = false; selected = null; UnavailableReason = null; Preparations = Completions = Cancellations = 0; }
             }
             public static partial class RespawnService {
                 public static bool RequiredItem = true;
                 private static bool HasRequiredRespawnItem(LocalPlayer player) => RequiredItem;
                 private static void ConsumeRespawnItem(LocalPlayer player) { }
                 public static void GiveUpRaid() { RespawnSessionState.HasGivenUp = true; }
+                // The failure handling itself is exercised against the real code in ScavEligibilityTests.
+                public static int Handled;
+                private static void HandleScavPreparationFailure(LocalGame game, Exception failure) { Handled++; RespawnSessionState.IsRespawnInProgress = false; }
             }
             public static class BodyReplacementCompatibility {
                 public static string CachedRejectionReason => null;
@@ -233,7 +239,7 @@ public sealed class RespawnChoiceTests
                 RespawnSessionState.RespawnsUsed = 0; RespawnSessionState.LastDeathTime = 99;
                 RespawnSessionState.RespawnItemAvailable = true; RespawnSessionState.SelectedSpawnMode = RespawnLocationMode.NearCorpse;
                 RespawnPromptPanel.Instance.Hides = 0; RespawnService.RequiredItem = true;
-                RespawnEngine.Request = null; PmcScavSession.Reset();
+                RespawnEngine.Request = null; PmcScavSession.Reset(); RespawnService.Handled = 0;
                 bool reject = false; var location = RespawnLocationMode.NearCorpse;
                 switch (scenario) {
                     case "pmc-enabled-near": break;
@@ -248,6 +254,7 @@ public sealed class RespawnChoiceTests
                     case "scav-from-scav": scav = true; game.Profile.Info.Side = EPlayerSide.Savage; reject = true; break;
                     case "captured-pmc-choice": Settings.RespawnAsScav.Value = false; break;
                     case "captured-scav-choice": scav = true; break;
+                    case "scav-prepare-failure": scav = true; PmcScavSession.FailPrepare = true; break;
                     case "missing-game": RespawnSessionState.CurrentLocalGame = null; reject = true; break;
                     case "mod-disabled": Settings.Enabled.Value = false; reject = true; break;
                     case "no-pending-choice": RespawnSessionState.PendingRespawnChoice = false; reject = true; break;
@@ -285,6 +292,12 @@ public sealed class RespawnChoiceTests
                 game.Pump();
                 if (scenario == "raid-ended-while-waiting") {
                     Check(RespawnEngine.Request == null && PmcScavSession.Preparations == 0, "Stopped raid still replaced the body."); return;
+                }
+                if (scenario == "scav-prepare-failure") {
+                    // A failed preparation never reaches the engine and always goes through the failure handler.
+                    Check(PmcScavSession.Preparations == 1 && RespawnService.Handled == 1 && RespawnEngine.Request == null
+                        && RespawnSessionState.RespawnsUsed == 0 && !RespawnSessionState.IsRespawnInProgress, "Prepare failure was not routed to the handler.");
+                    return;
                 }
                 var request = RespawnEngine.Request;
                 Check(request != null && RespawnSessionState.RespawnsUsed == 1, "Choice did not finish exactly one replacement.");

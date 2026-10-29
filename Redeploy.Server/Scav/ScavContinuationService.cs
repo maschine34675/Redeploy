@@ -162,6 +162,62 @@ public sealed partial class ScavContinuationService
         return null;
     }
 
+    /// <summary>
+    /// The registration-, journal- and Scav-state half of preparation, shared with <see cref="Probe"/>.
+    /// Read-only: nothing is reserved or written.
+    /// </summary>
+    private ScavResponse? RejectUnpreparable(MongoId sessionId, string id, string initialServerId,
+        out string issued, out PmcData pmc, out PmcData scav)
+    {
+        issued = ""; pmc = null!; scav = null!;
+        if (!issuedRaids.TryGetValue(id, out var registered) || registered != initialServerId)
+        {
+            logger.Debug($"Redeploy Scav preparation rejected: no-issued-pmc-raid; registration={(registered == null ? "missing" : "identity-mismatch")}.");
+            return ScavResponse.Rejected("no-issued-pmc-raid");
+        }
+        issued = registered;
+        if (journal.ForSession(id).Any(ScavStatePolicy.BlocksNewRaid))
+            return ScavResponse.Rejected("previous-continuation-pending");
+        var full = saves.GetProfile(sessionId);
+        pmc = full.CharacterData!.PmcData!;
+        var regular = full.CharacterData.ScavData;
+        if (regular?.Info?.Side != "Savage" || regular.Id == null || regular.Id == pmc.Id || regular.Id != pmc.Savage
+            || regular.Inventory?.Equipment == null || regular.Info.SavageLockTime == null
+            || !double.IsFinite(regular.Info.SavageLockTime.Value))
+            return ScavResponse.Rejected("regular-scav-unavailable");
+        scav = regular;
+        if (regular.Info.SavageLockTime >= Now)
+            return new ScavResponse { Error = "scav-cooldown", AvailableAt = regular.Info.SavageLockTime };
+        return null;
+    }
+
+    /// <summary>
+    /// Answers whether <see cref="Prepare"/> would get past registration and Scav state for this raid. The
+    /// client asks before it ends the dead PMC's statistics session, because after that point it can no
+    /// longer return to the ordinary PMC respawn. Nothing is journaled, reserved or generated.
+    /// </summary>
+    public async Task<ScavResponse> Probe(MongoId sessionId, ScavProbeRequest request, CancellationToken ct)
+    {
+        string id = sessionId.ToString();
+        await Gate(id).WaitAsync(ct);
+        try
+        {
+            if (request.InitialServerId.Length > 256 || !IsPmcServer(request.InitialServerId))
+                return ScavResponse.Rejected("invalid-prepare-request");
+            // Any earlier reservation for this raid makes a new preparation fail with a conflict.
+            if (journal.Read(id, request.InitialServerId) != null)
+                return ScavResponse.Rejected("continuation-already-prepared");
+            return RejectUnpreparable(sessionId, id, request.InitialServerId, out _, out _, out _)
+                ?? new ScavResponse { Success = true, Phase = "Probe" };
+        }
+        catch (Exception ex)
+        {
+            logger.Warning($"Redeploy Scav probe refused ({ex.GetType().Name}); ordinary PMC settlement remains available.");
+            return ScavResponse.Rejected("prepare-unavailable");
+        }
+        finally { Gate(id).Release(); }
+    }
+
     public async Task<ScavResponse> Prepare(MongoId sessionId, ScavPrepareRequest request, CancellationToken ct)
     {
         string id = sessionId.ToString();
@@ -187,22 +243,8 @@ public sealed partial class ScavContinuationService
                     return ScavResponse.Rejected("prepare-expired");
                 return PreparedResponse(existing);
             }
-            if (!issuedRaids.TryGetValue(id, out var issued) || issued != request.InitialServerId)
-            {
-                logger.Debug($"Redeploy Scav preparation rejected: no-issued-pmc-raid; registration={(issued == null ? "missing" : "identity-mismatch")}.");
-                return ScavResponse.Rejected("no-issued-pmc-raid");
-            }
-            if (journal.ForSession(id).Any(ScavStatePolicy.BlocksNewRaid))
-                return ScavResponse.Rejected("previous-continuation-pending");
-            var full = saves.GetProfile(sessionId);
-            var pmc = full.CharacterData!.PmcData!;
-            var scav = full.CharacterData.ScavData;
-            if (scav?.Info?.Side != "Savage" || scav.Id == null || scav.Id == pmc.Id || scav.Id != pmc.Savage
-                || scav.Inventory?.Equipment == null || scav.Info.SavageLockTime == null
-                || !double.IsFinite(scav.Info.SavageLockTime.Value))
-                return ScavResponse.Rejected("regular-scav-unavailable");
-            if (scav.Info.SavageLockTime >= Now)
-                return new ScavResponse { Error = "scav-cooldown", AvailableAt = scav.Info.SavageLockTime };
+            var unpreparable = RejectUnpreparable(sessionId, id, request.InitialServerId, out var issued, out var pmc, out var scav);
+            if (unpreparable != null) return unpreparable;
             var frozen = Parse<EndLocalRaidRequestData>(frozenJson);
             if (frozen.ServerId != issued || frozen.Results?.Result != ExitStatus.KILLED
                 || frozen.Results.Profile?.Id != pmc.Id || frozen.Results.Profile?.Info?.Side == "Savage"
@@ -213,7 +255,7 @@ public sealed partial class ScavContinuationService
             ScavInventoryPolicy.Carried(frozenPmc, templates.Items.ContainsKey);
             var scavItems = ScavInventoryPolicy.Carried(scav, templates.Items.ContainsKey);
             var pmcIds = pmc.Inventory!.Items!.Select(x => x.Id.ToString()).ToHashSet(StringComparer.Ordinal);
-            if (scavItems.Any(x => pmcIds.Contains(x.Id.ToString())) || pmcIds.Contains(scav.Inventory.Equipment.ToString()!))
+            if (scavItems.Any(x => pmcIds.Contains(x.Id.ToString())) || pmcIds.Contains(scav.Inventory!.Equipment.ToString()!))
                 return ScavResponse.Rejected("regular-scav-shares-pmc-items");
             frozenPmc.InsuredItems = cloner.Clone(pmc.InsuredItems ?? []);
             if (request.PmcInsuranceCaptured)
@@ -226,7 +268,7 @@ public sealed partial class ScavContinuationService
             var entry = new ScavJournalEntry
             {
                 SessionId = id, InitialServerId = issued, PmcProfileId = pmc.Id!.Value.ToString(),
-                ScavProfileId = scav.Id!.Value.ToString(), ScavEquipmentId = scav.Inventory.Equipment.Value.ToString(),
+                ScavProfileId = scav.Id!.Value.ToString(), ScavEquipmentId = scav.Inventory!.Equipment!.Value.ToString(),
                 RequestId = request.ClientRequestId, PrepareHash = hash,
                 Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
                 ScavJson = scavJson, GenerationHash = ScavJournal.Hash(scavJson),

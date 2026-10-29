@@ -222,7 +222,8 @@ public sealed class RegularScavContinuationTests
             .Single(node => node.Identifier.ValueText == "Prepare").ToFullString();
         var fragments = new[] {
             "if (UnavailableReason != null)",
-            "cost = new ScavRespawnItemCost(dead)",
+            "cost = new ScavRespawnItemCost(game.LocalPlayer)",
+            "Post(\"probe\"",
             "cost.CaptureWithoutCostItem(",
             "task = Post(\"prepare\", body)",
             "RequireSuccess(response)",
