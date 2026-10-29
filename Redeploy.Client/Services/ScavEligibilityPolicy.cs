@@ -85,6 +85,22 @@ internal static class ScavEligibilityPolicy
             : ScavPrepareFailureAction.EndRaid;
     }
 
+    /// <summary>
+    /// What the probe answer (phase 2 of Prepare) means for the failure the caller completes with. The
+    /// probe changes nothing, so every failure of it is a refusal that may hand the PMC choices back,
+    /// including a timed-out request (HttpClient reports it as a TaskCanceledException, which is an
+    /// OperationCanceledException). Only a cancellation while the raid itself is gone stays a plain
+    /// cancellation: the native end owns what happens then.
+    /// </summary>
+    public static Exception ClassifyProbeFailure(Exception failure, bool raidCanContinue)
+        => failure switch
+        {
+            ScavPreparationRefused => failure,
+            ScavServerRefusal refusal => new ScavPreparationRefused(refusal.Message, refusal.Code, refusal),
+            OperationCanceledException when !raidCanContinue => failure,
+            _ => new ScavPreparationRefused(ServerUnreachableReason, null, failure),
+        };
+
     public static string DescribeServerCode(string code) => code switch
     {
         "scav-cooldown" => "Your regular Scav is still on cooldown. No Scav or equipment was consumed.",
@@ -92,11 +108,13 @@ internal static class ScavEligibilityPolicy
             + "That happens in a raid reached by map transit and after a server restart during the raid.",
         "previous-continuation-pending" => "An earlier Scav continuation or loot transfer is still unresolved. Finish it from the main menu first.",
         "regular-scav-unavailable" => "Your regular Scav is not available on the server.",
+        "regular-scav-shares-pmc-items" => "Your regular Scav and your PMC share items on the server, so a Scav continuation cannot be prepared.",
         "continuation-already-prepared" or "continuation-closed" or "prepare-expired" or "recovery-already-requested"
             or "unknown-continuation" or "body-already-activated" or "generation-mismatch"
-            => "A Scav continuation for this raid was already used or closed.",
-        "invalid-prepare-request" or "invalid-frozen-pmc-death" or "regular-scav-shares-pmc-items" or "profile-too-large"
-            or "prepare-unavailable" or "control-unavailable"
+            => "A Scav continuation for this raid was already prepared, used or closed.",
+        "invalid-prepare-request" or "prepare-unavailable" or "control-unavailable"
+            => "The server could not check this raid for a Scav continuation.",
+        "invalid-frozen-pmc-death" or "profile-too-large"
             => "The server could not verify your PMC death for a Scav continuation.",
         _ => "The server refused the Scav continuation.",
     };

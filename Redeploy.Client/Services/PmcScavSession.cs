@@ -255,10 +255,13 @@ internal static class PmcScavSession
             RequireSuccess(probe.GetAwaiter().GetResult());
             if (!CanContinue(game))
                 throw new OperationCanceledException("The raid ended while checking the Scav.");
+            // The item stayed on the corpse while the answer was awaited; the session end below is the
+            // first thing that depends on it, so a vanished item is still a clean refusal here.
+            if (!cost.IsStillHeld)
+                throw new ScavPreparationRefused("The required respawn item is no longer available.");
         }
-        catch (ScavServerRefusal ex) { failure = new ScavPreparationRefused(ex.Message, ex.Code, ex); }
-        catch (OperationCanceledException ex) { failure = ex; }
-        catch (Exception ex) { failure = new ScavPreparationRefused(ScavEligibilityPolicy.ServerUnreachableReason, null, ex); }
+        // A timed-out or cancelled request is a refusal too, unless the raid itself is gone.
+        catch (Exception ex) { failure = ScavEligibilityPolicy.ClassifyProbeFailure(ex, CanContinue(game)); }
         if (failure != null)
         {
             completed(null, null, failure);

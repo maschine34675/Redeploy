@@ -192,7 +192,18 @@ public sealed partial class ScavContinuationService
     }
 
     /// <summary>
-    /// Answers whether <see cref="Prepare"/> would get past registration and Scav state for this raid. The
+    /// The account's regular Scav must not own any item id (or its equipment root) that the PMC also owns;
+    /// the Scav's carried graph must be valid. Read-only, shared by <see cref="Probe"/> and <see cref="Prepare"/>.
+    /// </summary>
+    private bool SharesItemsWithPmc(PmcData pmc, PmcData scav)
+    {
+        var scavItems = ScavInventoryPolicy.Carried(scav, templates.Items.ContainsKey);
+        var pmcIds = pmc.Inventory!.Items!.Select(x => x.Id.ToString()).ToHashSet(StringComparer.Ordinal);
+        return scavItems.Any(x => pmcIds.Contains(x.Id.ToString())) || pmcIds.Contains(scav.Inventory!.Equipment.ToString()!);
+    }
+
+    /// <summary>
+    /// Answers whether <see cref="Prepare"/> would get past registration, Scav state and item ownership for this raid. The
     /// client asks before it ends the dead PMC's statistics session, because after that point it can no
     /// longer return to the ordinary PMC respawn. Nothing is journaled, reserved or generated.
     /// </summary>
@@ -207,8 +218,12 @@ public sealed partial class ScavContinuationService
             // Any earlier reservation for this raid makes a new preparation fail with a conflict.
             if (journal.Read(id, request.InitialServerId) != null)
                 return ScavResponse.Rejected("continuation-already-prepared");
-            return RejectUnpreparable(sessionId, id, request.InitialServerId, out _, out _, out _)
-                ?? new ScavResponse { Success = true, Phase = "Probe" };
+            var unpreparable = RejectUnpreparable(sessionId, id, request.InitialServerId, out _, out var pmc, out var scav);
+            if (unpreparable != null) return unpreparable;
+            // Account state alone decides this one, so ask before the client ends the dead PMC's session.
+            if (SharesItemsWithPmc(pmc, scav))
+                return ScavResponse.Rejected("regular-scav-shares-pmc-items");
+            return new ScavResponse { Success = true, Phase = "Probe" };
         }
         catch (Exception ex)
         {
@@ -253,9 +268,7 @@ public sealed partial class ScavContinuationService
                 return ScavResponse.Rejected("invalid-frozen-pmc-death");
             var frozenPmc = frozen.Results!.Profile!;
             ScavInventoryPolicy.Carried(frozenPmc, templates.Items.ContainsKey);
-            var scavItems = ScavInventoryPolicy.Carried(scav, templates.Items.ContainsKey);
-            var pmcIds = pmc.Inventory!.Items!.Select(x => x.Id.ToString()).ToHashSet(StringComparer.Ordinal);
-            if (scavItems.Any(x => pmcIds.Contains(x.Id.ToString())) || pmcIds.Contains(scav.Inventory!.Equipment.ToString()!))
+            if (SharesItemsWithPmc(pmc, scav))
                 return ScavResponse.Rejected("regular-scav-shares-pmc-items");
             frozenPmc.InsuredItems = cloner.Clone(pmc.InsuredItems ?? []);
             if (request.PmcInsuranceCaptured)

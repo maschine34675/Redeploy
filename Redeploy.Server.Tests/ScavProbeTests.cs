@@ -35,6 +35,8 @@ public sealed partial class ScavContinuationTests
     [InlineData("pending-continuation", "previous-continuation-pending")]
     [InlineData("same-raid-reserved", "continuation-already-prepared")]
     [InlineData("foreign-server-id", "invalid-prepare-request")]
+    [InlineData("scav-shares-pmc-item", "regular-scav-shares-pmc-items")]
+    [InlineData("scav-shares-pmc-root", "regular-scav-shares-pmc-items")]
     public async Task ProbeRejectsExactlyWhatPrepareWouldRejectAndChangesNothing(string state, string expected)
     {
         using var f = new Fixture();
@@ -73,6 +75,20 @@ public sealed partial class ScavContinuationTests
                 break;
             case "foreign-server-id":
                 raid = "factory4_day.Savage 123456789";
+                break;
+            case "scav-shares-pmc-item":
+            {
+                f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = raid });
+                // A PMC item that carries the id of one of the account Scav's items (valid graph, so only the overlap fails).
+                var scavInventory = f.Full.CharacterData!.ScavData!.Inventory!;
+                var scavItem = Item(scavInventory.Equipment!.Value.ToString(), "FirstPrimaryWeapon");
+                scavInventory.Items!.Add(scavItem);
+                f.Pmc.Inventory!.Items!.Add(new() { Id = scavItem.Id, Template = Template, ParentId = f.Pmc.Inventory.Equipment.ToString(), SlotId = "Backpack" });
+                break;
+            }
+            case "scav-shares-pmc-root":
+                f.Service.RegisterStart(f.Session, new() { PlayerSide = "pmc" }, new() { ServerId = raid });
+                f.Pmc.Inventory!.Items!.Add(new() { Id = f.Full.CharacterData!.ScavData!.Inventory!.Equipment!.Value, Template = Template, ParentId = f.Pmc.Inventory.Equipment.ToString(), SlotId = "Backpack" });
                 break;
             default: throw new ArgumentOutOfRangeException(nameof(state));
         }

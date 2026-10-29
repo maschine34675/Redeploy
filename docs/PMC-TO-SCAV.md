@@ -186,15 +186,19 @@ error.
   ends the dead PMC's statistics session (which adds that life's experience and a
   Killed session to the profile and cannot be reopened) it posts
   `/redeploy/pmc-scav/probe` with the raid's server ID. The server answers with the
-  registration, pending-continuation and Scav-state half of `prepare` (the code is
-  shared) and journals, reserves and generates nothing. `prepare` itself is
-  unchanged and still validates everything again.
+  registration, pending-continuation, Scav-state and item-ownership half of `prepare`
+  (the code is shared; an account Scav that shares item ids with the PMC is
+  refused here too) and journals, reserves and generates nothing. `prepare` itself
+  is unchanged and still validates everything again.
 - **A refusal before any change returns to the PMC choices.** If the pre-checks
-  fail, the probe is refused, the server does not answer or the raid ended, the
-  dead PMC, its profile, the respawn-cost item and the Scav are untouched. While
-  the raid still runs and a PMC respawn is possible, the prompt is shown again;
-  the Scav button stays disabled with the reason for the rest of that death, and a
-  warning notification says that the PMC respawn choices are still open.
+  fail, the probe is refused, the server does not answer (a connection error or a
+  timed-out request counts as no answer), the respawn-cost item is gone from the
+  corpse or the raid ended, the dead PMC, its profile, the respawn-cost item and
+  the Scav are untouched. While the raid still runs and a PMC respawn is possible,
+  the prompt is shown again; the Scav button stays disabled with the reason for
+  the rest of that death, and a warning notification says that the PMC respawn
+  choices are still open. When the raid itself ended meanwhile, no prompt is
+  shown and the native ending runs.
 - **Anything after that point keeps the old fail-closed ending.** Once the session
   has been ended (the `prepare` request and everything after it, including the
   cost commit and the respawn pipeline) a failure ends the raid as a normal PMC
@@ -206,7 +210,10 @@ error.
   `previous-continuation-pending`, `regular-scav-unavailable`, `scav-cooldown`
   and the reservation-state codes) are mapped to plain sentences. The raw code is
   kept in the BepInEx log line (`[server code: ...]`) but not shown to the player.
-  A new test fails if the server adds a code without a client text.
+  The probe codes are worded for the probe too (it never looks at the PMC death).
+  A new test fails if `ScavContinuationService` adds a `Rejected("...")` or
+  `Error = "..."` code without a client text; codes built any other way, or in
+  other server files, are not covered by that scan.
 
 Tests: `ScavEligibilityTests` (client eligibility rule, pre-change classification,
 failure handling with the real `RespawnService`/`PmcScavSession` code, code map,

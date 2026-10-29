@@ -107,6 +107,7 @@ public sealed class ScavEligibilityTests
     [InlineData("codes")]
     [InlineData("transit-rule")]
     [InlineData("decision")]
+    [InlineData("probe-failure")]
     public void PolicyTablesMatchTheServerRulesAndKeepRawCodesOutOfPlayerText(string scenario)
         => Assert.Equal("PASS", Run(Harness.Value, "policy", scenario));
 
@@ -136,12 +137,16 @@ public sealed class ScavEligibilityTests
     [InlineData("probe-missing")]
     [InlineData("probe-after-session-end")]
     [InlineData("refusal-after-session-end")]
+    [InlineData("classifier-missing")]
+    [InlineData("cost-recheck-missing")]
     public void PreSessionEndOrderNegativeControlsAreDetected(string mutation)
     {
         var source = PrepareSource();
         var mutant = mutation switch
         {
             "probe-missing" => source.Replace("Post(\"probe\"", "Post(\"probe-renamed\""),
+            "classifier-missing" => source.Replace("ClassifyProbeFailure(", "ClassifyProbeFailureRenamed("),
+            "cost-recheck-missing" => source.Replace("cost.IsStillHeld", "true"),
             "probe-after-session-end" => source.Replace("Post(\"probe\"", "Post(\"probe-renamed\"")
                 .Replace("dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null);",
                     "dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null); var late = Post(\"probe\", null);"),
@@ -159,7 +164,12 @@ public sealed class ScavEligibilityTests
         int probe = prepare.IndexOf("Post(\"probe\"", StringComparison.Ordinal);
         int sessionEnd = prepare.IndexOf("dead.OnGameSessionEnd(", StringComparison.Ordinal);
         int refusal = prepare.IndexOf("new ScavPreparationRefused(", StringComparison.Ordinal);
-        if (probe < 0 || sessionEnd < 0 || probe > sessionEnd || refusal < 0 || refusal > sessionEnd)
+        // The probe answer is classified (a timeout is a refusal, not an end) and the held cost item is
+        // re-checked, both after the question and before the session end.
+        int classify = prepare.IndexOf("ClassifyProbeFailure(", StringComparison.Ordinal);
+        int held = prepare.IndexOf("cost.IsStillHeld", StringComparison.Ordinal);
+        if (probe < 0 || sessionEnd < 0 || probe > sessionEnd || refusal < 0 || refusal > sessionEnd
+            || classify < probe || classify > sessionEnd || held < probe || held > sessionEnd)
             return false;
         return !prepare[sessionEnd..].Contains("ScavPreparationRefused") && !prepare[sessionEnd..].Contains("Block(");
     }
@@ -244,6 +254,13 @@ public sealed class ScavEligibilityTests
         var mutant = BuildHarness(source => source.Replace("continuationHeld ? new InvalidOperationException(reason) : new ScavPreparationRefused(reason)",
             "new ScavPreparationRefused(reason)"));
         Assert.NotEqual("PASS", Run(mutant, "recheck", "prepared"));
+    }
+
+    [Fact]
+    public void TimedOutProbeEndsRaidNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("OperationCanceledException when !raidCanContinue => failure,", "OperationCanceledException => failure,"));
+        Assert.NotEqual("PASS", Run(mutant, "policy", "probe-failure"));
     }
 
     [Fact]
@@ -701,6 +718,24 @@ public sealed class ScavEligibilityTests
                         Check(ScavEligibilityPolicy.AfterPrepareFailure(false, true, false) == end, "A changed state must end.");
                         foreach (var refused in new[] { true, false }) foreach (var possible in new[] { true, false })
                             Check(ScavEligibilityPolicy.AfterPrepareFailure(refused, false, possible) == none, "A finished raid owns its own ending.");
+                        return;
+                    }
+                    if (scenario == "probe-failure") {
+                        // A timed-out request (HttpClient: TaskCanceledException) changed nothing and must give the PMC choices back.
+                        var timeout = new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+                        var timedOut = ScavEligibilityPolicy.ClassifyProbeFailure(timeout, true);
+                        Check(timedOut is ScavPreparationRefused && ReferenceEquals(timedOut.InnerException, timeout), "A timed-out probe is not a refusal.");
+                        Check(timedOut.Message == ScavEligibilityPolicy.ServerUnreachableReason, "Timeout lost the readable reason.");
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(timedOut is ScavPreparationRefused, true, true) == ScavPrepareFailureAction.ReopenPmcChoices, "A timed-out probe ends the raid.");
+                        Check(ScavEligibilityPolicy.ClassifyProbeFailure(new OperationCanceledException("cancelled"), true) is ScavPreparationRefused, "A cancelled probe in a running raid is not a refusal.");
+                        // The raid itself is gone: the native end owns the rest, no refusal and no re-offer.
+                        var ended = new OperationCanceledException("The raid ended while checking the Scav.");
+                        Check(ReferenceEquals(ScavEligibilityPolicy.ClassifyProbeFailure(ended, false), ended), "A cancellation after the raid ended was reclassified.");
+                        Check(ScavEligibilityPolicy.ClassifyProbeFailure(new System.Net.Http.HttpRequestException("connection refused"), true) is ScavPreparationRefused, "A transport failure is not a refusal.");
+                        var server = ScavEligibilityPolicy.ClassifyProbeFailure(new ScavServerRefusal("no-issued-pmc-raid"), true);
+                        Check(server is ScavPreparationRefused { Code: "no-issued-pmc-raid" }, "A server refusal lost its code.");
+                        var held = new ScavPreparationRefused("The required respawn item is no longer available.");
+                        Check(ReferenceEquals(ScavEligibilityPolicy.ClassifyProbeFailure(held, true), held), "An existing refusal was rewrapped.");
                         return;
                     }
                     throw new Exception("Unknown policy scenario");
