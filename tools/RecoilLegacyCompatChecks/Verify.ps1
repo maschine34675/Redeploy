@@ -23,6 +23,8 @@ $taskHashes = @{}
 foreach ($taskName in $taskNames) { $taskHashes[$taskName] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $taskProduction $taskName)).Hash }
 $taskContext = Join-Path $taskProduction 'BodyReplacementContext.cs'
 $taskContextHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $taskContext).Hash
+$taskRule = Join-Path $taskProduction 'ReplacementProfileRule.cs'
+$taskRuleHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $taskRule).Hash
 $taskRows = [Collections.Generic.List[object]]::new()
 $taskRunId = [guid]::NewGuid().ToString('N')
 if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'obj\project.assets.json') -PathType Leaf)) {
@@ -53,7 +55,9 @@ $taskMutations = @(
     @{name='foreign-cache-adoption';file='RecoilLegacyCompat.cs';from='if (Exists(cached) && !ReferenceEquals(cached.GetComponent<Player>(), oldBody))';to='if (false && Exists(cached) && !ReferenceEquals(cached.GetComponent<Player>(), oldBody))';expected='unrelated cached controller rejects before construction'},
     @{name='canceled-adoption';file='RecoilLegacyCompat.cs';from='if (_newAdoption) Scope.AbandonAdoption(_preparedLease, _adoptedHands);';to='if (_newAdoption) { /* negative control: forget cancellation */ }';expected='canceled adoption leaves ordinary component updates untouched True'},
     @{name='unfiltered-world-cleanup';file='RecoilLegacyCompat.cs';from='RetireWhere(l => ReferenceEquals(l.World, world));';to='RetireWhere(_ => true);';expected='unrelated world cleanup is inert'},
-    @{name='unfiltered-world-cache';file='RecoilLegacyCompat.cs';from='if (owner != null && included(owner)) _contract.ClearCache();';to='if (owner != null) _contract.ClearCache();';expected='unrelated world cleanup is inert'}
+    @{name='unfiltered-world-cache';file='RecoilLegacyCompat.cs';from='if (owner != null && included(owner)) _contract.ClearCache();';to='if (owner != null) _contract.ClearCache();';expected='unrelated world cleanup is inert'},
+    @{name='game-profile-only';file='RecoilLegacyCompat.cs';from='ReplacementProfileRule.CarriesRaidProfile(body.Profile, game.Profile, BodyReplacementContext.ExpectedProfile)';to='ReferenceEquals(body.Profile, game.Profile)';expected='own-Scav replacement and old body survive foreign initialization'},
+    @{name='profile-gate-removed';file='RecoilLegacyCompat.cs';from='!ReplacementProfileRule.CarriesRaidProfile(body.Profile, game.Profile, BodyReplacementContext.ExpectedProfile)';to='false';expected='unrelated profile body stays outside the recoil handoff'}
 )
 foreach ($taskMutation in $taskMutations) {
     $taskCopy = Join-Path $taskEvidence $taskMutation.name
@@ -65,10 +69,11 @@ foreach ($taskMutation in $taskMutations) {
     Set-Content -LiteralPath $taskFile -Value $taskSource.Replace($taskMutation.from,$taskMutation.to)
     Invoke-Check $taskMutation.name $taskCopy $taskMutation.expected
 }
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $taskContext).Hash -ne $taskContextHash) {
+if (((Get-FileHash -Algorithm SHA256 -LiteralPath $taskContext).Hash -ne $taskContextHash) -or ((Get-FileHash -Algorithm SHA256 -LiteralPath $taskRule).Hash -ne $taskRuleHash)) {
     throw 'Shared construction context changed during verification; rerun against a stable revision.'
 }
 $taskHashes['BodyReplacementContext.cs'] = $taskContextHash
+$taskHashes['ReplacementProfileRule.cs'] = $taskRuleHash
 Invoke-Check 'final-baseline' $taskProduction ''
 foreach ($taskName in $taskNames) {
     if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $taskProduction $taskName)).Hash -ne $taskHashes[$taskName]) {
@@ -77,4 +82,4 @@ foreach ($taskName in $taskNames) {
 }
 $taskHashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $taskEvidence 'production-sha256.json')
 $taskRows | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $taskEvidence 'results.json')
-Write-Output ("Recoil Legacy baseline and nine behavioral mutants verified: " + $taskEvidence)
+Write-Output ("Recoil Legacy baseline and eleven behavioral mutants verified: " + $taskEvidence)

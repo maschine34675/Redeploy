@@ -10,6 +10,7 @@
     <Compile Include="$(ProductionRoot)/RecoilLegacyContract.cs" Link="Production/Contract.cs" />
     <Compile Include="$(ProductionRoot)/RecoilLegacyScope.cs" Link="Production/Scope.cs" />
     <Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/ReplacementProfileRule.cs" Link="Production/ReplacementProfileRule.cs" />
     <Reference Include="Mono.Cecil"><HintPath>D:/SPT41/BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
   </ItemGroup>
 </Project>

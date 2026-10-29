@@ -75,6 +75,38 @@ PitFireTeam process death before the raid-stop handler disposes their registry.
 The callback is still attached if bot rebind throws, so failed-rewire recovery
 can end the raid.
 
+## Optional-mod handover for the Scav switch
+
+The engine builds the Scav body with the replacement profile and assigns
+`game.Profile` only after the body was created and validated. While the body is
+built, `body.Profile` therefore differs from `game.Profile`. Optional-mod adapters
+that decide during construction must accept the profile the active replacement
+expects (`BodyReplacementContext.ExpectedProfile`) and not only the game's current
+one; `ReplacementProfileRule.CarriesRaidProfile` is that single rule. Recoil
+Rework Legacy and Fontaine FOV Fix compared against `game.Profile` alone in 1.1.0,
+so the Scav body was never handed over to them. By the decompiled mod and the
+harness model, the Recoil singletons would then have stayed with the PMC corpse and
+the mod's own `Awake` would have destroyed the new player object; this was never
+observed in the game. For FOV Fix the foreign scale callback would have run against
+the old main player. This is fixed after 1.1.0 (Core 1.0.18). Both mods are verified
+offline only for the Scav switch (table below). A source guard
+(`SourceGuardTests`) now fails the test suite if any Compat adapter
+reads `game.Profile` for a body under construction outside that rule.
+
+How each optional mod's handover is verified for the Scav switch:
+
+| Mod | Evidence for the Scav switch |
+|---|---|
+| Recoil Rework Legacy 2.0.0+ | Harness only (`tools/RecoilLegacyCompatChecks`, production adapter against the pinned published DLL): a Scav-profile body created under the PMC game profile keeps its player object and owns both singletons, old components are released at commit, a failed replacement restores the old pair, an unrelated profile is left alone, PMC-to-Scav-to-PMC chains. Not run natively with the Scav switch. |
+| Fontaine FOV Fix 4.1.0+ | The shared rule and the context (`tools/BodyReplacementChecks` case `profile-replacement`, unit tests, source guard). The adapter's own construction-time guard has no Unity-free harness. Not run natively with the Scav switch. |
+| AI Limit, Healing Autocancel, Quest Tracker, Audio Accessibility Indicators | Native own-Scav run of 2026-10-29 (`STANDALONE-COMPAT-20261029.md`) plus their harnesses. |
+| All other optional integrations | No decision depends on `game.Profile` (audited in source; the guard above keeps it so). They run the same shared handover as for a same-profile respawn and were verified natively or by harness only for ordinary respawns, not with the Scav switch. |
+
+Adapters that read `body.Profile` (Quest Tracker quest data, Radar wishlist) use
+the new body's own profile, which is correct for the Scav. Healing Autocancel and
+PiP Disabler compare `game.Profile` only after the commit, together with
+`game.LocalPlayer == body`, so they never apply to a body under construction.
+
 ## Failure and recovery limits
 
 - A map must provide native Scav spawns and exits. BTR/transit item deliveries

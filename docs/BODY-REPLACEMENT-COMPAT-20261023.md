@@ -28,7 +28,7 @@ protection. These are optional integrations, not dependencies. The frozen
 
 | Mod | General Core behavior |
 |---|---|
-| Recoil Rework Legacy 2.0.0+ | Transfer singleton recoil/camera components before the replacement's `Awake`; refresh the actual equipped firearm cache; fence retired updates. Failure recovery can restore ownership even to the still-dead original body. Never destroy a player's GameObject. |
+| Recoil Rework Legacy 2.0.0+ | Transfer singleton recoil/camera components before the replacement's `Awake`; refresh the actual equipped firearm cache; fence retired updates. Failure recovery can restore ownership even to the still-dead original body. Never destroy a player's GameObject. The handover also applies to the own-Scav body, which is built with the replacement profile before the game commits it (see [PMC-TO-SCAV.md](PMC-TO-SCAV.md)). |
 | Continuous Load Ammo 1.2.0+ | Adopt the initial loading controller; retire and rebind it on the exact replacement; isolate disposal, movement limits and asynchronous completion by physical controller/inventory/task. |
 | Continuous Healing 1.6.3+ | Keep upstream behavior for the current living local player; prevent retired-body start/cancel/effect-removal callbacks from operating on the successor. Unrelated ordinary bots remain upstream. |
 

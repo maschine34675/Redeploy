@@ -27,6 +27,7 @@ internal static class Program
         ("cancel-first", CancelFirst),
         ("cancel-prior", CancelPrior),
         ("exact-candidate", ExactCandidate),
+        ("profile-replacement", ProfileReplacement),
         ("created-fault", CreatedFault),
         ("stale-candidate", StaleCandidate),
         ("cached-ui", CachedUi),
@@ -379,6 +380,42 @@ internal static class Program
         Check(BodyReplacementContext.OwnsBody(current), "Exact candidate not leased");
         current.GameWorld = new GameWorld();
         Check(!BodyReplacementContext.OwnsBody(current), "Pooled body reused in another world retained authority");
+        BodyReplacementCompatibility.EndAttempt();
+    }
+
+    // Own-Scav continuation: the engine creates the body with the replacement profile and commits
+    // game.Profile only after validation, so adapters deciding during creation need the expected
+    // profile from the context rather than the game's (Recoil Legacy and FOV Fix did not).
+    private static void ProfileReplacement()
+    {
+        Install();
+        var raid = NewRaid();
+        var original = raid.Game.Profile;
+        var scav = new Profile { Id = "replacement-profile-id" };
+        BodyReplacementCompatibility.Prepare(raid.Game, raid.Body, scav);
+        Same(scav, BodyReplacementContext.ExpectedProfile, "The context must expose the replacement profile of an own-Scav continuation");
+        var keepsOldProfile = new LocalPlayer { GameWorld = raid.World, Profile = original, IsYourPlayer = true };
+        raid.World.MainPlayer = keepsOldProfile;
+        Check(!BodyReplacementContext.TryOwnCandidate(keepsOldProfile), "A body that kept the old profile was accepted as the Scav replacement");
+        var unrelated = new LocalPlayer { GameWorld = raid.World, Profile = new Profile { Id = "replacement-profile-id" }, IsYourPlayer = true };
+        raid.World.MainPlayer = unrelated;
+        Check(!BodyReplacementContext.TryOwnCandidate(unrelated), "A same-ID impostor profile was accepted as the Scav replacement");
+        var fresh = new LocalPlayer { GameWorld = raid.World, Profile = scav, IsYourPlayer = true };
+        raid.World.MainPlayer = fresh;
+        Same(original, raid.Game.Profile, "The game must still hold the old profile while the replacement is created");
+        Check(BodyReplacementContext.TryOwnCandidate(fresh), "The replacement body carrying the replacement profile was rejected");
+        BodyReplacementCompatibility.ValidateCreated(fresh);
+        raid.Game.Profile = scav;
+        raid.Game.LocalPlayer = fresh;
+        Check(BodyReplacementContext.TryOwnCandidate(fresh) && BodyReplacementContext.OwnsBody(fresh), "The replacement body lost ownership after the profile commit");
+        BodyReplacementCompatibility.EndAttempt();
+        Same(null, BodyReplacementContext.ExpectedProfile, "The expected profile must not outlive the replacement attempt");
+
+        ResetFixture();
+        Install();
+        var ordinary = NewRaid();
+        BodyReplacementCompatibility.Prepare(ordinary.Game, ordinary.Body);
+        Same(ordinary.Body.Profile, BodyReplacementContext.ExpectedProfile, "An ordinary respawn expects the old body's profile");
         BodyReplacementCompatibility.EndAttempt();
     }
 

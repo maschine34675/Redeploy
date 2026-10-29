@@ -241,6 +241,60 @@ public class SourceGuardTests
         Assert.NotEmpty(SourceGuards.FreecamEnableSites(new[] { ("faulted.cs", faulted) }).Unguarded);
     }
 
+    // ---------------------------------------------------------------- replacement profile
+
+    [Fact]
+    public void AdaptersNeverTreatTheGamesProfileAsTheOnlyProfileOfABodyUnderConstruction()
+    {
+        var violations = SourceGuards.GameProfileReadsOutsideTheReplacementRule(CoreSources());
+        Assert.True(violations.Count == 0,
+            "An own-Scav body is built with the replacement profile before game.Profile changes. Use ReplacementProfileRule.CarriesRaidProfile:\n"
+            + string.Join("\n", violations));
+        // A guard over zero reads proves nothing: the rule and the audited post-commit readers must still be there.
+        var sources = CoreSources();
+        Assert.Contains(sources, s => s.Path.EndsWith("RecoilLegacyCompat.cs") && s.Source.Contains("ReplacementProfileRule.CarriesRaidProfile("));
+        Assert.Contains(sources, s => s.Path.EndsWith("FovFixCompat.cs") && s.Source.Contains("ReplacementProfileRule.CarriesRaidProfile("));
+        // A stale whitelist entry (renamed method, removed read) would silently allow a future read there.
+        Assert.Empty(SourceGuards.StaleCommittedGameProfileReaders(sources));
+    }
+
+    [Fact]
+    public void ARenamedPostCommitReaderMakesItsWhitelistEntryStale()
+    {
+        var sources = CoreSources();
+        var renamed = sources.Select(s => Path.GetFileName(s.Path) == "HealingAutoCancelCompat.cs"
+            ? (s.Path, Replace(s.Source, " Current", " CurrentRenamed")) : s);
+        Assert.NotEmpty(SourceGuards.StaleCommittedGameProfileReaders(renamed));
+    }
+
+    [Theory]
+    [InlineData("RecoilLegacyCompat.cs", "ReplacementProfileRule.CarriesRaidProfile(body.Profile, game.Profile, BodyReplacementContext.ExpectedProfile)", "ReferenceEquals(body.Profile, game.Profile)")]
+    [InlineData("FovFixCompat.cs", "ReplacementProfileRule.CarriesRaidProfile(body.Profile, Game?.Profile, BodyReplacementContext.ExpectedProfile)", "ReferenceEquals(body.Profile, Game?.Profile)")]
+    public void ReintroducingTheGameProfileComparisonIsCaught(string file, string original, string fault)
+    {
+        var sources = CoreSources();
+        Assert.Contains(sources, source => Path.GetFileName(source.Path) == file);
+        var faulted = sources.Select(source => Path.GetFileName(source.Path) == file ? (source.Path, Replace(source.Source, original, fault)) : source);
+        Assert.NotEmpty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(faulted));
+    }
+
+    [Fact]
+    public void ANewAdapterReadingTheGamesProfileIsCaughtButTheContextAndRuleCallAreNot()
+    {
+        var folder = Path.Combine("Redeploy.Core", "Compat");
+        const string reads = "class Sample { bool M() => ReferenceEquals(body.Profile, _game.Profile); }";
+        const string chained = "class Sample { bool M() => ReferenceEquals(body.Profile, CurrentGame?.Profile); }";
+        const string viaRule = "class Sample { bool M() => ReplacementProfileRule.CarriesRaidProfile(body.Profile, game.Profile, BodyReplacementContext.ExpectedProfile); }";
+        const string unrelated = "class Sample { bool M() => body.Profile != null && other.Profile == body.Profile; }";
+        Assert.NotEmpty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine(folder, "Sample.cs"), reads) }));
+        Assert.NotEmpty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine(folder, "Sample.cs"), chained) }));
+        Assert.Empty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine(folder, "Sample.cs"), viaRule) }));
+        Assert.Empty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine(folder, "Sample.cs"), unrelated) }));
+        Assert.Empty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine(folder, "BodyReplacementContext.cs"), reads) }));
+        // Outside Compat (engine, view) the engine's own ordering is its business.
+        Assert.Empty(SourceGuards.GameProfileReadsOutsideTheReplacementRule(new[] { (Path.Combine("Redeploy.Core", "Engine", "Sample.cs"), reads) }));
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private static List<(string Path, string Source)> CoreSources()

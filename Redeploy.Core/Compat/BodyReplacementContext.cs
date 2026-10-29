@@ -19,6 +19,12 @@ internal static class BodyReplacementContext
     internal static GameWorld CurrentWorld { get; private set; }
     internal static LocalPlayer PreviousBody { get; private set; }
     internal static bool IsCreating { get; private set; }
+    /// <summary>
+    /// The profile the replacement body must carry while it is created: the replacement profile of
+    /// an own-Scav continuation (the game commits it only afterwards), else the old body's profile.
+    /// Null outside an active replacement.
+    /// </summary>
+    internal static Profile ExpectedProfile => IsCreating ? _expectedProfile : null;
     private static LocalGame _previousGame;
     private static GameWorld _previousWorld;
     private static Lease _previousEntryLease;

@@ -103,17 +103,18 @@ namespace EFT.Animations.NewRecoil
 namespace EFT
 {
     public interface IBotGame { }
+    public class Profile { }
     public class AbstractGame { }
     public class LocalGame : AbstractGame,IBotGame
     {
-        public GameWorld GameWorld; public LocalPlayer LocalPlayer; public object Profile=new();
+        public GameWorld GameWorld; public LocalPlayer LocalPlayer; public Profile Profile=new();
         public GameStatus Status=GameStatus.Started; public JsonType.LocalRaidSettings Settings=new();
     }
     public class GameWorld { public string LocationId="factory4_day";public Player MainPlayer; }
     public class HideoutGameWorld : GameWorld { }
     public class Player : UnityEngine.MonoBehaviour
     {
-        public GameWorld GameWorld;public object Profile;public bool IsYourPlayer=true;
+        public GameWorld GameWorld;public Profile Profile;public bool IsYourPlayer=true;
         public Health HealthController=new();public object HandsController;public Pwa ProceduralWeaponAnimation=new();
         public int Rotations;
         public Task Init()=>Task.CompletedTask;

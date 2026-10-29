@@ -374,6 +374,78 @@ internal static class SourceGuards
             .Any(child => child is ThrowStatementSyntax || child is ThrowExpressionSyntax);
     }
 
+    // ------------------------------------------------------------------ replacement profile
+
+    /// <summary>
+    /// Compat adapters that ask whether a body carries "the game's profile". During an own-Scav
+    /// replacement the engine creates the body with the replacement profile and commits
+    /// <c>game.Profile</c> only afterwards, so such a comparison is false for the very body being
+    /// built. A read of <c>game.Profile</c> (<c>_game</c>, <c>Game</c>, <c>CurrentGame</c>) is allowed only inside
+    /// <c>ReplacementProfileRule.CarriesRaidProfile(...)</c>, in <c>BodyReplacementContext</c> (the owner
+    /// of the expected profile), or in the listed methods that run after the commit.
+    /// </summary>
+    public static readonly (string File, string Method)[] CommittedGameProfileReaders =
+    {
+        ("HealingAutoCancelCompat.cs", "Current"),      // Never true while IsCreating: also needs game.LocalPlayer == body.
+        ("PipDisablerCompat.cs", "ObserveLocalOptic"),  // Same: Game.LocalPlayer must already be the observed body.
+    };
+
+    public static List<string> GameProfileReadsOutsideTheReplacementRule(IEnumerable<(string Path, string Source)> files)
+        => GameProfileReads(files)
+            .Where(read => !read.InsideRule && !CommittedGameProfileReaders.Contains((read.File, read.Method)))
+            .Select(read => $"{read.File}:{read.Line} ({read.Method})")
+            .ToList();
+
+    /// <summary>
+    /// Entries of <see cref="CommittedGameProfileReaders"/> that no longer contain a read of the game's profile
+    /// (renamed method, moved file, read removed): a stale entry would otherwise silently allow a future read there.
+    /// </summary>
+    public static List<string> StaleCommittedGameProfileReaders(IEnumerable<(string Path, string Source)> files)
+    {
+        var reads = GameProfileReads(files).ToList();
+        return CommittedGameProfileReaders
+            .Where(entry => !reads.Any(read => read.File == entry.File && read.Method == entry.Method))
+            .Select(entry => $"{entry.File} ({entry.Method})")
+            .ToList();
+    }
+
+    // The receiver is recognised by name only (game, _game, Game, CurrentGame): a read through another alias
+    // (var g = Game; g.Profile) is not seen. The guard is a tripwire for the known pattern, not a proof.
+    private static IEnumerable<(string File, string Method, int Line, bool InsideRule)> GameProfileReads(IEnumerable<(string Path, string Source)> files)
+    {
+        foreach (var (path, source) in files)
+        {
+            var parts = path.Split('\\', '/');
+            var file = parts[^1];
+            if (!parts.Contains("Compat") || file == "BodyReplacementContext.cs")
+                continue;
+
+            var root = Parse(source, path).GetCompilationUnitRoot();
+            foreach (var node in root.DescendantNodes())
+            {
+                string receiver;
+                if (node is MemberAccessExpressionSyntax access && access.Name.Identifier.ValueText == "Profile")
+                    receiver = LastName(access.Expression);
+                else if (node is MemberBindingExpressionSyntax binding && binding.Name.Identifier.ValueText == "Profile")
+                    receiver = LastName(node.Ancestors().OfType<ConditionalAccessExpressionSyntax>()
+                        .First(chain => chain.WhenNotNull.Span.Contains(node.Span)).Expression);
+                else
+                    continue;
+
+                if (receiver == null || !Regex.IsMatch(receiver, @"^(_?[gG]ame|CurrentGame)$"))
+                    continue;
+                var insideRule = node.Ancestors().OfType<InvocationExpressionSyntax>().Any(call =>
+                    call.Expression is MemberAccessExpressionSyntax rule
+                    && rule.Name.Identifier.ValueText == "CarriesRaidProfile"
+                    && LastName(rule.Expression) == "ReplacementProfileRule");
+                var method = node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText
+                             ?? node.Ancestors().OfType<PropertyDeclarationSyntax>().FirstOrDefault()?.Identifier.ValueText;
+
+                yield return (file, method, node.GetLocation().GetLineSpan().StartLinePosition.Line + 1, insideRule);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ shared
 
     private static SyntaxTree Parse(string source, string path = "")
