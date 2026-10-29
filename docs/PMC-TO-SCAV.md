@@ -1,7 +1,7 @@
 # PMC death followed by your regular Player-Scav
 
-Current development code provides an optional same-raid continuation
-using the account's regular Scav and cooldown. It is not released. The 2026-10-28
+Redeploy 1.1.0 provides an optional same-raid continuation
+using the account's regular Scav and cooldown. The 2026-10-28
 revision replaces the earlier independent generated-Scav/mail prototype; that
 prototype's dated evidence below is historical and does not validate the new flow.
 
@@ -11,7 +11,8 @@ availability checks before selection. **469 client/Core tests and 149 server
 tests passed. Focused native recovery and control tests passed on SPT-GPU-1.**
 See the [new native evidence and limitations](PMC-SCAV-RECOVERY-20261028.md) and
 [release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md). The earlier normal-flow
-tests below retain their original dated scope. No new public package is implied.
+tests below retain their original dated scope. These tests used pre-1.1.0
+binaries; see the [1.1.0 release notes](RELEASE-1.1.0.md) for release scope.
 
 ## Behavior
 

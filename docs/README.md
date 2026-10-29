@@ -5,6 +5,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
+| [Redeploy 1.1.0 release notes](RELEASE-1.1.0.md) | Own-Scav continuation and recovery, optional integrations, Core 1.0.17 and update instructions. |
 | [Native release check, 2026-10-29](RELEASE-CHECK-20261029.md) | Standalone respawn, corpse loot, own-Scav transfer, exact candidates and quieter routine logging. |
 | [Own-Scav continuation](PMC-TO-SCAV.md) | Regular-Scav choice, native loot transfer, recovery limits and dated validation. |
 | [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Historical blockers, implemented fixes, acceptance and remaining publication work. |
@@ -15,6 +16,9 @@ Start with the [project README](../README.md) for installation, settings, update
 | [FOV and loading animation compatibility](FOV-MANIMAL-COMPAT-20261025.md) | Core 1.0.11: Fontaine FOV Fix and Manimal Ammo Loading Animations; native candidate and test boundaries. |
 | [Magazine panel compatibility](MAGCHECK-COMPAT-20261025.md) | Core 1.0.12: Magazine Check Interrupt; panel retirement and deferred callbacks. |
 | [Radar and crosshair compatibility](HUD-COMPAT-20261025.md) | Core 1.0.13: Accurate Circular Radar and Simple Crosshair; exact body/camera handover and native limits. |
+| [ImpactCue and Enemy Markers](ITEMS-HUD-COMPAT-20261025.md) | Core 1.0.14: HUD, body and camera handover; native tests for both drivers. |
+| [Quick Cancel, PiP and Amand's Graphics](REMAINING-BODY-COMPAT-20261026.md) | Core 1.0.15: body/camera integrations, standalone evidence and the Labyrinth limit. |
+| [Standalone compatibility](STANDALONE-COMPAT-20261029.md) | Core 1.0.17: AI Limit, Healing Autocancel, Quest Tracker and Audio Accessibility Indicators. |
 | [Published owned-mod audit](OWN-MOD-COMPATIBILITY-20261024.md) | All 27 published mod repositories and four beta packages: body-replacement handling, consumer-side hardening candidates, release coordination and native test gaps. |
 | [Native probe instructions](../tools/RespawnApiProbe/README.md) | Developer-only in-game checks. The probe is not included in normal installation. |
 | [Probe results, 2026-09-21](RESPAWN-API-PROBE-RESULTS-2026-09-21.md) | Tested scenarios and remaining coverage limits for the recorded builds. |

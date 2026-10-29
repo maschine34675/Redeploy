@@ -4,8 +4,8 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-See the [changelog](docs/CHANGELOG.md) for changes since 1.0.0 and the separate
-Core version line.
+**Redeploy 1.1.0** for SPT 4.1.x bundles **Core 1.0.17**. See the
+[release notes](docs/RELEASE-1.1.0.md) and [changelog](docs/CHANGELOG.md).
 
 ## Features
 
@@ -17,23 +17,23 @@ Core version line.
 - **Insurance is preserved.** The mod keeps insurance records for gear left on corpses; returns still depend on SPT's normal insurance rules and your server settings.
 - **Kills are carried over.** Kills you scored before respawning still appear on the end-of-raid screen.
 - **Fails safe.** When the server component is missing, the mod stays inactive and death behaves exactly like vanilla.
-- **Own-Scav continuation (unreleased):** the optional
+- **Own-Scav continuation:** the optional
   `RespawnAsScav` setting is enabled by default and adds a choice of one life as your regular Player-Scav in the same
   raid after PMC death, provided the normal Scav cooldown has expired. Successful
   extraction opens the usual Scav-to-stash transfer screen. A Scav cooldown only
   disables this choice; the normal PMC respawn remains available. See
   [behavior and test scope](docs/PMC-TO-SCAV.md) and
-  [recovery validation](docs/PMC-SCAV-RECOVERY-20261028.md). The own-Scav sections
-  below describe current development code; the published 1.0.2 package does not
-  contain this feature.
+  [recovery validation](docs/PMC-SCAV-RECOVERY-20261028.md). This feature is new
+  in 1.1.0.
 
 ## Requirements and compatibility
 
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
-- **Dependencies:** No separately installed mods; the release must include Redeploy.Core.
-- **Version lines:** The published 1.0.2 release contains Client/Server `1.0.2` and Core `1.0.13`. Core has its own version and is a library, not a separate BepInEx plugin.
-  Current development uses Core `1.0.17`; its client requires that minimum. The published 1.0.2 package is unchanged.
+- **Dependencies:** No separately installed mods; Redeploy.Core is included.
+- **Version lines:** Redeploy 1.1.0 contains Client/Server `1.1.0` and Core `1.0.17`.
+  Core has its own version and is a library, not a separate BepInEx plugin.
+  The client requires Core `1.0.17` or newer with a compatible API.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -43,15 +43,15 @@ Core version line.
   - **Magazine Check Interrupt 1.1.1+** — retires the old body's floating magazine panel; delayed hide callbacks cannot hide its successor's display.
   - **Accurate Circular Radar 1.3.4+** — preserves the radar through camera replacement and rebinds it to the current player. Radar colors retain the mod's faction/role meaning, not team hostility.
   - **Simple Crosshair 1.4.0+** — preserves the overlay and binds its callbacks to the replacement body and camera.
-  - **ImpactCue 2.0.3+** (development Core 1.0.14) — rebinds health/weapon telemetry while retaining the raid's combat history.
-  - **Enemy Markers 1.4.0+** (development Core 1.0.14) — preserves bot markers, updates their camera and excludes the local replacement body.
-  - **Manimal's Quick Cancel 2.0.0+** (development Core 1.0.15) — retires pending medical controllers belonging to the old physical body and fences late callbacks without clearing unrelated controllers.
-  - **Picture in Picture Disabler 2.1.0+** (development Core 1.0.15) — retires owned optic state and generated mesh caches across replacement while retaining foreign settings and unrelated optics. Native Arena tests with Fontaine FOV Fix 4.1.0 passed two actual scoped deaths and replacement-scope rendering; standalone testing also passed a scoped death and old-cache retirement.
-  - **Amand's Graphics 1.8.0+** (development Core 1.0.15, limited) — binds graphics components to the replacement camera, preserving the ON/OFF choice and original scene/light defaults. Factory ON/OFF respawns passed, but the mod's initial Labyrinth scene activation fails before Core replacement. See the limitation below.
-  - **AI Limit 1.9.2+** (development Core 1.0.17) — moves its human-player distance reference from the old body to the replacement, preserving the bot list and distance settings.
-  - **Healing Autocancel, Forge 5.0.1 / plugin 1.1.0+** (development Core 1.0.17) — binds healing cancellation to the replacement health controller and prevents late old-body events from cancelling the current player's treatment. This is a separate integration from Continuous Healing and Quick Cancel.
-  - **Quest Tracker 1.7.0+** (development Core 1.0.17) — refreshes body-bound quest caches without replacing the panel or resetting tracked-quest preferences.
-  - **Audio Accessibility Indicators 2.1.0+** (development Core 1.0.17) — retains the existing directional HUD through a replacement; ordinary raid-end disposal still runs.
+  - **ImpactCue 2.0.3+** — rebinds health/weapon telemetry while retaining the raid's combat history.
+  - **Enemy Markers 1.4.0+** — preserves bot markers, updates their camera and excludes the local replacement body.
+  - **Manimal's Quick Cancel 2.0.0+** — retires pending medical controllers belonging to the old physical body and fences late callbacks without clearing unrelated controllers.
+  - **Picture in Picture Disabler 2.1.0+** — retires owned optic state and generated mesh caches across replacement while retaining foreign settings and unrelated optics. Native Arena tests with Fontaine FOV Fix 4.1.0 passed two actual scoped deaths and replacement-scope rendering; standalone testing also passed a scoped death and old-cache retirement.
+  - **Amand's Graphics 1.8.0+** (limited) — binds graphics components to the replacement camera, preserving the ON/OFF choice and original scene/light defaults. Factory ON/OFF respawns passed, but the mod's initial Labyrinth scene activation fails before Core replacement. See the limitation below.
+  - **AI Limit 1.9.2+** — moves its human-player distance reference from the old body to the replacement, preserving the bot list and distance settings.
+  - **Healing Autocancel, Forge 5.0.1 / plugin 1.1.0+** — binds healing cancellation to the replacement health controller and prevents late old-body events from cancelling the current player's treatment. This is a separate integration from Continuous Healing and Quick Cancel.
+  - **Quest Tracker 1.7.0+** — refreshes body-bound quest caches without replacing the panel or resetting tracked-quest preferences.
+  - **Audio Accessibility Indicators 2.1.0+** — retains the existing directional HUD through a replacement; ordinary raid-end disposal still runs.
   - **DoorDash** (tarkin) — sprint-ramming doors keeps working with the replacement character.
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
@@ -115,7 +115,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. The published Redeploy 1.0.2 release requires Core **1.0.13 or newer**; the current development client still reports 1.0.2 but requires Core **1.0.17 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.0 requires Core **1.0.17 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 
@@ -171,7 +171,7 @@ Configure the mod in-game with the F12 BepInEx configuration manager, or close t
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `Enabled` | `true` | Master switch. When off, death behaves like vanilla. |
-| `RespawnAsScav` | `true` | Experimental: offer your regular Scav alongside naked PMC respawn when its cooldown has expired; extraction opens the normal loot transfer. Regular Scav raids keep normal Redeploy behavior. |
+| `RespawnAsScav` | `true` | Offer your regular Scav alongside naked PMC respawn when its cooldown has expired; extraction opens the normal loot transfer. Regular Scav raids keep normal Redeploy behavior. |
 | `MaxRespawnsPerRaid` | `1` | Respawns allowed per raid; `0` or less means unlimited. |
 | `RespawnHealthPercent` | `100` | Starting health for each body part, clamped to 1–100%; old body-part effects are cleared. |
 | `RespawnCooldownSeconds` | `5` | Minimum seconds since death; time spent watching a replay counts. `0` or less removes the extra wait, but an active Killcam can still hold the respawn. |

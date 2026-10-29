@@ -1,108 +1,77 @@
 # Changelog
 
 Notable changes since **v1.0.0**, reconstructed from Git history and published
-release notes. Release dates are GitHub publication dates.
+release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
+1.1.0 bundles Core 1.0.17; 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
+and 1.0.0 bundled Core 1.0.8.
 
-Redeploy Client/Server and Redeploy.Core have **separate version numbers**.
-Release 1.0.2 contains Client/Server 1.0.2 and Core 1.0.13. Release 1.0.1
-contains Core 1.0.10; release 1.0.0 contains Core 1.0.8.
+## [1.1.0] - 2026-10-29
 
-## Unreleased — Standalone body compatibility, Core 1.0.17
+Client/Server **1.1.0**, bundled and minimum Core **1.0.17**. Changes since
+[v1.0.2](https://github.com/maschine34675/Redeploy/releases/tag/v1.0.2).
+The public `RespawnApi` contract remains version 1.
 
-- AI Limit 1.9.2+: use the replacement body as the human-player distance origin,
-  retaining bot lists and mod settings.
-- Healing Autocancel (Forge 5.0.1, internal plugin 1.1.0): rebind healing events
-  and isolate delayed events from retired bodies. The previous Continuous Healing
-  and Quick Cancel adapters did not cover this separate mod.
-- Quest Tracker 1.7.0+: rebuild body-bound quest caches while keeping the panel
-  and the user's tracking preferences, including through own-Scav continuation.
-- Audio Accessibility Indicators 2.1.0+: preserve compass rotation across the
-  body handover without suppressing normal raid-end cleanup.
-- These integrations live in shared Core; no ArenaMode installation is required.
-  Newer versions require the expected APIs and receive an unverified-version
-  warning. Ordinary raids and absent mods retain their behavior.
-- Preserve compass updates when a failed living-body replacement restores the
-  original player; another replacement remains possible afterwards.
-- Standalone Factory validation: two PMC respawns, own-Scav continuation,
-  retained HUD/controller ownership and post-respawn healing. See
-  [test scope and limitations](STANDALONE-COMPAT-20261029.md).
+### Continue as your own Scav
 
-## Unreleased — Own-Scav continuation, Core 1.0.16
+- After PMC death, choose the usual naked PMC respawn or one life as your
+  regular Player-Scav, with its current equipment and normal cooldown.
+  `RespawnAsScav` is enabled by default; saved settings remain unchanged.
+- The PMC corpse stays lootable and the PMC outcome remains a death. Scav
+  extraction opens the native Scav-to-stash transfer screen; Scav progression,
+  regeneration and cooldown follow the native outcome. Recovered insured items
+  are removed from the original claim. A second death ends the raid.
+- Recover an interrupted continuation from the main menu: abandon an unfinished
+  Scav life, complete a provable recorded save or resume the remaining loot
+  transfer. Items already moved to the stash remain there. Recovery requires a
+  game restart before another raid; ambiguous partial saves remain blocked.
+- Missing Scav exits, cooldown and prior BTR/transit item deliveries disable
+  only the Scav choice. Both respawn choices respect the configured limit and
+  item cost. Fresh PMC raids with map-transition options can reserve the Scav;
+  arriving from another map remains unsupported.
+- BTR item delivery is unavailable after switching, and Sell All is unavailable
+  in this continuation's loot transfer. Move wanted items to the stash and
+  finish the transfer. Ordinary PMC/Scav delivery and ordinary Scav Sell All
+  keep their native behavior.
+- Preserve the extraction countdown across body replacement. Replacement death
+  callbacks now follow native ordering, including when bot rebinding fails.
+- Core accepts a separate replacement profile for the Scav flow; existing
+  same-profile consumers retain their behavior.
 
-- Default-on `RespawnAsScav`: after a PMC death, choose naked PMC respawn or continue once in the same raid as
-  your regular Player-Scav with its current gear, when its normal cooldown permits.
-- The PMC corpse stays lootable. The PMC outcome remains a death; successful
-  Scav extraction opens the normal Scav-to-stash transfer screen. Scav progression,
-  regeneration and cooldown follow the native Scav outcome. This replaces the
-  independent Scav and mailed-loot prototype.
-- Recovered insured items are excluded from the original insurance claim. Dying
-  after switching to the Scav ends the raid; it does not offer another respawn.
-- Main-menu recovery for interrupted continuations: explicitly abandon an
-  unfinished Scav life, complete a provable recorded save, or resume the remaining
-  native loot transfer. The PMC remains dead; already transferred stash items
-  remain in place. Menu recovery requires a game restart before a new raid.
-- Persist completed transfer moves before acknowledgement and preserve exact
-  native-save/outer-raid completion across retry. Unproven partial outcomes stay
-  blocked. Client-only recovery also completes ArenaMode's ordinary-raid boundary.
-- Disable only the Scav choice when native Scav exits cannot be verified or
-  BTR/transit items were already sent in the PMC life. Recheck before preparation
-  while preserving the normal PMC choices.
-- Block BTR item delivery for the adopted Scav before item movement, including
-  late purchase completion. Other BTR services and ordinary PMC/Scav delivery
-  retain their native behavior.
-- Disable Sell All in the owned continuation loot transfer to prevent payment
-  and recovered-equipment duplication after interruption. Move wanted items to
-  the stash and finish the transfer; ordinary Scav Sell All is unchanged.
-- Shared Core accepts an explicitly separate replacement profile. Existing
-  same-profile consumers retain their behavior and RespawnApi version 1.
-- The extraction timer now preserves remaining time across ordinary respawns
-  as well as the Scav switch.
-- Fresh PMC raids with available map transitions can reserve the regular Scav.
-  Previously the `Common` transit flag incorrectly caused `no-issued-pmc-raid`.
-  Actual incoming map transitions remain unsupported and are rejected.
-- Replacement death callbacks follow native ordering, allowing PitFireTeam to
-  handle the death before raid teardown disposes its registry. The death handler
-  is also retained when bot rebind fails.
-- This development change is not a release. See [behavior, evidence and limits](PMC-TO-SCAV.md).
-- Candidate `6a1332d` passes 469 client/Core tests and 149 server tests. The
-  [native recovery checks](PMC-SCAV-RECOVERY-20261028.md) cover Prepared/Active
-  interruption, partial-transfer restart and scoped delivery/availability guards.
-- The configuration menu uses readable ordered labels and preserves existing
-  saved settings. Detailed respawn measurements are an advanced setting.
+### Optional integrations in shared Core
 
-## Unreleased — Core 1.0.14–1.0.15
+All integrations below work without ArenaMode and preserve the other mod's
+settings. Each mod is installed separately.
 
-- ImpactCue 2.0.3+: bind telemetry and weapon/health caches to the confirmed
-  replacement body without clearing the raid's combat history. Late callbacks
-  from a retired body cannot take the HUD back.
-- Enemy Markers 1.4.0+: preserve existing bot markers, bind their billboards to
-  the replacement camera, and exclude the local replacement from new markers.
-- These Core 1.0.14 integrations passed three native respawns and raid exit per
-  driver, including the Enemy Markers destroyed-body cleanup correction. See
-  [HUD compatibility evidence](ITEMS-HUD-COMPAT-20261025.md).
-- Quick Cancel 2.0.0+: Core 1.0.15 retires only the old body's pending medical
-  controllers and rejects delayed callbacks for that body. Actual cancellation
-  and subsequent firearm use passed in Arena; the rare pending-drop/death race
-  is covered by offline production-boundary checks, not the native timing test.
-- Picture in Picture Disabler 2.1.0+: Core 1.0.15 limits optic callbacks and
-  generated mesh-cache retirement to proven physical owners. Preserve the exact
-  held optic's provenance when native death detaches the weapon before preparation.
-  Two actual scoped Arena deaths and new-scope rendering passed with FOV Fix 4.1.0.
-- Amand's Graphics 1.8.0+: Core 1.0.15 binds the replacement camera while
-  retaining the ON/OFF preference and original scene/light defaults. Factory
-  ON/OFF respawns passed. Labyrinth still fails in the mod's initial scene lookup
-  before Core replacement; an incomplete baseline is refused rather than reset.
-  This is a bounded camera repair, not a fix for that independent map blocker.
-- These integrations belong to Core and apply to standalone Redeploy and Arena.
-  Ordinary raids without a Core replacement retain the foreign mods' behavior.
-  The public RespawnApi version remains 1.
-- The same final Core 1.0.15 passed two Factory respawns with Arena absent:
-  scoped M700 death and old PiP-cache retirement, current Amand/HUD bindings,
-  plus native medical cancellation and an RGD throw after respawn. This does not
-  establish every optic, HUD feature, map or the rare pending-drop/death race. See
-  [remaining body compatibility](REMAINING-BODY-COMPAT-20261026.md) for native
-  scenarios, offline checks and limits. Client/Server stay at 1.0.2; the published
-  release still contains Core 1.0.13 and is not changed by this development work.
+- **ImpactCue 2.0.3+** and **Enemy Markers 1.4.0+**: retain combat history and bot
+  markers while following the replacement body and camera.
+- **Manimal's Quick Cancel 2.0.0+**: retire medical work belonging to the old body
+  and keep late callbacks from affecting its successor.
+- **Picture in Picture Disabler 2.1.0+**: retire the old body's optic state and
+  generated mesh caches while preserving unrelated optics and settings.
+- **Amand's Graphics 1.8.0+**: follow the replacement camera and retain ON/OFF and
+  scene settings. Its initial Labyrinth scene lookup remains unsupported.
+- **AI Limit 1.9.2+**: measure bot distance from the replacement player.
+- **Healing Autocancel, Forge 5.0.1 / plugin 1.1.0+**: move healing cancellation
+  to the new health controller and isolate late events from the old body.
+- **Quest Tracker 1.7.0+** and **Audio Accessibility Indicators 2.1.0+**: retain
+  the HUD and tracking preferences while refreshing body and compass references,
+  including recovery from a failed living-body replacement.
+
+### Settings, logging and verification
+
+- Readable F12 labels and units, ordered settings and advanced diagnostics.
+  Routine respawn details now use Debug; safety decisions and real failures
+  remain visible. Detailed pipeline timing remains disabled by default.
+- Expanded automated lifecycle, recovery, inventory and integration checks.
+  Dated native checks cover ordinary respawn, corpse-weapon recovery and firing,
+  give-up, own-Scav extraction, partial transfer and interrupted-flow recovery.
+- Those native checks used the recorded pre-1.1.0 binaries. They do not certify
+  fresh release hashes, every map/optic, optional-mod combination or timing race.
+  Fika remains unsupported; future optional-mod versions need matching APIs.
+
+See the [release notes](RELEASE-1.1.0.md), [native release check](RELEASE-CHECK-20261029.md),
+[own-Scav recovery](PMC-SCAV-RECOVERY-20261028.md) and
+[standalone integration checks](STANDALONE-COMPAT-20261029.md) for exact scope.
 
 ## [1.0.2]
 
@@ -213,6 +182,7 @@ already belong to this baseline. See its
 [README](https://github.com/maschine34675/Redeploy/blob/v1.0.0/README.md)
 for the features and limitations at release.
 
+[1.1.0]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0
 [1.0.2]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.2
 [1.0.1]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.1
 [1.0.0]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.0

@@ -1,8 +1,18 @@
 # Redeploy repository status
 
+## Release preparation — 2026-10-29
+
+- Current source targets Client/Server **1.1.0** and shared Core **1.0.17**.
+  Existing assembly names, plugin identities and install paths are unchanged.
+- [Release notes](RELEASE-1.1.0.md) and the [versioned changelog](CHANGELOG.md)
+  cover the changes since the published 1.0.2 package.
+- The native checks below used pre-version-bump binaries. Fresh 1.1.0 builds,
+  final archive validation and publication are separate release work; this
+  preparation entry does not certify new binary hashes or a published asset.
+
 ## Native release check and logging — 2026-10-29
 
-- Development remains Client/Server 1.0.2 with Core 1.0.17.
+- This check used Client/Server 1.0.2 with Core 1.0.17.
 - Nine routine messages moved to Debug; safety, protection and real failures
   remain visible. All 469 client/Core tests passed.
 - Fresh GPU-2 checks cover naked PMC respawn, original corpse-weapon recovery and
