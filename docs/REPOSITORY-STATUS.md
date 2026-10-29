@@ -1,12 +1,19 @@
 # Redeploy repository status
 
-## Release preparation — Redeploy 1.1.1, 2026-10-29
+## Published 2026-10-29 — Redeploy 1.1.1
 
-- Hotfix source targets Client/Server **1.1.1** and shared Core **1.0.18**
-  (Recoil Rework / FOV Fix profile replacement, transit arrivals, refused Scav
-  preparation, Support log level). See [release notes](RELEASE-1.1.1.md) and the
-  [changelog](CHANGELOG.md#111---2026-10-29). ArenaMode 0.4.1 bundles the same Core.
-- Package evidence is added here once the release is published.
+[GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.1) is public,
+latest and not a prerelease. Tag/build source: `232af19ac2fac1c82acd5c6f43e0dcf8c2c80398`.
+`Redeploy-1.1.1.zip` contains exactly Client/Server 1.1.1 and Core 1.0.18; 226,569 bytes,
+SHA-256 `38a8e33c19ee38f2fd1be906847c1d21937e10aeedcd0e243735f6efe5ca2ca3`.
+The public ZIP and checksum were downloaded and verified against the local bytes and the
+GitHub digests. 522 client/Core and 162 server tests, the interop checks and the Core startup
+guard passed. All three DLLs had no malicious or suspicious VirusTotal labels. Core matches
+the copy in ArenaMode 0.4.1 exactly. One native GPU check with these binaries and Recoil
+Rework Legacy 2.0.0 passed Continue as Scav through extraction; see the
+[release notes](RELEASE-1.1.1.md). The v1.1.0 release page now names 1.1.1 as its successor
+and lists the fixed issues. Later documentation commits do not move the verified tag or
+change the published package.
 
 ## Published 2026-10-29 — Redeploy 1.1.0
 

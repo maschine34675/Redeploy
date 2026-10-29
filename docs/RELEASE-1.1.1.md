@@ -56,3 +56,26 @@ preparation still ends the raid. Fika remains unsupported. All other limits of
 still apply. The
 [changelog](https://github.com/maschine34675/Redeploy/blob/v1.1.1/docs/CHANGELOG.md#111---2026-10-29)
 records the complete changes.
+
+## Native release check
+
+On a GPU test host (SPT 4.1.6) with these exact binaries loaded and Recoil Rework
+Legacy 2.0.0 installed, a Factory PMC death followed by Continue as Scav passed the
+new server check, preparation and activation. The Scav stayed alive, a fired shot
+used a cartridge with Recoil Rework's camera recoil, the client log had no warning
+or error, and the Scav extracted to the transfer screen. A server refusal, a
+timeout, a map-transit arrival and FOV Fix were not run natively.
+
+## Package checks
+
+Built from `232af19ac2fac1c82acd5c6f43e0dcf8c2c80398`. ZIP SHA-256: `38a8e33c19ee38f2fd1be906847c1d21937e10aeedcd0e243735f6efe5ca2ca3` (226,569 bytes). The ZIP holds exactly Client/Server 1.1.1 and Core 1.0.18; its Core is byte-identical to the Core in ArenaMode 0.4.1.
+
+Fresh checks: 522 client/Core and 162 server tests passed with none skipped, plus the respawn interoperability checks and the Core startup guard. Credential scanning found no credentials in the release source or payload.
+
+VirusTotal results below apply to these exact binaries (29 October 2026). None of the three DLLs had a malicious or suspicious label.
+
+| File | SHA-256 / scan |
+|---|---|
+| `maschine-Redeploy.Client.dll` | [6638b5c3f385…](https://www.virustotal.com/gui/file/6638b5c3f385ddaeb2463a7e41c21a80ce9d4b395991864ce72a45309914e820) |
+| `maschine-Redeploy.Core.dll` | [98620898b6a7…](https://www.virustotal.com/gui/file/98620898b6a7cdbdc4802681f3ad39dbecb4eacec515fb2013d379d872a8faaf) |
+| `maschine-Redeploy.Server.dll` | [caa8b311b9f2…](https://www.virustotal.com/gui/file/caa8b311b9f2d2b1731d618c537662198ef2db906696afad349ff764cbd9bb22) |
