@@ -14,6 +14,12 @@ public sealed record ScavPrepareRequest : IRequestData
     [JsonPropertyName("pmcInsuranceCaptured")] public bool PmcInsuranceCaptured { get; set; }
 }
 
+/// <summary>Read-only question asked before the client touches its dead PMC: could a Scav be prepared for this raid?</summary>
+public sealed record ScavProbeRequest : IRequestData
+{
+    [JsonPropertyName("initialServerId")] public string InitialServerId { get; set; } = "";
+}
+
 public sealed record ScavRecoveryRequest : IRequestData
 {
     [JsonPropertyName("recoveryId")] public string RecoveryId { get; set; } = "";

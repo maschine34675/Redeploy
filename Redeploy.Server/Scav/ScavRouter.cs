@@ -10,6 +10,8 @@ namespace Redeploy.Server.Scav;
 [Injectable]
 public sealed class ScavRouter(JsonUtil json, ScavContinuationService service, LocationLifecycleService lifecycle, MatchCallbacks match) : StaticRouter(json,
 [
+    new RouteAction<ScavProbeRequest>("/redeploy/pmc-scav/probe",
+        async (_, request, id, _, ct) => json.Serialize(await service.Probe(id, request, ct))!),
     new RouteAction<ScavPrepareRequest>("/redeploy/pmc-scav/prepare",
         async (_, request, id, _, ct) => json.Serialize(await service.Prepare(id, request, ct))!),
     new RouteAction<ScavControlRequest>("/redeploy/pmc-scav/activate",

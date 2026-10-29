@@ -220,11 +220,7 @@ public static class RespawnService
 
             if (prepareFailure != null || scavProfile == null)
             {
-                Plugin.ModLogger.LogWarning($"Scav continuation unavailable: {prepareFailure?.Message ?? "no profile returned"}");
-                PmcScavSession.NotifyUnavailable(prepareFailure?.Message);
-                if (game.Status == GameStatus.Started)
-                    GiveUpRaid();
-                RespawnSessionState.IsRespawnInProgress = false;
+                HandleScavPreparationFailure(game, prepareFailure);
                 yield break;
             }
         }
@@ -288,6 +284,40 @@ public static class RespawnService
             Plugin.ModLogger.LogInfo("Respawn complete.");
         }
 
+        RespawnSessionState.IsRespawnInProgress = false;
+    }
+
+    /// <summary>
+    /// Scav preparation failed. Only a failure that provably changed nothing (a ScavPreparationRefused:
+    /// no reservation, no consumed item, the dead PMC's session still open) may give the PMC choices
+    /// back; anything later keeps the fail-closed ending, so a respawn item is never spent without a life.
+    /// </summary>
+    private static void HandleScavPreparationFailure(LocalGame game, Exception failure)
+    {
+        Plugin.ModLogger.LogWarning($"Scav continuation unavailable: {ScavEligibilityPolicy.DescribeForLog(failure)}");
+        var raidRunning = ReferenceEquals(RespawnSessionState.CurrentLocalGame, game)
+            && RespawnSessionState.IsInRaid && !RespawnSessionState.HasGivenUp
+            && game.Status == GameStatus.Started;
+        var choiceStillPossible = raidRunning && RespawnSessionState.PendingRespawnChoice
+            && game.LocalPlayer?.HealthController?.IsAlive == false
+            && Settings.HasRespawnsRemaining(RespawnSessionState.RespawnsUsed);
+        switch (ScavEligibilityPolicy.AfterPrepareFailure(failure is ScavPreparationRefused, raidRunning, choiceStillPossible))
+        {
+            case ScavPrepareFailureAction.ReopenPmcChoices:
+                PmcScavSession.RecordRefusal(failure.Message);
+                PmcScavSession.NotifyRefused(failure.Message);
+                RespawnSessionState.RespawnItemAvailable = HasRequiredRespawnItem(game.LocalPlayer);
+                RespawnSessionState.IsRespawnInProgress = false;
+                RespawnPromptPanel.Instance?.Show();
+                return;
+            case ScavPrepareFailureAction.EndRaid:
+                PmcScavSession.NotifyUnavailable(failure?.Message);
+                GiveUpRaid();
+                break;
+            default:
+                PmcScavSession.NotifyUnavailable(failure?.Message);
+                break;
+        }
         RespawnSessionState.IsRespawnInProgress = false;
     }
 

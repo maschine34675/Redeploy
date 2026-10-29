@@ -63,6 +63,9 @@ internal static class PmcScavSession
     private static string _unsafePreparationServerId;
     private static string _unsafePreparationPmcId;
     private static string _unsafePreparationReason;
+    // Set when a refusal changed nothing locally: the Scav choice stays disabled with this reason
+    // for the rest of this death, while the PMC choices come back.
+    private static string _refusedReason;
     private static readonly System.Reflection.FieldInfo ExitAuthority =
         AccessTools.Field(typeof(ExfiltrationPoint), "_authorityToChangeStatusExternally");
 
@@ -84,6 +87,8 @@ internal static class PmcScavSession
     {
         if (_unsafePreparationReason != null || _context != null)
             return "A Scav continuation has already been prepared. Finish or recover that continuation before trying again.";
+        if (_refusedReason != null)
+            return _refusedReason;
         if (!CanContinue(game) || game.Profile?.Info?.Side == EPlayerSide.Savage)
             return "Only a live PMC raid can continue as your Scav.";
         if (_deathInsuranceFailure != null)
@@ -99,7 +104,8 @@ internal static class PmcScavSession
             !string.IsNullOrWhiteSpace(settings?.serverId),
             exits != null && exits.Any(point => point != null), ExitAuthority != null,
             ScavEligibilityPolicy.HasDeliveredItems(world.BtrController?.TransferItemsController?.Stash)
-                || ScavEligibilityPolicy.HasDeliveredItems(world.TransitController?.TransferItemsController?.Stash));
+                || ScavEligibilityPolicy.HasDeliveredItems(world.TransitController?.TransferItemsController?.Stash),
+            ScavEligibilityPolicy.IsTransitArrival(settings?.transition));
     }
 
     private static string ScavUnavailableReason(Profile scav)
@@ -136,6 +142,7 @@ internal static class PmcScavSession
         _deathInsuranceFailure = null;
         _deathTime = 0f;
         _unsafePreparationServerId = _unsafePreparationPmcId = _unsafePreparationReason = null;
+        _refusedReason = null;
     }
 
     public static void RecordDeath(LocalGame game)
@@ -147,6 +154,7 @@ internal static class PmcScavSession
         _deathTime = game.PastTime;
         _deathInsurance = null;
         _deathInsuranceFailure = null;
+        _refusedReason = null;
         if (!Settings.RespawnAsScav.Value)
             return;
         try
@@ -193,24 +201,77 @@ internal static class PmcScavSession
     public static IEnumerator Prepare(LocalGame game, Action<Profile, ISpawnSelector, Exception> completed)
     {
         Task<JObject> task = null;
+        Task<JObject> probe = null;
         Exception failure = null;
         Context candidate = null;
         ScavRespawnItemCost cost = null;
+        // Phase 1, read-only. A failure here has changed nothing, so it is a refusal (the PMC choices
+        // come back) unless a held or unsafe continuation exists, which must never be returned from.
         try
         {
+            bool continuationHeld = _unsafePreparationReason != null || _context != null;
             if (UnavailableReason != null)
-                throw new InvalidOperationException(UnavailableReason);
+                throw ScavEligibilityPolicy.Block(UnavailableReason, continuationHeld);
             // Revalidate this exact game immediately before any profile mutation or
             // reservation; the prompt may have been displayed before the respawn delay.
             var unavailable = ReadOnlyUnavailableReason(game);
             if (unavailable != null)
-                throw new InvalidOperationException(unavailable);
-            var settings = LocalGameAccessor.GetLocalRaidSettings(game);
+                throw ScavEligibilityPolicy.Block(unavailable, continuationHeld);
             var transfers = game.GetTransferItems();
             // A transfer stash's single root item is present even when nothing was sent.
             if (transfers.Values.Any(items => items != null && items.Length > 1))
-                throw new InvalidOperationException(ScavEligibilityPolicy.PriorDeliveryReason);
+                throw ScavEligibilityPolicy.Block(ScavEligibilityPolicy.PriorDeliveryReason, continuationHeld);
+        }
+        catch (Exception ex) { failure = ex; }
+        if (failure != null)
+        {
+            completed(null, null, failure);
+            yield break;
+        }
 
+        // Phase 2, still read-only locally: ask the server whether a Scav can be prepared for this raid
+        // at all. Ending the dead PMC's statistics session below cannot be undone, and without this
+        // question a raid the server never registered (map transit, server restarted mid-raid, an older
+        // server mod) would only be found out after it, when the only way left is the PMC death ending.
+        try
+        {
+            // Reads only; fails here (before anything is consumed) when the cost item is already gone.
+            cost = new ScavRespawnItemCost(game.LocalPlayer);
+            probe = Post("probe", new JObject
+            {
+                ["initialServerId"] = LocalGameAccessor.GetLocalRaidSettings(game).serverId,
+            });
+        }
+        catch (Exception ex) { failure = new ScavPreparationRefused(ex.Message, null, ex); }
+        if (failure != null)
+        {
+            completed(null, null, failure);
+            yield break;
+        }
+        while (!probe.IsCompleted)
+            yield return null;
+        try
+        {
+            RequireSuccess(probe.GetAwaiter().GetResult());
+            if (!CanContinue(game))
+                throw new OperationCanceledException("The raid ended while checking the Scav.");
+            // The item stayed on the corpse while the answer was awaited; the session end below is the
+            // first thing that depends on it, so a vanished item is still a clean refusal here.
+            if (!cost.IsStillHeld)
+                throw new ScavPreparationRefused("The required respawn item is no longer available.");
+        }
+        // A timed-out or cancelled request is a refusal too, unless the raid itself is gone.
+        catch (Exception ex) { failure = ScavEligibilityPolicy.ClassifyProbeFailure(ex, CanContinue(game)); }
+        if (failure != null)
+        {
+            completed(null, null, failure);
+            yield break;
+        }
+
+        // Phase 3: from here the dead body and profile change; every failure fails closed.
+        try
+        {
+            var settings = LocalGameAccessor.GetLocalRaidSettings(game);
             var dead = game.LocalPlayer;
             dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null);
             game.Profile.Health = dead.ActiveHealthController.Store();
@@ -222,7 +283,6 @@ internal static class PmcScavSession
                 ServerId = settings.serverId,
                 DeathTime = _deathTime,
             };
-            cost = new ScavRespawnItemCost(dead);
             // Serialize while the cost is temporarily removed, then restore it in the
             // same frame. Cooldown rejection and preload failure consume nothing.
             var frozen = cost.CaptureWithoutCostItem(() => JObject.Parse(new SessionResult
@@ -679,7 +739,7 @@ internal static class PmcScavSession
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"Scav activation acknowledgement unavailable; native settlement retains the issued identity: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Scav activation acknowledgement unavailable; native settlement retains the issued identity: {ScavEligibilityPolicy.DescribeForLog(ex)}");
         }
     }
 
@@ -696,7 +756,7 @@ internal static class PmcScavSession
         }
         catch (Exception ex)
         {
-            Plugin.ModLogger.LogWarning($"Unused Scav preparation could not be cancelled: {ex.Message}");
+            Plugin.ModLogger.LogWarning($"Unused Scav preparation could not be cancelled: {ScavEligibilityPolicy.DescribeForLog(ex)}");
         }
     }
 
@@ -709,12 +769,7 @@ internal static class PmcScavSession
     private static void RequireSuccess(JObject response)
     {
         if ((bool?)response?["success"] != true)
-        {
-            var error = (string)response?["error"];
-            if (error == "scav-cooldown")
-                error = "Your regular Scav is still on cooldown. No Scav or equipment was consumed.";
-            throw new InvalidOperationException(error ?? "The server rejected the Scav continuation.");
-        }
+            throw new ScavServerRefusal((string)response?["error"]);
     }
 
     public static void NotifyUnavailable(string reason)
@@ -722,6 +777,14 @@ internal static class PmcScavSession
                 ? "Scav continuation unavailable; raid saving was stopped to protect your profile. "
                 : "Scav continuation unavailable; the PMC raid will end normally. ")
             + (reason ?? string.Empty), warning: true);
+
+    /// <summary>Nothing was changed: keep the Scav choice disabled for this death and say why.</summary>
+    public static void RecordRefusal(string reason)
+        => _refusedReason = string.IsNullOrWhiteSpace(reason) ? "The Scav continuation is unavailable." : reason;
+
+    public static void NotifyRefused(string reason)
+        => ShowNotice("Scav continuation unavailable. Your PMC respawn choices are still open. " + (reason ?? string.Empty),
+            warning: true);
 
     private static void ShowNotice(string message, bool warning = false)
     {

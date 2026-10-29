@@ -55,6 +55,7 @@ public sealed class RegularScavContinuationTests
     [InlineData("failed-removal-rejects")]
     [InlineData("broken-rollback-rejects")]
     [InlineData("duplicate-commit-rejects")]
+    [InlineData("taken-while-waiting")]
     [InlineData("no-cost")]
     public void CostReservationUsesRealClientAlgorithmAgainstInventoryBoundary(string scenario)
     {
@@ -222,7 +223,8 @@ public sealed class RegularScavContinuationTests
             .Single(node => node.Identifier.ValueText == "Prepare").ToFullString();
         var fragments = new[] {
             "if (UnavailableReason != null)",
-            "cost = new ScavRespawnItemCost(dead)",
+            "cost = new ScavRespawnItemCost(game.LocalPlayer)",
+            "Post(\"probe\"",
             "cost.CaptureWithoutCostItem(",
             "task = Post(\"prepare\", body)",
             "RequireSuccess(response)",
@@ -355,7 +357,14 @@ public sealed class RegularScavContinuationTests
                         try { cost.Commit(); } catch (InvalidOperationException) { rejected = true; }
                         if (!rejected) return "double commit accepted";
                         break;
+                    case "taken-while-waiting":
+                        if (!cost.IsStillHeld) return "held cost reported missing";
+                        player.Profile.Inventory.Items.Clear();
+                        player.Profile.Inventory.Items.Add(new EFT.InventoryLogic.Item { Owner = player.Profile.Inventory });
+                        if (cost.IsStillHeld) return "substituted cost item counted as held";
+                        break;
                     case "no-cost":
+                        if (!cost.IsStillHeld) return "unconfigured cost reported missing";
                         if (!cost.CaptureWithoutCostItem(() => player.Profile.Inventory.Items.Contains(original))) return "unconfigured cost removed";
                         cost.Commit();
                         if (!player.Profile.Inventory.Items.Contains(original)) return "unconfigured cost committed";

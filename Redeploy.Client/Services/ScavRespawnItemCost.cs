@@ -35,6 +35,9 @@ internal sealed class ScavRespawnItemCost
             ?? throw new InvalidOperationException("The required respawn item is no longer available.");
     }
 
+    /// <summary>Read-only: the exact cost item is still on the dead player. Nothing is removed or consumed.</summary>
+    public bool IsStillHeld => _item == null || (ContainsExactItem() && _item.Parent != null);
+
     public T CaptureWithoutCostItem<T>(Func<T> serialize)
     {
         if (_committed)

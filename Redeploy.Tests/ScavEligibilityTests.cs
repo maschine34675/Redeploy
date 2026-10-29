@@ -24,6 +24,13 @@ public sealed class ScavEligibilityTests
     [InlineData("insurance-failed")]
     [InlineData("prepared")]
     [InlineData("cooldown")]
+    [InlineData("transit-arrival")]
+    [InlineData("transit-count-only")]
+    [InlineData("transit-visited-only")]
+    [InlineData("transit-missing-history")]
+    [InlineData("fresh-transition-data")]
+    [InlineData("no-transition-data")]
+    [InlineData("server-refused")]
     public void ActualAvailabilityRejectsKnownFailuresAndPreservesPmcChoices(string scenario)
         => Assert.Equal("PASS", Run(Harness.Value, "eligibility", scenario));
 
@@ -82,8 +89,97 @@ public sealed class ScavEligibilityTests
     [InlineData("btr-delivery")]
     [InlineData("serialized-delivery")]
     [InlineData("prepared")]
+    [InlineData("unsafe")]
+    [InlineData("transit-arrival")]
     public void ActualPreparationRevalidatesBeforeMutationAndReservation(string scenario)
         => Assert.Equal("PASS", Run(Harness.Value, "recheck", scenario));
+
+    [Theory]
+    [InlineData("refused")]
+    [InlineData("committed")]
+    [InlineData("server-refusal-after-body")]
+    [InlineData("raid-ended")]
+    [InlineData("no-respawns-left")]
+    public void ActualPreparationFailureReturnsToPmcChoicesOnlyWhenNothingWasChanged(string scenario)
+        => Assert.Equal("PASS", Run(Harness.Value, "prepare-failure", scenario));
+
+    [Theory]
+    [InlineData("codes")]
+    [InlineData("transit-rule")]
+    [InlineData("decision")]
+    [InlineData("probe-failure")]
+    public void PolicyTablesMatchTheServerRulesAndKeepRawCodesOutOfPlayerText(string scenario)
+        => Assert.Equal("PASS", Run(Harness.Value, "policy", scenario));
+
+    [Fact]
+    public void EveryServerContinuationCodeHasReadableClientText()
+    {
+        var source = File.ReadAllText(Path.Combine(ApiContractTests.RepoRoot, "Redeploy.Server", "Scav", "ScavContinuationService.cs"));
+        var codes = System.Text.RegularExpressions.Regex.Matches(source, "(?:Rejected\\(|Error = )\"([a-z][a-z-]+)\"")
+            .Select(match => match.Groups[1].Value).Distinct().ToArray();
+        // Guards the scan itself: the codes the client has to explain today.
+        Assert.Contains("no-issued-pmc-raid", codes);
+        Assert.Contains("scav-cooldown", codes);
+        Assert.True(codes.Length >= 15, string.Join(",", codes));
+        foreach (var code in codes)
+            Assert.Equal("PASS", Run(Harness.Value, "code", code));
+    }
+
+    [Fact]
+    public void ClientAsksTheServerBeforeItEndsTheDeadPmcSessionAndOnlyThenFailsClosed()
+    {
+        Assert.True(ProbePrecedesSessionEndAndLaterFailuresStayClosed(PrepareSource()));
+        Assert.Contains("/redeploy/pmc-scav/probe", File.ReadAllText(Path.Combine(ApiContractTests.RepoRoot,
+            "Redeploy.Server", "Scav", "ScavRouter.cs")));
+    }
+
+    [Theory]
+    [InlineData("probe-missing")]
+    [InlineData("probe-after-session-end")]
+    [InlineData("refusal-after-session-end")]
+    [InlineData("classifier-missing")]
+    [InlineData("cost-recheck-missing")]
+    public void PreSessionEndOrderNegativeControlsAreDetected(string mutation)
+    {
+        var source = PrepareSource();
+        var mutant = mutation switch
+        {
+            "probe-missing" => source.Replace("Post(\"probe\"", "Post(\"probe-renamed\""),
+            "classifier-missing" => source.Replace("ClassifyProbeFailure(", "ClassifyProbeFailureRenamed("),
+            "cost-recheck-missing" => source.Replace("cost.IsStillHeld", "true"),
+            "probe-after-session-end" => source.Replace("Post(\"probe\"", "Post(\"probe-renamed\"")
+                .Replace("dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null);",
+                    "dead.OnGameSessionEnd(ExitStatus.Killed, _deathTime, game.Location.Id, null); var late = Post(\"probe\", null);"),
+            _ => source.Replace("catch (ScavCostRestorationException ex)",
+                "catch (ScavCostRestorationException ex) when (ex is ScavPreparationRefused)"),
+        };
+        Assert.NotEqual(source, mutant);
+        Assert.False(ProbePrecedesSessionEndAndLaterFailuresStayClosed(mutant));
+    }
+
+    // The probe is the last thing that may end in a PMC re-offer; the dead PMC's statistics session
+    // cannot be reopened, so no failure after it may produce one.
+    private static bool ProbePrecedesSessionEndAndLaterFailuresStayClosed(string prepare)
+    {
+        int probe = prepare.IndexOf("Post(\"probe\"", StringComparison.Ordinal);
+        int sessionEnd = prepare.IndexOf("dead.OnGameSessionEnd(", StringComparison.Ordinal);
+        int refusal = prepare.IndexOf("new ScavPreparationRefused(", StringComparison.Ordinal);
+        // The probe answer is classified (a timeout is a refusal, not an end) and the held cost item is
+        // re-checked, both after the question and before the session end.
+        int classify = prepare.IndexOf("ClassifyProbeFailure(", StringComparison.Ordinal);
+        int held = prepare.IndexOf("cost.IsStillHeld", StringComparison.Ordinal);
+        if (probe < 0 || sessionEnd < 0 || probe > sessionEnd || refusal < 0 || refusal > sessionEnd
+            || classify < probe || classify > sessionEnd || held < probe || held > sessionEnd)
+            return false;
+        return !prepare[sessionEnd..].Contains("ScavPreparationRefused") && !prepare[sessionEnd..].Contains("Block(");
+    }
+
+    private static string PrepareSource()
+    {
+        var root = CSharpSyntaxTree.ParseText(ClientSource("Services/PmcScavSession.cs")).GetRoot();
+        return root.DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(method => method.Identifier.ValueText == "Prepare").ToFullString();
+    }
 
     [Fact]
     public void DeathInsuranceIsCapturedOncePerBodyAndNeverOnPromptRepaint()
@@ -115,6 +211,73 @@ public sealed class ScavEligibilityTests
     }
 
     [Fact]
+    public void TransitArrivalNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("if (isTransitArrival)", "if (false)"));
+        Assert.NotEqual("PASS", Run(mutant, "eligibility", "transit-arrival"));
+    }
+
+    [Theory]
+    [InlineData("transition.transitionCount != 0 ||", "transit-count-only")]
+    [InlineData("|| transition.visitedLocations is not { Length: 0 }", "transit-visited-only")]
+    [InlineData("transition.visitedLocations is not { Length: 0 }", "transit-missing-history", "transition.visitedLocations is { Length: > 0 }")]
+    public void TransitRuleNegativeControlsAreDetected(string original, string scenario, string replacement = "")
+    {
+        var mutant = BuildHarness(source => source.Replace(original, replacement));
+        Assert.NotEqual("PASS", Run(mutant, "eligibility", scenario));
+    }
+
+    [Fact]
+    public void ServerRefusalMustStickNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("if (_refusedReason != null)", "if (false)"));
+        Assert.NotEqual("PASS", Run(mutant, "prepare-failure", "refused"));
+    }
+
+    [Fact]
+    public void AlwaysEndRaidNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("refusedBeforeAnyChange && pmcChoiceStillPossible", "false"));
+        Assert.NotEqual("PASS", Run(mutant, "prepare-failure", "refused"));
+    }
+
+    [Fact]
+    public void ReofferAfterChangeNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("refusedBeforeAnyChange && pmcChoiceStillPossible", "pmcChoiceStillPossible"));
+        Assert.NotEqual("PASS", Run(mutant, "prepare-failure", "committed"));
+    }
+
+    [Fact]
+    public void HeldContinuationMustNotBeReturnedFromNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("continuationHeld ? new InvalidOperationException(reason) : new ScavPreparationRefused(reason)",
+            "new ScavPreparationRefused(reason)"));
+        Assert.NotEqual("PASS", Run(mutant, "recheck", "prepared"));
+    }
+
+    [Fact]
+    public void TimedOutProbeEndsRaidNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("OperationCanceledException when !raidCanContinue => failure,", "OperationCanceledException => failure,"));
+        Assert.NotEqual("PASS", Run(mutant, "policy", "probe-failure"));
+    }
+
+    [Fact]
+    public void PromptNotShownNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace("RespawnPromptPanel.Instance?.Show();", ""));
+        Assert.NotEqual("PASS", Run(mutant, "prepare-failure", "refused"));
+    }
+
+    [Fact]
+    public void RawServerCodeInPlayerTextNegativeControlIsDetected()
+    {
+        var mutant = BuildHarness(source => source.Replace(": base(ScavEligibilityPolicy.DescribeServerCode(code))", ": base(code)"));
+        Assert.NotEqual("PASS", Run(mutant, "policy", "codes"));
+    }
+
+    [Fact]
     public void PrepareWireUsesVerifiedDeathInsuranceWithoutReplacingFinalCapture()
     {
         var source = ClientSource("Services/PmcScavSession.cs");
@@ -137,7 +300,8 @@ public sealed class ScavEligibilityTests
         var root = CSharpSyntaxTree.ParseText(ClientSource("Services/PmcScavSession.cs")).GetRoot();
         var methods = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Where(method => method.Identifier.ValueText is "ReadOnlyUnavailableReason" or "ScavUnavailableReason"
-                or "HasSwitched" or "CanContinue" or "RecordDeath" or "ResetForRaidStart" or "BlocksBtrItemDelivery" or "CaptureDeathInsurance" or "BlocksScavSellAll");
+                or "HasSwitched" or "CanContinue" or "RecordDeath" or "ResetForRaidStart" or "BlocksBtrItemDelivery" or "CaptureDeathInsurance" or "BlocksScavSellAll"
+                or "RecordRefusal" or "NotifyRefused" or "NotifyUnavailable");
         var properties = root.DescendantNodes().OfType<PropertyDeclarationSyntax>()
             .Where(property => property.Identifier.ValueText is "UnavailableReason" or "IsOffered");
         var prepare = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
@@ -148,7 +312,7 @@ public sealed class ScavEligibilityTests
             || !local.Declaration.Variables.Any(variable => variable.Identifier.ValueText == "dead"));
         var choice = CSharpSyntaxTree.ParseText(ClientSource("Services/RespawnService.cs")).GetRoot()
             .DescendantNodes().OfType<MethodDeclarationSyntax>()
-            .Where(method => method.Identifier.ValueText is "BeginRespawn" or "BeginScavRespawn");
+            .Where(method => method.Identifier.ValueText is "BeginRespawn" or "BeginScavRespawn" or "HandleScavPreparationFailure");
         var patches = CSharpSyntaxTree.ParseText(ClientSource("Patches/PmcScavPatches.cs")).GetRoot()
             .DescendantNodes().OfType<ClassDeclarationSyntax>()
             .Where(type => type.Identifier.ValueText.StartsWith("PmcScavBtr", StringComparison.Ordinal)
@@ -202,7 +366,10 @@ public sealed class ScavEligibilityTests
             public static implicit operator string(MongoID id) => id.value;
             public override string ToString() => value;
         }
-        namespace JsonType { public sealed class FlatItem { public MongoID _id; public MongoID? parentId; } }
+        namespace JsonType {
+            public sealed class FlatItem { public MongoID _id; public MongoID? parentId; }
+            public sealed class TransitSettings { public int transitionCount; public string[] visitedLocations; }
+        }
         namespace Comfort.Common { public static class Singleton<T> { public static T Instance; } }
         namespace EFT {
             public enum EPlayerSide { Bear, Savage }
@@ -313,7 +480,8 @@ public sealed class ScavEligibilityTests
             public sealed class Setting { public bool Value = true; }
             public static class Settings {
                 public static Setting RespawnAsScav = new Setting(), Enabled = new Setting();
-                public static bool HasRespawnsRemaining(int used) => true;
+                public static bool RespawnsLeft = true;
+                public static bool HasRespawnsRemaining(int used) => RespawnsLeft;
             }
             public static class RespawnSessionState {
                 public static LocalGame CurrentLocalGame;
@@ -321,7 +489,11 @@ public sealed class ScavEligibilityTests
                 public static int RespawnsUsed; public static RespawnLocationMode SelectedSpawnMode;
             }
             public sealed class Session { public Profile ProfileOfPet = new Profile { Id = "scav", Info = new Info { Side = EPlayerSide.Savage } }; }
-            public sealed class RaidSettings { public string serverId = "raid"; }
+            public sealed class RaidSettings {
+                public string serverId = "raid";
+                // A fresh raid, as the server's start response describes it.
+                public TransitSettings transition = new TransitSettings { transitionCount = 0, visitedLocations = new string[0] };
+            }
             public static class LocalGameAccessor {
                 public static Session Session = new Session(); public static RaidSettings Settings = new RaidSettings();
                 public static Session GetSession(LocalGame game) => Session;
@@ -334,11 +506,14 @@ public sealed class ScavEligibilityTests
             public static class Plugin { public static Logger ModLogger = new Logger(); }
             public sealed class Logger { public void LogWarning(string message) { } }
             public sealed class RespawnPromptPanel {
-                public static RespawnPromptPanel Instance = new RespawnPromptPanel(); public int Hides;
+                public static RespawnPromptPanel Instance = new RespawnPromptPanel(); public int Hides, Shows;
                 public void Hide() { Hides++; }
+                public void Show() { Shows++; }
             }
             public static partial class RespawnService {
-                public static bool? LastScavChoice;
+                public static bool? LastScavChoice; public static int GiveUps;
+                public static void GiveUpRaid() { GiveUps++; RespawnSessionState.HasGivenUp = true; RespawnPromptPanel.Instance.Hide(); }
+                public static void RunFailure(LocalGame game, Exception failure) => HandleScavPreparationFailure(game, failure);
                 public static bool HasRequiredRespawnItem(LocalPlayer player) => true;
                 private static IEnumerator RespawnCoroutine(LocalGame game, bool continueAsScav) { LastScavChoice = continueAsScav; yield break; }
             }
@@ -351,6 +526,8 @@ public sealed class ScavEligibilityTests
                 private static LocalGame _deathGame; private static LocalPlayer _deathPlayer;
                 private static float _deathTime; private static FlatItem[] _deathInsurance; private static string _deathInsuranceFailure;
                 private static string _unsafePreparationServerId, _unsafePreparationPmcId, _unsafePreparationReason;
+                private static string _refusedReason;
+                public static void MarkUnsafe() { _unsafePreparationReason = "unsafe"; }
                 public static object ExitAuthority = new object(); public static int Notices; public static string LastNotice;
                 private static void ShowNotice(string text, bool warning = false) { Notices++; LastNotice = text; }
                 public static FlatItem[] DeathInsurance() => _deathInsurance;
@@ -382,7 +559,8 @@ public sealed class ScavEligibilityTests
                 var game = new LocalGame(); game.LocalPlayer.Profile = game.Profile;
                 RespawnSessionState.CurrentLocalGame = game; RespawnSessionState.IsInRaid = RespawnSessionState.PendingRespawnChoice = true;
                 RespawnSessionState.HasGivenUp = RespawnSessionState.IsRespawnInProgress = false;
-                RespawnPromptPanel.Instance.Hides = 0; RespawnService.LastScavChoice = null;
+                RespawnPromptPanel.Instance.Hides = RespawnPromptPanel.Instance.Shows = 0;
+                RespawnService.LastScavChoice = null; RespawnService.GiveUps = 0; Settings.RespawnsLeft = true;
                 LocalGameAccessor.Session = new Session(); LocalGameAccessor.Settings = new RaidSettings();
                 ExfiltrationController.Instance = new ExfiltrationController();
                 Comfort.Common.Singleton<GameWorld>.Instance = new GameWorld();
@@ -410,6 +588,14 @@ public sealed class ScavEligibilityTests
                     case "insurance-failed": game.InsuranceFails = true; PmcScavSession.RecordDeath(game); break;
                     case "prepared": PmcScavSession.Adopt(game, adopted: false); break;
                     case "cooldown": LocalGameAccessor.Session.ProfileOfPet.Info.SavageLockTime = 1200; break;
+                    case "transit-arrival": LocalGameAccessor.Settings.transition = new TransitSettings { transitionCount = 1, visitedLocations = new[] { "bigmap" } }; break;
+                    case "transit-count-only": LocalGameAccessor.Settings.transition = new TransitSettings { transitionCount = 2, visitedLocations = new string[0] }; break;
+                    case "transit-visited-only": LocalGameAccessor.Settings.transition = new TransitSettings { transitionCount = 0, visitedLocations = new[] { "bigmap" } }; break;
+                    case "transit-missing-history": LocalGameAccessor.Settings.transition = new TransitSettings { transitionCount = 0, visitedLocations = null }; break;
+                    case "fresh-transition-data": LocalGameAccessor.Settings.transition = new TransitSettings { transitionCount = 0, visitedLocations = new string[0] }; break;
+                    case "no-transition-data": LocalGameAccessor.Settings.transition = null; break;
+                    case "server-refused": PmcScavSession.RecordRefusal("The server did not register this raid."); break;
+                    case "unsafe": PmcScavSession.MarkUnsafe(); break;
                     default: throw new Exception("Unknown scenario: " + scenario);
                 }
             }
@@ -465,12 +651,97 @@ public sealed class ScavEligibilityTests
                 }
                 if (mode == "recheck") {
                     Check(PmcScavSession.UnavailableReason == null, "Baseline was unavailable.");
-                    SetFailure(game, scenario); bool rejected = false;
-                    try { PmcScavSession.Preflight(game); } catch (InvalidOperationException) { rejected = true; }
-                    Check(rejected, "Preparation ignored a changed prerequisite."); return;
+                    SetFailure(game, scenario); InvalidOperationException rejected = null;
+                    try { PmcScavSession.Preflight(game); } catch (InvalidOperationException ex) { rejected = ex; }
+                    Check(rejected != null, "Preparation ignored a changed prerequisite.");
+                    // A held (prepared or unsafe) continuation is never a clean state to return from.
+                    bool held = scenario is "prepared" or "unsafe";
+                    Check((rejected is ScavPreparationRefused) == !held, "Pre-change refusal classification mismatch: " + scenario); return;
+                }
+                if (mode == "prepare-failure") {
+                    RespawnSessionState.IsRespawnInProgress = true; RespawnPromptPanel.Instance.Hide();
+                    int hidesBefore = RespawnPromptPanel.Instance.Hides;
+                    Exception failure = scenario switch {
+                        "refused" or "raid-ended" or "no-respawns-left" => new ScavPreparationRefused("Reason shown to the player.", "no-issued-pmc-raid"),
+                        "committed" => new InvalidOperationException("late failure"),
+                        "server-refusal-after-body" => new ScavServerRefusal("invalid-frozen-pmc-death"),
+                        _ => throw new Exception("Unknown scenario: " + scenario) };
+                    if (scenario == "raid-ended") game.Status = GameStatus.Stopping;
+                    if (scenario == "no-respawns-left") Settings.RespawnsLeft = false;
+                    RespawnService.RunFailure(game, failure);
+                    bool reopen = scenario == "refused", end = scenario is "committed" or "server-refusal-after-body" or "no-respawns-left";
+                    Check(RespawnPromptPanel.Instance.Shows == (reopen ? 1 : 0), "Prompt visibility mismatch: " + scenario);
+                    Check(RespawnService.GiveUps == (end ? 1 : 0), "End-raid mismatch: " + scenario);
+                    Check(!RespawnSessionState.IsRespawnInProgress, "Respawn flag left set.");
+                    Check(PmcScavSession.Notices == 1, "Missing player notice.");
+                    Check(!PmcScavSession.LastNotice.Contains("no-issued-pmc-raid"), "Raw server code reached the player.");
+                    if (end || scenario == "raid-ended") Check(PmcScavSession.LastNotice.Contains("will end normally"), "Wrong ending notice.");
+                    if (!reopen) { Check(RespawnPromptPanel.Instance.Hides >= hidesBefore, "Prompt state corrupted."); return; }
+                    Check(RespawnSessionState.PendingRespawnChoice && !RespawnSessionState.HasGivenUp, "PMC choice state lost.");
+                    Check(PmcScavSession.LastNotice.Contains("PMC respawn choices"), "Notice does not say the PMC choices remain.");
+                    Check(PmcScavSession.UnavailableReason == "Reason shown to the player.", "Scav choice not disabled with the reason.");
+                    RespawnService.BeginScavRespawn(); Check(game.Starts == 0, "Refused Scav choice could be retried.");
+                    RespawnService.BeginRespawn(RespawnLocationMode.NearCorpse);
+                    Check(game.Starts == 1 && RespawnService.LastScavChoice == false, "PMC respawn cannot run after the refusal.");
+                    return;
+                }
+                if (mode == "code") {
+                    var text = ScavEligibilityPolicy.DescribeServerCode(scenario);
+                    Check(text != ScavEligibilityPolicy.DescribeServerCode("code-from-a-future-server") && !text.Contains(scenario), "No readable text for server code " + scenario);
+                    return;
+                }
+                if (mode == "policy") {
+                    if (scenario == "codes") {
+                        Check(ScavEligibilityPolicy.DescribeServerCode(null) == ScavEligibilityPolicy.DescribeServerCode("code-from-a-future-server"), "Missing code is not generic.");
+                        var refusal = new ScavServerRefusal("no-issued-pmc-raid");
+                        Check(!refusal.Message.Contains("no-issued-pmc-raid"), "Raw server code in the player text.");
+                        Check(ScavEligibilityPolicy.DescribeForLog(refusal).Contains("no-issued-pmc-raid"), "Log lost the raw server code.");
+                        var wrapped = new ScavPreparationRefused(refusal.Message, refusal.Code, refusal);
+                        Check(ScavEligibilityPolicy.RefusalCode(wrapped) == "no-issued-pmc-raid" && ScavEligibilityPolicy.RefusalCode(new Exception("x", wrapped)) == "no-issued-pmc-raid", "Code not recoverable from the wrapper chain.");
+                        Check(ScavEligibilityPolicy.RefusalCode(new InvalidOperationException("plain")) == null, "Plain failure invented a code.");
+                        return;
+                    }
+                    if (scenario == "transit-rule") {
+                        Check(!ScavEligibilityPolicy.IsTransitArrival(null), "No transition data is a fresh raid.");
+                        Check(!ScavEligibilityPolicy.IsTransitArrival(new TransitSettings { transitionCount = 0, visitedLocations = new string[0] }), "Fresh raid flagged.");
+                        Check(ScavEligibilityPolicy.IsTransitArrival(new TransitSettings { transitionCount = 1, visitedLocations = new string[0] }), "Count missed.");
+                        Check(ScavEligibilityPolicy.IsTransitArrival(new TransitSettings { transitionCount = 0, visitedLocations = new[] { "bigmap" } }), "History missed.");
+                        Check(ScavEligibilityPolicy.IsTransitArrival(new TransitSettings { transitionCount = 0, visitedLocations = null }), "Missing history is non-fresh on the server.");
+                        Check(ScavEligibilityPolicy.IsTransitArrival(new TransitSettings { transitionCount = -1, visitedLocations = new string[0] }), "Negative count is non-fresh on the server.");
+                        return;
+                    }
+                    if (scenario == "decision") {
+                        var none = ScavPrepareFailureAction.Nothing; var reopen = ScavPrepareFailureAction.ReopenPmcChoices; var end = ScavPrepareFailureAction.EndRaid;
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(true, true, true) == reopen, "Clean refusal must reopen.");
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(true, true, false) == end, "No PMC choice left must end.");
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(false, true, true) == end, "A changed state must end.");
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(false, true, false) == end, "A changed state must end.");
+                        foreach (var refused in new[] { true, false }) foreach (var possible in new[] { true, false })
+                            Check(ScavEligibilityPolicy.AfterPrepareFailure(refused, false, possible) == none, "A finished raid owns its own ending.");
+                        return;
+                    }
+                    if (scenario == "probe-failure") {
+                        // A timed-out request (HttpClient: TaskCanceledException) changed nothing and must give the PMC choices back.
+                        var timeout = new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+                        var timedOut = ScavEligibilityPolicy.ClassifyProbeFailure(timeout, true);
+                        Check(timedOut is ScavPreparationRefused && ReferenceEquals(timedOut.InnerException, timeout), "A timed-out probe is not a refusal.");
+                        Check(timedOut.Message == ScavEligibilityPolicy.ServerUnreachableReason, "Timeout lost the readable reason.");
+                        Check(ScavEligibilityPolicy.AfterPrepareFailure(timedOut is ScavPreparationRefused, true, true) == ScavPrepareFailureAction.ReopenPmcChoices, "A timed-out probe ends the raid.");
+                        Check(ScavEligibilityPolicy.ClassifyProbeFailure(new OperationCanceledException("cancelled"), true) is ScavPreparationRefused, "A cancelled probe in a running raid is not a refusal.");
+                        // The raid itself is gone: the native end owns the rest, no refusal and no re-offer.
+                        var ended = new OperationCanceledException("The raid ended while checking the Scav.");
+                        Check(ReferenceEquals(ScavEligibilityPolicy.ClassifyProbeFailure(ended, false), ended), "A cancellation after the raid ended was reclassified.");
+                        Check(ScavEligibilityPolicy.ClassifyProbeFailure(new System.Net.Http.HttpRequestException("connection refused"), true) is ScavPreparationRefused, "A transport failure is not a refusal.");
+                        var server = ScavEligibilityPolicy.ClassifyProbeFailure(new ScavServerRefusal("no-issued-pmc-raid"), true);
+                        Check(server is ScavPreparationRefused { Code: "no-issued-pmc-raid" }, "A server refusal lost its code.");
+                        var held = new ScavPreparationRefused("The required respawn item is no longer available.");
+                        Check(ReferenceEquals(ScavEligibilityPolicy.ClassifyProbeFailure(held, true), held), "An existing refusal was rewrapped.");
+                        return;
+                    }
+                    throw new Exception("Unknown policy scenario");
                 }
                 if (mode == "eligibility") {
-                    SetFailure(game, scenario); bool ready = scenario is "ready" or "empty-native-roots";
+                    SetFailure(game, scenario); bool ready = scenario is "ready" or "empty-native-roots" or "fresh-transition-data" or "no-transition-data";
                     for (int i = 0; i < 5; i++) Check((PmcScavSession.UnavailableReason == null) == ready, "Eligibility mismatch: " + scenario);
                     Check(game.TransferReads == 0, "Prompt flattened native transfers.");
                     if (!ready) {

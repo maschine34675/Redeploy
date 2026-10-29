@@ -23,15 +23,24 @@ binaries; see the [1.1.0 release notes](RELEASE-1.1.0.md) for release scope.
 - Scav cooldown or unavailability known before selection disables only the Scav choice. Choosing PMC
   never reserves the Scav or starts its continuation transaction. Both choices
   respect the respawn limit and configured item cost. The PMC corpse stays lootable.
-  The same check now includes missing/unverified Scav exits and BTR/transit items
-  already sent during the PMC life; it is repeated immediately before preparation.
+  The same check now includes missing/unverified Scav exits, BTR/transit items
+  already sent during the PMC life and a raid reached by map transit (see below);
+  it is repeated immediately before preparation.
 - The Scav uses the account's current Scav identity, equipment and progression,
   separate from the PMC. The normal Scav cooldown must have expired; the prompt
   explains when it is unavailable, and the server independently enforces it.
   Preparation reserves this Scav without generating new gear. Refused preparation
   does not consume a respawn-cost item or reset the Scav cooldown.
 - A subsequent death, leaving the raid or time expiry ends the raid. The Scav
-  cannot respawn again. Transit to another map is outside this first version.
+  cannot respawn again. Transit to another map is outside this first version:
+  the Scav choice is disabled, with a reason, in any raid you reached by map
+  transit (second and later raid of a transit chain), because the server only
+  registers a fresh raid for a Scav continuation.
+- If the server refuses or cannot answer before anything changed locally (raid not
+  registered, server restarted during the raid, older server mod, connection
+  problem), the prompt comes back with the PMC choices and the Scav choice disabled
+  with a readable reason; the raid does not end. See
+  [Pre-change refusal](#pre-change-refusal-and-incoming-transits--hotfix-111).
 - The PMC's outcome remains a death. PMC and Scav combat progression are handled
   separately. Native shared effects, such as Fence reputation and Scav quests,
   still apply as in an ordinary Scav raid.
@@ -112,7 +121,7 @@ PiP Disabler compare `game.Profile` only after the commit, together with
 - A map must provide native Scav spawns and exits. BTR/transit item deliveries
   already made in the PMC phase prevent conversion; empty native transfer roots
   do not. Missing Scav exits or prior deliveries disable only the Scav choice
-  before preparation. Transit is disabled and hidden during this first Scav
+  before preparation, as does a raid reached by map transit. Transit is disabled and hidden during this first Scav
   implementation. BTR item delivery is blocked for the adopted Scav before items
   can move, including late purchase completion during raid teardown. Other BTR
   services and ordinary PMC/Scav delivery keep their native behavior.
@@ -131,7 +140,8 @@ PiP Disabler compare `game.Profile` only after the commit, together with
   they are never interpreted as regular-Scav reservations.
 - A final lost-insurance scan failure refuses settlement rather than inventing
   an empty claim. Ordinary PMC death remains available if preparation fails
-  before the body switch.
+  before the body switch: a failure that changed nothing returns to the PMC
+  choices, any later failure ends the raid as a normal PMC death.
 
 ## Recovery and release-blocker fixes — 2026-10-28
 
@@ -188,6 +198,61 @@ Native insurance, BTR rides/purchase UI, all maps and invited squads remain outs
 that run's scope. An initial non-completing switch was not reproduced by the
 clean multi-respawn repeat; its cause is not claimed resolved.
 
+## Pre-change refusal and incoming transits — hotfix 1.1.1
+
+Found in the 29 October release review: in the second or later raid of a map
+transit chain the Scav button was enabled, but the server never registers such a
+raid (`StartRejection`: `incoming-transition` or `non-fresh-transition`), so
+preparation always failed with `no-issued-pmc-raid` and the failure ended the raid
+instead of returning to the PMC choices. The same ending followed a server restart
+during the raid, an older server mod without the Scav routes, or a connection
+error.
+
+- **Transit arrivals are detected on the client.** The start response the client
+  keeps (`LocalRaidSettings.transition`) is read with the server's own rule:
+  a nonzero `transitionCount` or a visited-locations list that is not empty marks a
+  transit arrival. No transition data at all is a fresh raid. The Scav button is
+  then disabled with the reason "Scav continuation is unavailable in a raid you
+  reached by map transit." The PMC choices work as in any other raid.
+- **A new read-only server question precedes any local change.** Before the client
+  ends the dead PMC's statistics session (which adds that life's experience and a
+  Killed session to the profile and cannot be reopened) it posts
+  `/redeploy/pmc-scav/probe` with the raid's server ID. The server answers with the
+  registration, pending-continuation, Scav-state and item-ownership half of `prepare`
+  (the code is shared; an account Scav that shares item ids with the PMC is
+  refused here too) and journals, reserves and generates nothing. `prepare` itself
+  is unchanged and still validates everything again.
+- **A refusal before any change returns to the PMC choices.** If the pre-checks
+  fail, the probe is refused, the server does not answer (a connection error or a
+  timed-out request counts as no answer), the respawn-cost item is gone from the
+  corpse or the raid ended, the dead PMC, its profile, the respawn-cost item and
+  the Scav are untouched. While the raid still runs and a PMC respawn is possible,
+  the prompt is shown again; the Scav button stays disabled with the reason for
+  the rest of that death, and a warning notification says that the PMC respawn
+  choices are still open. When the raid itself ended meanwhile, no prompt is
+  shown and the native ending runs.
+- **Anything after that point keeps the old fail-closed ending.** Once the session
+  has been ended (the `prepare` request and everything after it, including the
+  cost commit and the respawn pipeline) a failure ends the raid as a normal PMC
+  death, as before. A held reservation, an unsafe cost restoration or a prepared
+  context also never returns to the prompt. A server restart that happens between
+  the probe and `prepare` therefore still ends the raid; this window is a few
+  frames.
+- **Readable messages.** Known server codes (`no-issued-pmc-raid`,
+  `previous-continuation-pending`, `regular-scav-unavailable`, `scav-cooldown`
+  and the reservation-state codes) are mapped to plain sentences. The raw code is
+  kept in the BepInEx log line (`[server code: ...]`) but not shown to the player.
+  The probe codes are worded for the probe too (it never looks at the PMC death).
+  A new test fails if `ScavContinuationService` adds a `Rejected("...")` or
+  `Error = "..."` code without a client text; codes built any other way, or in
+  other server files, are not covered by that scan.
+
+Tests: `ScavEligibilityTests` (client eligibility rule, pre-change classification,
+failure handling with the real `RespawnService`/`PmcScavSession` code, code map,
+ordering of the probe before the session end, planted-bug controls) and
+`ScavProbeTests` (server probe against the same states as `prepare`, nothing
+journaled or written).
+
 ## Acceptance checks
 
 The following table defines the checks. Dated evidence below distinguishes
@@ -206,7 +271,8 @@ native runs from offline tests and remaining limits.
 | Restart recovery | Prepared/Active and partial-transfer restart; explicit abandon/save/remaining transfer; no repeated loot, insurance or cooldown; new raids work afterward |
 | Client-only restart | Recovery clears the exact ordinary-raid transaction while the server and ArenaMode remain running |
 | Restrictions | Owned Scav BTR delivery and Sell All are denied before item/payment effects; ordinary controls remain native |
-| Preflight | Missing Scav exits/prior delivery disable only Scav; ordinary PMC respawn remains usable |
+| Preflight | Missing Scav exits/prior delivery/map-transit arrival disable only Scav; ordinary PMC respawn remains usable |
+| Refused preparation | Server cannot register the raid, was restarted or is an older build: prompt returns with PMC choices, Scav disabled with a readable reason; no respawn item, statistics or Scav state consumed |
 | Regression | Normal PMC respawn works with the additional Scav choice enabled by default and explicitly disabled; normal Scav respawn remains functional |
 
 Native testing uses the dedicated SPT-GPU-1 test profile. Syncthing for its SPT41
