@@ -1,5 +1,19 @@
 # Redeploy repository status
 
+## Published 2026-10-29 — Redeploy 1.1.0
+
+[GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0) is public,
+latest and not a prerelease. Tag/build source: `f7eae6f59a5cc9c4bc69a0268bb0ce8d1a5f44fc`.
+`Redeploy-1.1.0.zip` contains exactly Client/Server 1.1.0 and Core 1.0.17; 223,169 bytes,
+SHA-256 `aa1c2f0f705b83d268702ce0b3bdd61bea9089b35789553336b5486676d1e093`.
+The public ZIP/checksum were downloaded and verified against local bytes and GitHub digests.
+469 client/Core and 149 server cases plus 47 interop checks passed; initially absent sibling
+Arena fixtures were rerun successfully against the final 0.4.0 source/binary. All three DLLs
+had no malicious/suspicious VirusTotal labels. Core matches ArenaMode's supplied copy exactly.
+See [release notes](RELEASE-1.1.0.md) for scanner links, install steps and native evidence limits.
+No live deployment/settings/synchronization changes were performed for publication. Later
+documentation commits do not move the verified tag or change the published package.
+
 ## Release preparation — 2026-10-29
 
 - Current source targets Client/Server **1.1.0** and shared Core **1.0.17**.

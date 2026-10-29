@@ -61,3 +61,17 @@ continuations. These used the recorded **pre-1.1.0 binaries**, so they establish
 those gameplay scenarios, not native acceptance of newly built 1.1.0 hashes or
 every map, optic and optional-mod combination. The
 [changelog](https://github.com/maschine34675/Redeploy/blob/v1.1.0/docs/CHANGELOG.md#110---2026-10-29) records the complete release changes.
+
+## Package checks
+
+Built from `f7eae6f59a5cc9c4bc69a0268bb0ce8d1a5f44fc`. ZIP SHA-256: `aa1c2f0f705b83d268702ce0b3bdd61bea9089b35789553336b5486676d1e093`. The uploaded ZIP includes the verified Client/Server versions and shared Core 1.0.17. Package contents, binary metadata, source stamps and extracted bytes passed validation.
+
+Fresh checks: 469 client/Core and 149 server tests passed, plus 47 respawn interoperability checks. Credential scanning found no confirmed credentials in the release source or payload.
+
+VirusTotal results below apply to these exact binaries (29 October 2026). No malicious or suspicious labels were reported for any of the three DLLs; each had 71 undetected and four unsupported engines.
+
+| File | SHA-256 / scan |
+|---|---|
+| `maschine-Redeploy.Core.dll` | [256632c7d9d6…](https://www.virustotal.com/gui/file/256632c7d9d66751db54660f05d8bb6de55a4ec87feb3e3607f6e1c9b5c70cfe) |
+| `maschine-Redeploy.Client.dll` | [e92851c4e536…](https://www.virustotal.com/gui/file/e92851c4e5360439b2d94e63dfc2dbe2819f30563676d8382097cf5d62583336) |
+| `maschine-Redeploy.Server.dll` | [787a60c605d5…](https://www.virustotal.com/gui/file/787a60c605d5d92f5f8c2f721fd6d460abd7ab07fd1e31823f3652fc8b08f212) |
