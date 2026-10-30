@@ -1,5 +1,17 @@
 # Redeploy repository status
 
+## Repository hygiene — 2026-10-30
+
+- `AGENTS.md` was rewritten as short working notes for agent sessions (layout, no-deploy
+  build and test commands, Core versioning rules, verified traps, conventions). The previous
+  content, the CorpseRun handoff with the Stufe-0/1 engine notes, is archived verbatim in
+  [docs/history/CORPSERUN-HANDOFF.md](history/CORPSERUN-HANDOFF.md); nothing in it was
+  edited. Documentation only: no source, package or installation change.
+- Local, not in the repository: gitignored `artifacts/` folders older than 2026-10-28 and all
+  `bin/`/`obj/` output were deleted on the development machine (`publish-111`,
+  `publish-20261029` and `standalone-compat-20261029` were kept). Published packages live on
+  GitHub; the next build recreates the outputs.
+
 ## Published 2026-10-29 — Redeploy 1.1.1
 
 [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.1) is public,
@@ -155,5 +167,6 @@ No build, deployment, profile edit, game-configuration edit or game test was nee
 for this administrative change. Unrelated new `assets/` content in Redeploy was left
 untouched and excluded from the documentation commit.
 
-`CLAUDE-CODE-HANDOFF.md` and `CODE-REVIEW-2026-07-29.md` retain historical CorpseRun
+[docs/history/CORPSERUN-HANDOFF.md](history/CORPSERUN-HANDOFF.md) (formerly `AGENTS.md`,
+before that `CLAUDE-CODE-HANDOFF.md`) and `CODE-REVIEW-2026-07-29.md` retain historical CorpseRun
 details; their old paths and identifiers are not current build instructions.

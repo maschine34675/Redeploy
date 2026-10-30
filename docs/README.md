@@ -26,6 +26,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | [Logging follow-up, 2026-10-18](LOGGING-FOLLOWUP-20261018.md) | Core 1.0.8 timing opt-in, logging changes and offline verification. Not a complete native acceptance report. |
 | [Repository status](REPOSITORY-STATUS.md) | Current checkout/remote and the historical CorpseRun archive. |
 | [Code review, 2026-07-29](CODE-REVIEW-2026-07-29.md) | Historical CorpseRun review; not a list of current unresolved defects. |
-| [Historical handoff](../AGENTS.md) | Earlier implementation notes and pitfalls, now stored as `AGENTS.md`. Its old CorpseRun names and paths are not current installation instructions. |
+| [Agent working notes](../AGENTS.md) | Layout, no-deploy build and test commands, Core versioning rules, traps and conventions for agent sessions (rewritten 2026-10-30). |
+| [Historical CorpseRun handoff](history/CORPSERUN-HANDOFF.md) | The earlier implementation notes and pitfalls, verbatim (until 2026-10-29). Its old CorpseRun names, paths and open items are not current instructions. |
 
 Old reports retain names such as CorpseRun, KillcamReplay and the former handoff filename for provenance. Current standalone identities are Redeploy and Killcam. Offline test results, deployment and native gameplay acceptance are separate evidence; a report only covers its stated builds and scenarios.
