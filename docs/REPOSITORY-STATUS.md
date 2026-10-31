@@ -11,10 +11,16 @@
   `Redeploy.Tests/AdapterUnpatchGuardTests` pins that for all sixteen adapters. See the
   [changelog](CHANGELOG.md), "Unreleased".
 - `CoreVersion.props` is now **1.0.19**. ArenaMode's branch `fix/map-screen-admission`
-  stamps and requires it; release the two together. Offline tests only: no Core or driver
-  was rebuilt or deployed by this change, so `Redeploy.Core/bin` still holds a 1.0.18 build
-  until the next Release build (`CoreVersionTests.BuiltCoreCarriesItsOwnVersionLine` reports
-  that skew until then). No native measurement yet.
+  stamps and requires it; release the two together. The commit `51ac95c` itself ran offline
+  tests only. On 31.10. evening the orchestrator built Core `1.0.19+51ac95c` and deployed it
+  with ArenaMode `0.4.1+60795208` to all Syncthing hosts for the native measurement; on the
+  development machine `Redeploy.Core/bin/Debug` holds that 1.0.19 build, `bin/Release` still
+  a 1.0.18 build (`70bceb1`), and `CoreVersionTests` read the newer of the two. No native
+  measurement yet.
+- Review follow-up (31.10. evening): `AdapterUnpatchGuardTests` now requires the flag to be
+  raised on the path to the `Patch` call (an unconditional statement of an enclosing block,
+  after the method's last return before it); a flag raised in the absent branch used to pass.
+  `Redeploy.Tests` 593 total, 592 passed, 1 skipped (Redeploy.Client not built).
 
 ## Repository hygiene — 2026-10-30
 

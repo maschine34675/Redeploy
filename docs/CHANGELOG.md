@@ -23,7 +23,10 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 - `Redeploy.Tests/AdapterUnpatchGuardTests` pins the guard for all sixteen
   adapters that own a Harmony instance (a Roslyn source contract, because the
   adapters cannot load outside the game) and proves, per file, that removing the
-  guard, the set or the clear fails it.
+  guard, the set or the clear fails it. The set has to lie on the path to the
+  `Patch` call (an unconditional statement of an enclosing block, after the
+  method's last return before it); a flag raised on the absent-plugin path is
+  rejected.
 - Core **1.0.19**. A driver built from this source (Redeploy.Client,
   ArenaMode.Client) stamps and requires Core 1.0.19 and refuses an older Core at
   startup, so ArenaMode and Redeploy builds from this state must ship together

@@ -17,9 +17,11 @@ namespace Redeploy.Tests;
 /// <item>each <c>X.UnpatchSelf()</c> sits under <c>if (F)</c> or after <c>if (!F) return;</c> for a static
 /// bool field F of the adapter;</item>
 /// <item>the method holding that UnpatchSelf also assigns <c>F = false</c> (cleared when it unpatches);</item>
-/// <item>every <c>X.Patch(...)</c> of the same Harmony instance is preceded, in its method, by <c>F = true</c>,
+/// <item>every <c>X.Patch(...)</c> of the same Harmony instance is preceded, in its method, by <c>F = true;</c>,
 /// or sits in a helper whose every call site is (set where the adapter patches, so a bind that fails
-/// between two Patch calls still unpatches).</item>
+/// between two Patch calls still unpatches). The set must lie on the path to the Patch: an unconditional
+/// statement of a block that encloses the Patch statement (or the helper call), after the method's last
+/// return before it, so a flag raised on the absent-plugin path does not count (tightened 2026-10-31).</item>
 /// </list>
 /// The fault tests remove the guard, the set and the clear of each named file in turn; the oracle has to
 /// report every one of them, so a guard that stops seeing a file fails here instead of passing quietly.
@@ -116,6 +118,40 @@ public class AdapterUnpatchGuardTests
         Assert.Contains(UnpatchGuard.Violations(source), v => v.Contains("unguarded UnpatchSelf"));
     }
 
+    /// <summary>
+    /// The set must lie on the path to the Patch call. Before 2026-10-31 evening the oracle accepted any
+    /// <c>F = true</c> that came earlier in the file, so a flag raised on the absent-plugin path (which
+    /// makes that path unpatch on every poll again) passed. The first row is the control: the same
+    /// sample with the flag on the bind path is clean, so the other rows fail for the flag alone.
+    /// </summary>
+    [Theory]
+    [InlineData(true, "if (!Present(out var info)) { Clear(); return null; }", "_patched = true;")]
+    [InlineData(false, "if (!Present(out var info)) { _patched = true; Clear(); return null; }", "")]
+    [InlineData(false, "_patched = true; if (!Present(out var info)) { Clear(); return null; }", "")]
+    [InlineData(false, "if (!Present(out var info)) { Clear(); return null; }", "if (info != null) _patched = true;")]
+    [InlineData(false, "if (!Present(out var info)) { Clear(); return null; }", "Action raise = () => _patched = true;")]
+    public void TheFlagMustBeRaisedOnThePathToPatch(bool accepted, string absentPath, string bindPath)
+    {
+        const string template = """
+            internal static class SampleCompat
+            {
+                private static readonly Harmony Patches = new("id");
+                private static bool _patched;
+                internal static string GetRejectionReason()
+                {
+                    ABSENT
+                    BIND
+                    Patches.Patch(_mark, prefix: Hook(nameof(BeforeMark)));
+                    return null;
+                }
+                private static void Clear() { if (_patched) { Patches.UnpatchSelf(); _patched = false; } }
+            }
+            """;
+        var violations = UnpatchGuard.Violations(template.Replace("ABSENT", absentPath).Replace("BIND", bindPath));
+        if (accepted) Assert.Empty(violations);
+        else Assert.Contains(violations, v => v.Contains("_patched is not set before Patches.Patch"));
+    }
+
     private static string Read(string file) => File.ReadAllText(Path.Combine(CompatRoot, file));
 }
 
@@ -157,7 +193,8 @@ internal static class UnpatchGuard
         foreach (var flag in flags)
             foreach (var patch in Calls(root, harmony, "Patch"))
                 if (!SetBefore(root, patch, flag, depth: 0))
-                    violations.Add($"{flag} is not set before {harmony}.Patch in {Name(Owner(patch))} (line {Line(patch)})");
+                    violations.Add($"{flag} is not set before {harmony}.Patch in {Name(Owner(patch))} (line {Line(patch)}):"
+                        + " raise it with an unconditional statement on the path to the Patch, after the last return before it");
         return violations;
     }
 
@@ -227,7 +264,7 @@ internal static class UnpatchGuard
     {
         var owner = Owner(site);
         if (owner == null) return false;
-        if (Assignments(owner, flag, true).Any(a => a.SpanStart < site.SpanStart)) return true;
+        if (RaisedOnThePathTo(owner, site, flag)) return true;
         // A helper (Patch(...), AddUnregister(...)) is fine when every call site sets the flag first.
         var name = Name(owner);
         if (depth >= 3 || name == null) return false;
@@ -238,6 +275,40 @@ internal static class UnpatchGuard
             .ToList();
         return callers.Count > 0 && callers.All(call => SetBefore(root, call, flag, depth + 1));
     }
+
+    /// <summary>
+    /// <c>F = true;</c> as an unconditional statement of a block that encloses the site (the block of
+    /// the Patch statement, or of the loop or try that holds it), before the statement holding the site
+    /// and after the owner's last return that precedes the site. Textual order alone is not enough: a
+    /// flag raised in the absent-plugin branch, or before that branch returns, also comes first in the
+    /// file, and the absent path would then unpatch on every poll again.
+    /// </summary>
+    private static bool RaisedOnThePathTo(SyntaxNode owner, SyntaxNode site, string flag)
+    {
+        int lastReturn = owner.DescendantNodes().OfType<ReturnStatementSyntax>()
+            .Where(r => r.SpanStart < site.SpanStart && !r.Span.Contains(site.Span) && ReferenceEquals(Function(r), owner))
+            .Select(r => r.SpanStart).DefaultIfEmpty(-1).Max();
+        foreach (var block in site.Ancestors().TakeWhile(node => node != owner && node is not AnonymousFunctionExpressionSyntax)
+                     .OfType<BlockSyntax>())
+            foreach (var statement in block.Statements.TakeWhile(s => !s.Span.Contains(site.Span)))
+                if (statement.SpanStart > lastReturn && RaisesFlag(statement, flag)) return true;
+        return false;
+    }
+
+    private static bool RaisesFlag(StatementSyntax statement, string flag)
+    {
+        if (statement is not ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax assignment }) return false;
+        for (var a = assignment; a != null; a = a.Right as AssignmentExpressionSyntax)
+            if (a.IsKind(SyntaxKind.SimpleAssignmentExpression) && a.Left is IdentifierNameSyntax left
+                && left.Identifier.ValueText == flag && RightmostValue(a).IsKind(SyntaxKind.TrueLiteralExpression))
+                return true;
+        return false;
+    }
+
+    // The innermost method, accessor, local function or lambda: a return inside a lambda ends the lambda only.
+    private static SyntaxNode Function(SyntaxNode node)
+        => node.Ancestors().FirstOrDefault(a => a is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax
+            or BaseMethodDeclarationSyntax or AccessorDeclarationSyntax);
 
     private static IEnumerable<AssignmentExpressionSyntax> Assignments(SyntaxNode scope, string flag, bool value)
         => scope.DescendantNodes().OfType<AssignmentExpressionSyntax>().Where(a =>
