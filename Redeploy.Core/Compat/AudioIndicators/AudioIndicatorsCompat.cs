@@ -23,6 +23,8 @@ internal static class AudioIndicatorsCompat
     private static Component _rotation;
     private static GameObject _hud;
     private static bool _initialized, _fault, _warned, _resumeRotation;
+    // Whether Patches may hold a patch: set before the Patch calls, cleared after UnpatchSelf.
+    private static bool _patched;
     private static string _failure;
 
     internal static string GetRejectionReason()
@@ -43,6 +45,7 @@ internal static class AudioIndicatorsCompat
             if (Scope.Owned) throw new InvalidOperationException("plugin changed during an owned raid");
             Clear(); _contract = AudioIndicatorsContract.Resolve(info.Instance.GetType(), info.Metadata?.GUID, info.Metadata?.Version);
             _plugin = info.Instance; _version = version;
+            _patched = true;
             Patch(_contract.Unregister, nameof(BeforeUnregister)); Patch(_contract.Update, nameof(BeforeUpdate));
             Verify();
             if (version > AudioIndicatorsContract.ReviewedVersion && !_warned)
@@ -147,5 +150,15 @@ internal static class AudioIndicatorsCompat
         if (message != _failure) CoreLog.LogWarning(message);
         return _failure = message;
     }
-    private static void Clear() { Patches.UnpatchSelf(); _contract = null; _plugin = null; _version = null; }
+    private static void Clear()
+    {
+        // HarmonyX's UnpatchSelf walks every patched method of the process (about 1,270 in a
+        // modded client, 2 ms and 10 MB per walk on GPU-2, 2026-10-31), and the absent-plugin
+        // branch reaches this on every admission poll (ArenaMode's map screen asks five times a
+        // second). Unpatch only while this instance may hold patches: the flag is raised before
+        // the first Patch call, so a bind that fails half-way still unpatches, and lowered only
+        // after UnpatchSelf returned (Redeploy.Tests/AdapterUnpatchGuardTests pins the shape).
+        if (_patched) { Patches.UnpatchSelf(); _patched = false; }
+        _contract = null; _plugin = null; _version = null;
+    }
 }

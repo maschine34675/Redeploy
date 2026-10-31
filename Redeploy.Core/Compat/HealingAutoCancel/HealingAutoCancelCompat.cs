@@ -43,6 +43,8 @@ internal static class HealingAutoCancelCompat
     private static Action<EBodyPart, float, DamageInfo> _original;
     private static string _failure, _warning;
     private static bool _newerWarned, _subscribed;
+    // Whether Patches may hold a patch: set before every Patch call, cleared after UnpatchSelf.
+    private static bool _patched;
     [ThreadStatic] private static ActiveHealthController _dispatchSource;
     [ThreadStatic] private static Binding _wrapper;
 
@@ -81,6 +83,7 @@ internal static class HealingAutoCancelCompat
                 typeof(void), typeof(EBodyPart), typeof(float), typeof(DamageInfo));
             _unregister = Method(typeof(GameWorld), nameof(GameWorld.UnregisterPlayer), false, typeof(void), typeof(IPlayer));
             _original = (Action<EBodyPart, float, DamageInfo>)Delegate.CreateDelegate(typeof(Action<EBodyPart, float, DamageInfo>), _handler);
+            _patched = true;
             Patches.Patch(_handler, prefix: Hook(nameof(BeforeHandler)));
             Patches.Patch(_started, postfix: Hook(nameof(AfterStarted)));
             Patches.Patch(_changeHealth, prefix: Hook(nameof(BeforeChangeHealth)), finalizer: Hook(nameof(AfterChangeHealth)));
@@ -238,6 +241,7 @@ internal static class HealingAutoCancelCompat
     private static void AddUnregister(MethodInfo target)
     {
         if (UnregisterTargets.Contains(target)) return;
+        _patched = true;
         Patches.Patch(target, prefix: Hook(nameof(BeforeUnregister))); UnregisterTargets.Add(target);
     }
     private static HarmonyMethod Hook(string name) => new(typeof(HealingAutoCancelCompat), name) { priority = Priority.First };
@@ -259,7 +263,14 @@ internal static class HealingAutoCancelCompat
     {
         Detach(); _game = null; _world = null; _retiredBody = null;
         if (_subscribed) { RespawnApi.Replaced -= Replaced; _subscribed = false; }
-        Patches.UnpatchSelf(); UnregisterTargets.Clear(); _plugin = null; _version = null; _original = null;
+        // HarmonyX's UnpatchSelf walks every patched method of the process (about 1,270 in a
+        // modded client, 2 ms and 10 MB per walk on GPU-2, 2026-10-31), and the absent-plugin
+        // branch reaches this on every admission poll (ArenaMode's map screen asks five times a
+        // second). Unpatch only while this instance may hold patches: the flag is raised before
+        // the first Patch call, so a bind that fails half-way still unpatches, and lowered only
+        // after UnpatchSelf returned (Redeploy.Tests/AdapterUnpatchGuardTests pins the shape).
+        if (_patched) { Patches.UnpatchSelf(); _patched = false; }
+        UnregisterTargets.Clear(); _plugin = null; _version = null; _original = null;
         _playerProperty = _healthProperty = null; _setPlayer = _setHealth = _handler = _started = _changeHealth = _unregister = null;
     }
     private static void Reject(Exception ex)

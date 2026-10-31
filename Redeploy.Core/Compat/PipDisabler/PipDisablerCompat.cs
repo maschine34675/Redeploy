@@ -44,6 +44,8 @@ internal static class PipDisablerCompat
     private static System.Version _version;
     private static string _failure;
     private static bool _fault, _newerWarned;
+    // Whether Hooks may hold a patch: set before every Patch call, cleared after UnpatchSelf.
+    private static bool _hooked;
     private static LocalGame Game => Singleton<AbstractGame>.Instantiated ? Singleton<AbstractGame>.Instance as LocalGame : null;
     private static GameWorld World => Singleton<GameWorld>.Instantiated ? Singleton<GameWorld>.Instance : null;
     private static bool Current => _world != null && ReferenceEquals(_world, World) && ReferenceEquals(_game, Game)
@@ -70,6 +72,7 @@ internal static class PipDisablerCompat
             _contract = PipDisablerContract.Resolve(info.Instance.GetType(), info.Metadata?.GUID, info.Metadata?.Version);
             _plugin = info.Instance;
             _version = PipDisablerContract.Normalize(info.Metadata.Version);
+            _hooked = true;
             foreach (var target in new[] { _contract.Enable, _contract.Disable, _contract.Bypass }) Patch(target, nameof(BeforeOptic));
             Patch(_contract.Check, nameof(BeforeUpdate), nameof(AfterUpdate)); Patch(_contract.Tick, nameof(BeforeUpdate));
             Patch(_contract.GetCache, nameof(BeforeCache), nameof(AfterCacheSelection));
@@ -132,7 +135,7 @@ internal static class PipDisablerCompat
         if (method == null || method.ReturnType != typeof(void) || method.GetMethodBody() == null
             || method.GetBaseDefinition() != typeof(GameWorld).GetMethod(nameof(GameWorld.UnregisterPlayer), new[] { typeof(IPlayer) }))
             throw new MissingMethodException("PiP cannot verify native world unregister");
-        if (!Unregisters.Contains(method)) { Patch(method, nameof(BeforeUnregister)); Unregisters.Add(method); }
+        if (!Unregisters.Contains(method)) { _hooked = true; Patch(method, nameof(BeforeUnregister)); Unregisters.Add(method); }
         VerifyHooks(); _pending = oldBody;
     }
     internal static void AbortPreparation() => _pending = null;
@@ -350,5 +353,14 @@ internal static class PipDisablerCompat
         return _failure = message;
     }
     private static void ClearBinding()
-    { Hooks.UnpatchSelf(); Unregisters.Clear(); _contract = null; _plugin = null; _version = null; _pending = null; }
+    {
+        // HarmonyX's UnpatchSelf walks every patched method of the process (about 1,270 in a
+        // modded client, 2 ms and 10 MB per walk on GPU-2, 2026-10-31), and the absent-plugin
+        // branch reaches this on every admission poll (ArenaMode's map screen asks five times a
+        // second). Unpatch only while this instance may hold patches: the flag is raised before
+        // the first Patch call, so a bind that fails half-way still unpatches, and lowered only
+        // after UnpatchSelf returned (Redeploy.Tests/AdapterUnpatchGuardTests pins the shape).
+        if (_hooked) { Hooks.UnpatchSelf(); _hooked = false; }
+        Unregisters.Clear(); _contract = null; _plugin = null; _version = null; _pending = null;
+    }
 }

@@ -1,5 +1,21 @@
 # Redeploy repository status
 
+## Absent-adapter unpatch guard, Core 1.0.19 — 2026-10-31 (unreleased)
+
+- Branch `fix/absent-adapter-unpatch` (from `main` at `70bceb1`, not merged, not pushed).
+  Five Core adapters (Quick Cancel, PiP Disabler, Quest Tracker, Audio Accessibility
+  Indicators, Healing Autocancel) called `Harmony.UnpatchSelf()` on every admission check
+  while their mod was absent; HarmonyX walks every patched method for it. ArenaMode's map
+  screen polls admission five times a second, which cost one long frame per poll on GPU-2
+  (2026-10-31). The adapters now unpatch only while their Harmony instance may hold patches;
+  `Redeploy.Tests/AdapterUnpatchGuardTests` pins that for all sixteen adapters. See the
+  [changelog](CHANGELOG.md), "Unreleased".
+- `CoreVersion.props` is now **1.0.19**. ArenaMode's branch `fix/map-screen-admission`
+  stamps and requires it; release the two together. Offline tests only: no Core or driver
+  was rebuilt or deployed by this change, so `Redeploy.Core/bin` still holds a 1.0.18 build
+  until the next Release build (`CoreVersionTests.BuiltCoreCarriesItsOwnVersionLine` reports
+  that skew until then). No native measurement yet.
+
 ## Repository hygiene — 2026-10-30
 
 - `AGENTS.md` was rewritten as short working notes for agent sessions (layout, no-deploy

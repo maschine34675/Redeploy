@@ -117,6 +117,9 @@ internal static class ImpactCueCompat
             throw new MissingMethodException("ImpactCue cannot verify this world's player unregister entry");
         if (!UnregisterTargets.Contains(unregister))
         {
+            // Prepare runs only while bound, so _patched is already set; repeat it at the
+            // Patch call so the flag never depends on that ordering.
+            _patched = true;
             Patch(unregister, nameof(BeforeUnregister));
             UnregisterTargets.Add(unregister);
             VerifyPatches();

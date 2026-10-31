@@ -24,6 +24,8 @@ internal static class QuestTrackerCompat
     private static System.Version _version;
     private static Component _component;
     private static bool _initialized, _fault, _warned, _binding;
+    // Whether Patches may hold a patch: set before the Patch calls, cleared after UnpatchSelf.
+    private static bool _patched;
     private static string _failure;
 
     internal static string GetRejectionReason()
@@ -45,6 +47,7 @@ internal static class QuestTrackerCompat
             Clear();
             _contract = QuestTrackerContract.Resolve(info.Instance.GetType(), info.Metadata?.GUID, info.Metadata?.Version);
             _plugin = info.Instance; _version = version;
+            _patched = true;
             foreach (var method in new[] { _contract.Update, _contract.Cache, _contract.Changed })
                 Patches.Patch(method, new HarmonyMethod(typeof(QuestTrackerCompat), nameof(BeforeCallback)) { priority = Priority.First });
             Verify();
@@ -158,5 +161,15 @@ internal static class QuestTrackerCompat
         if (message != _failure) CoreLog.LogWarning(message);
         return _failure = message;
     }
-    private static void Clear() { Patches.UnpatchSelf(); _contract = null; _plugin = null; _version = null; }
+    private static void Clear()
+    {
+        // HarmonyX's UnpatchSelf walks every patched method of the process (about 1,270 in a
+        // modded client, 2 ms and 10 MB per walk on GPU-2, 2026-10-31), and the absent-plugin
+        // branch reaches this on every admission poll (ArenaMode's map screen asks five times a
+        // second). Unpatch only while this instance may hold patches: the flag is raised before
+        // the first Patch call, so a bind that fails half-way still unpatches, and lowered only
+        // after UnpatchSelf returned (Redeploy.Tests/AdapterUnpatchGuardTests pins the shape).
+        if (_patched) { Patches.UnpatchSelf(); _patched = false; }
+        _contract = null; _plugin = null; _version = null;
+    }
 }

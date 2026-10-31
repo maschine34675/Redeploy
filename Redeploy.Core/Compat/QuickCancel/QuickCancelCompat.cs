@@ -26,6 +26,8 @@ internal static class QuickCancelCompat
     private static MethodInfo _mark, _unregister;
     private static string _failure, _warning;
     private static bool _newerWarned;
+    // Whether Patches may hold a patch: set before every Patch call, cleared after UnpatchSelf.
+    private static bool _patched;
 
     internal static string GetRejectionReason()
     {
@@ -52,6 +54,7 @@ internal static class QuickCancelCompat
             _ = Pending;
             _mark = Method(state, "Mark", true, typeof(bool), typeof(Player.MedsController));
             _unregister = Method(typeof(GameWorld), nameof(GameWorld.UnregisterPlayer), false, typeof(void), typeof(IPlayer));
+            _patched = true;
             Patches.Patch(_mark, prefix: Hook(nameof(BeforeMark)));
             AddUnregister(_unregister);
             _instance = info.Instance; _version = version;
@@ -124,6 +127,7 @@ internal static class QuickCancelCompat
     private static void AddUnregister(MethodInfo target)
     {
         if (UnregisterTargets.Contains(target)) return;
+        _patched = true;
         Patches.Patch(target, prefix: Hook(nameof(BeforeUnregister))); UnregisterTargets.Add(target);
     }
     private static HarmonyMethod Hook(string name) => new(typeof(QuickCancelCompat), name) { priority = Priority.First };
@@ -141,7 +145,14 @@ internal static class QuickCancelCompat
     }
     private static void Clear()
     {
-        Patches.UnpatchSelf(); UnregisterTargets.Clear(); _instance = null; _version = null; _pending = null; _mark = _unregister = null;
+        // HarmonyX's UnpatchSelf walks every patched method of the process (about 1,270 in a
+        // modded client, 2 ms and 10 MB per walk on GPU-2, 2026-10-31), and the absent-plugin
+        // branch reaches this on every admission poll (ArenaMode's map screen asks five times a
+        // second). Unpatch only while this instance may hold patches: the flag is raised before
+        // the first Patch call, so a bind that fails half-way still unpatches, and lowered only
+        // after UnpatchSelf returned (Redeploy.Tests/AdapterUnpatchGuardTests pins the shape).
+        if (_patched) { Patches.UnpatchSelf(); _patched = false; }
+        UnregisterTargets.Clear(); _instance = null; _version = null; _pending = null; _mark = _unregister = null;
     }
     private static void Reject(Exception ex)
     {

@@ -107,6 +107,9 @@ internal static class EnemyMarkersCompat
             throw new MissingMethodException("Enemy Markers cannot verify the runtime world unregister entry");
         if (!UnregisterTargets.Contains(unregister))
         {
+            // Prepare runs only while bound, so _patched is already set; repeat it at the
+            // Patch call so the flag never depends on that ordering.
+            _patched = true;
             Patch(unregister, nameof(BeforeUnregister));
             UnregisterTargets.Add(unregister);
         }

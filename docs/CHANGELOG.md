@@ -5,6 +5,30 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.1 bundles Core 1.0.18; 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13,
 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
+## Unreleased — Absent optional mods no longer unpatch per check, Core 1.0.19
+
+- **Performance.** Every `GetRejectionReason` of the Quick Cancel, PiP Disabler,
+  Quest Tracker, Audio Accessibility Indicators and Healing Autocancel adapters
+  called `Harmony.UnpatchSelf()` when that mod was NOT installed (and again on
+  every refused bind). HarmonyX's UnpatchSelf walks every patched method of the
+  process with a `GetPatchInfo` allocation per method: about 2 ms and 10 MB per
+  walk on GPU-2 with ~1,270 patched methods. ArenaMode polls admission from its
+  map screen five times a second, so the five walks per check made one 45-130 ms
+  frame every 0.2 s there (measured 2026-10-31). Each adapter now records
+  whether its Harmony instance may hold patches (set before its first `Patch`
+  call, cleared after a successful `UnpatchSelf`) and unpatches only then; the
+  other eleven adapters already did. Enemy Markers and ImpactCue set their flag
+  again at their preparation-time unregister hook. Installed-mod verification,
+  fault paths and real unbinding are unchanged.
+- `Redeploy.Tests/AdapterUnpatchGuardTests` pins the guard for all sixteen
+  adapters that own a Harmony instance (a Roslyn source contract, because the
+  adapters cannot load outside the game) and proves, per file, that removing the
+  guard, the set or the clear fails it.
+- Core **1.0.19**. A driver built from this source (Redeploy.Client,
+  ArenaMode.Client) stamps and requires Core 1.0.19 and refuses an older Core at
+  startup, so ArenaMode and Redeploy builds from this state must ship together
+  with this Core. Not yet measured natively; not released.
+
 ## [1.1.1] - 2026-10-29
 
 Client/Server **1.1.1**, bundled and minimum Core **1.0.18**. Hotfix for
