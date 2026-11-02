@@ -41,6 +41,7 @@ public class AdapterUnpatchGuardTests
         "EnemyMarkers/EnemyMarkersCompat.cs",
         "FovFixCompat.cs",
         "HealingAutoCancel/HealingAutoCancelCompat.cs",
+        "HandsAreNotBusy/HandsAreNotBusyCompat.cs",
         "ImpactCue/ImpactCueCompat.cs",
         "MagazineCheckCompat.cs",
         "ManimalAmmoCompat.cs",
@@ -48,6 +49,7 @@ public class AdapterUnpatchGuardTests
         "QuestTracker/QuestTrackerCompat.cs",
         "QuickCancel/QuickCancelCompat.cs",
         "Radar/RadarCompat.cs",
+        "RaidReview/RaidReviewCompat.cs",
         "RecoilLegacyCompat.cs",
         "SimpleCrosshair/SimpleCrosshairCompat.cs",
     };

@@ -1,5 +1,24 @@
 # Redeploy repository status
 
+## Recorder and popular-mod integration — 2026-11-02 (unreleased)
+
+- Current checkout is `main`; the earlier performance commits `51ac95c` and
+  `3c41bd6` are already in its history. The branch/build details in the dated
+  2026-10-31 entry below describe that earlier state.
+- Shared Core is now **1.0.20** in source. Added Raid Review 1.10.0,
+  HollywoodFX 3.0.0 and Hands Are Not Busy 1.7.1 body replacement adapters.
+  See [design, popular-mod audit and validation](RECORDING-AND-POPULAR-COMPAT-20261102.md).
+- Client/Server stay 1.1.1 and API stays v1. Source builds of both drivers must
+  accompany Core 1.0.20 because their minimum-version stamp follows it.
+- No release, push or Arena whitelist change is part of this work. Deployment
+  and native gameplay evidence are recorded separately in the validation report.
+- Offline validation passed: 601 Core/client tests, 47 interop checks, shared
+  adapter composition, both new real-Harmony harnesses, replay/storage checks
+  and mutation controls. Core and both clients build; installed DLL hashes
+  remained unchanged. **Not deployed or tested in game.**
+- StatTrack remains a concrete next candidate; asynchronous save/clear behavior
+  and PMC/Scav accounting require a separate design before changing it.
+
 ## Absent-adapter unpatch guard, Core 1.0.19 — 2026-10-31 (unreleased)
 
 - Branch `fix/absent-adapter-unpatch` (from `main` at `70bceb1`, not merged, not pushed).

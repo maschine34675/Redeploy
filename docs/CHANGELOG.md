@@ -5,7 +5,26 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.1 bundles Core 1.0.18; 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13,
 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Absent optional mods no longer unpatch per check, Core 1.0.19
+## Unreleased — Shared Core 1.0.20
+
+- **Raid Review 1.10.0:** record Core-controlled physical lives separately,
+  including own-Scav continuation, while preserving the real recording owner,
+  session and EFT profile identities. Historical deaths and old-body combat
+  events remain associated with their original lives. The existing replay
+  shows separate per-life statistics; no Raid Review server or browser patch
+  is required.
+- **HollywoodFX 3.0.0:** refresh its local impact/optic player cache after a
+  confirmed replacement, without reinitializing the world or changing settings.
+- **Hands Are Not Busy 1.7.1:** fence hands resets on Core's prepared, uncommitted
+  and retired bodies; retain the replacement body's normal component.
+- The two new Harmony adapters are included in the absent-plugin performance
+  guards below; HollywoodFX needs no Harmony hook. See the
+  [focused popular-mod audit and validation report](RECORDING-AND-POPULAR-COMPAT-20261102.md).
+- Core's public API remains version 1. Client/Server versions remain 1.1.1;
+  drivers built from this checkout stamp and require Core 1.0.20. These source
+  changes do not replace the published 1.1.1 binaries.
+
+### Earlier unreleased performance fix — Core 1.0.19
 
 - **Performance.** Every `GetRejectionReason` of the Quick Cancel, PiP Disabler,
   Quest Tracker, Audio Accessibility Indicators and Healing Autocancel adapters

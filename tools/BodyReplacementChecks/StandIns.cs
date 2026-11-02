@@ -157,7 +157,8 @@ namespace Redeploy.Core.Compat
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers");
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators];
+        internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview];
         internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
@@ -182,6 +183,33 @@ namespace Redeploy.Core.Compat
     internal static class AiLimitContract { internal const string PluginGuid = "fixture.AiLimit"; }
     internal static class QuestTrackerContract { internal const string PluginGuid = "fixture.QuestTracker"; }
     internal static class AudioIndicatorsContract { internal const string PluginGuid = "fixture.AudioIndicators"; }
+    internal static class HollywoodFxContract { internal const string PluginGuid = "fixture.HollywoodFx"; }
+    internal static class HandsAreNotBusyContract { internal const string PluginGuid = "fixture.HandsAreNotBusy"; }
+    internal static class RaidReviewContract { internal const string PluginGuid = "fixture.RaidReview"; }
+    internal static class HollywoodFxCompat
+    {
+        internal static string GetRejectionReason() => Probes.HollywoodFx.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.HollywoodFx.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.HollywoodFx.Abort();
+        internal static void Tick() => Probes.HollywoodFx.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.HollywoodFx.Retired.Add(world);
+    }
+    internal static class HandsAreNotBusyCompat
+    {
+        internal static string GetRejectionReason() => Probes.HandsAreNotBusy.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.HandsAreNotBusy.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.HandsAreNotBusy.Abort();
+        internal static void Tick() => Probes.HandsAreNotBusy.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.HandsAreNotBusy.Retired.Add(world);
+    }
+    internal static class RaidReviewCompat
+    {
+        internal static string GetRejectionReason() => Probes.RaidReview.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.RaidReview.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.RaidReview.Abort();
+        internal static void Tick() => Probes.RaidReview.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.RaidReview.Retired.Add(world);
+    }
     internal static class AiLimitCompat
     {
         internal static string GetRejectionReason() => Probes.AiLimit.GetRejectionReason();

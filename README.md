@@ -97,6 +97,13 @@ checked. The test profile had no active quests, so actual quest-objective progre
 was covered by the automated harness rather than by that raid. See
 [standalone compatibility evidence](docs/STANDALONE-COMPAT-20261029.md).
 
+**In development, Core 1.0.20 (not included in the 1.1.1 release):** Raid Review
+1.10.0 records separate lives across respawns and own-Scav continuation;
+HollywoodFX 3.0.0 follows the replacement player; Hands Are Not Busy 1.7.1
+cannot reset the retired body's hands. Raid Review keeps separate statistics
+for each life. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
+before treating these as tested gameplay combinations.
+
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
 **Older ArenaMode builds:** ArenaMode 0.1.3 still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. Use ArenaMode 0.2.0 or newer, which delegates these adapters to Core. Standalone Redeploy does not require ArenaMode.

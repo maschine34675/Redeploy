@@ -82,9 +82,12 @@ public static class BodyReplacementCompatibility
         var healingAutoCancel = HealingAutoCancelCompat.GetRejectionReason();
         var questTracker = QuestTrackerCompat.GetRejectionReason();
         var audioIndicators = AudioIndicatorsCompat.GetRejectionReason();
+        var hollywoodFx = HollywoodFxCompat.GetRejectionReason();
+        var handsAreNotBusy = HandsAreNotBusyCompat.GetRejectionReason();
+        var raidReview = RaidReviewCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy ?? raidReview ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -136,7 +139,10 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(AiLimitContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HealingAutoCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(QuestTrackerContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(AudioIndicatorsContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(AudioIndicatorsContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(HollywoodFxContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(HandsAreNotBusyContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(RaidReviewContract.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
     {
@@ -162,6 +168,9 @@ public static class BodyReplacementCompatibility
         HealingAutoCancelCompat.Prepare(game, oldBody);
         QuestTrackerCompat.Prepare(game, oldBody);
         AudioIndicatorsCompat.Prepare(game, oldBody);
+        HollywoodFxCompat.Prepare(game, oldBody);
+        HandsAreNotBusyCompat.Prepare(game, oldBody);
+        RaidReviewCompat.Prepare(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
@@ -205,6 +214,9 @@ public static class BodyReplacementCompatibility
         HealingAutoCancelCompat.AbortPreparation();
         QuestTrackerCompat.AbortPreparation();
         AudioIndicatorsCompat.AbortPreparation();
+        HollywoodFxCompat.AbortPreparation();
+        HandsAreNotBusyCompat.AbortPreparation();
+        RaidReviewCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -230,6 +242,9 @@ public static class BodyReplacementCompatibility
             HealingAutoCancelCompat.Tick();
             QuestTrackerCompat.Tick();
             AudioIndicatorsCompat.Tick();
+            HollywoodFxCompat.Tick();
+            HandsAreNotBusyCompat.Tick();
+            RaidReviewCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -269,6 +284,9 @@ public static class BodyReplacementCompatibility
         HealingAutoCancelCompat.RetireWorld(world);
         QuestTrackerCompat.RetireWorld(world);
         AudioIndicatorsCompat.RetireWorld(world);
+        HollywoodFxCompat.RetireWorld(world);
+        HandsAreNotBusyCompat.RetireWorld(world);
+        RaidReviewCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();

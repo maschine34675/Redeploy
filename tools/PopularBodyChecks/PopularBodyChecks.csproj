@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net472</TargetFramework><LangVersion>latest</LangVersion><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems><ProductionRoot Condition="'$(ProductionRoot)' == ''">../../Redeploy.Core/Compat</ProductionRoot></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Runtime.csproj" /><ProjectReference Include="HollywoodFixture.csproj" /><ProjectReference Include="HandsFixture.csproj" />
+    <Compile Include="Program.cs" /><Compile Include="PublishedMetadata.cs" />
+    <Compile Include="$(ProductionRoot)/HollywoodFx/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="$(ProductionRoot)/HandsAreNotBusy/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="../../Redeploy.Core/Compat/QuestTracker/StandaloneHudScope.cs" Link="Production/StandaloneHudScope.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/QuestTracker/StandaloneHudContract.cs" Link="Production/StandaloneHudContract.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Reference Include="Mono.Cecil"><HintPath>../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="0Harmony"><HintPath>../../../../BepInEx/core/0Harmony.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>../../../../BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>../../../../BepInEx/core/MonoMod.Utils.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

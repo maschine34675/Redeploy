@@ -74,6 +74,21 @@ public static class RaidLifecycle
             return typeof(GameWorld).GetMethod(nameof(GameWorld.OnGameStarted));
         }
 
+        [PatchPrefix]
+        private static void Prefix(GameWorld __instance)
+        {
+            if (__instance is NarrateGameWorld)
+                return;
+            // Raid Review sends START from its own postfix. Bind before any start
+            // postfix runs; the adapter waits for driver startup before choosing
+            // whether this recording needs separate identities for each life.
+            try { RaidReviewCompat.BeforeRaidStart(__instance); }
+            catch (Exception ex)
+            {
+                CoreLog.LogWarning("Raid Review startup compatibility failed: " + ex.GetBaseException().Message);
+            }
+        }
+
         [PatchPostfix]
         private static void Postfix(GameWorld __instance)
         {
