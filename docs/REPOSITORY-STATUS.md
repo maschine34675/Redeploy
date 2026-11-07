@@ -1,6 +1,10 @@
 # Redeploy repository status
 
-## Redeploy 1.1.2 prepared — 2026-11-07 (not yet tagged)
+## Redeploy 1.1.2 published — 2026-11-07
+
+- Tag `v1.1.2` = `3b68193`; [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.2)
+  with `Redeploy-1.1.2.zip` and its checksum, latest, not a prerelease; `main` pushed with the
+  record commit `1763854` and this note.
 
 - Client/Server bumped to **1.1.2** in `Shared.props`, `Redeploy.Server.csproj`,
   `ModMetadata.cs` and `Plugin.cs`; Core stays **1.0.20** (`CoreVersion.props`,
@@ -10,16 +14,14 @@
   `docs/README.md` row. The release notes' native-check and package sections are
   filled by the record commit after packaging.
 - Branch state: `main` only; the merged `fix/absent-adapter-unpatch` was deleted on
-  2026-11-07. `origin/main` holds the Core 1.0.20 state (`eb64dae`); the 1.1.2 release
-  commit `3b68193` and this record commit are not pushed.
+  2026-11-07.
 - Offline checks on this state (no deploy, `-p:SPTModType=Library`): Core, Client and
   Server build (eight pre-existing client warnings); `Redeploy.Tests` 601 passed,
   `Redeploy.Server.Tests` 162 passed, `RESPAWN_INTEROP_CHECKS_PASSED`.
 - Packaged from `3b68193`: `artifacts/publish-112/package-20261107-203151/Redeploy-1.1.2.zip`
   (SHA-256 `e3a4a511…447d4`, 234,823 bytes; Core `1.0.20+3b68193`, SHA-256 `150851f5…`), the
   three DLLs clean on VirusTotal; ArenaMode 0.5.0 bundles the byte-identical Core. The record
-  of the native GPU cycle is in the release notes. The tag (on `3b68193`) and the push are
-  the user's.
+  of the native GPU cycle is in the release notes.
 
 ## Recorder and popular-mod integration — 2026-11-02 (unreleased)
 
