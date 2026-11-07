@@ -1,5 +1,23 @@
 # Redeploy repository status
 
+## Redeploy 1.1.2 prepared — 2026-11-07 (not yet tagged)
+
+- Client/Server bumped to **1.1.2** in `Shared.props`, `Redeploy.Server.csproj`,
+  `ModMetadata.cs` and `Plugin.cs`; Core stays **1.0.20** (`CoreVersion.props`,
+  unchanged since 2026-11-02). No Client or Server code change since 1.1.1.
+- Documentation: `docs/RELEASE-1.1.2.md` (new), changelog section `[1.1.2]`, README
+  version lines and the three Core 1.0.20 integrations in the optional list,
+  `docs/README.md` row. The release notes' native-check and package sections are
+  filled by the record commit after packaging.
+- Branch state: `main` only; the merged `fix/absent-adapter-unpatch` was deleted on
+  2026-11-07. `main` is ahead of `origin/main` and not pushed.
+- Offline checks on this state (no deploy, `-p:SPTModType=Library`): Core, Client and
+  Server build (eight pre-existing client warnings); `Redeploy.Tests` 601 passed,
+  `Redeploy.Server.Tests` 162 passed, `RESPAWN_INTEROP_CHECKS_PASSED`.
+- Next: package `Redeploy-1.1.2.zip` from the release commit; ArenaMode 0.5.0 bundles
+  the byte-identical Core; native GPU cycle with the package binaries; then the record
+  commit. The tag and the push are the user's.
+
 ## Recorder and popular-mod integration — 2026-11-02 (unreleased)
 
 - Current checkout is `main`; the earlier performance commits `51ac95c` and

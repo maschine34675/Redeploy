@@ -5,6 +5,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
+| [Redeploy 1.1.2 release notes](RELEASE-1.1.2.md) | Core 1.0.20: Raid Review, HollywoodFX and Hands Are Not Busy integrations, the absent-adapter performance fix of Core 1.0.19, update instructions. |
 | [Redeploy 1.1.1 release notes](RELEASE-1.1.1.md) | Hotfix: Recoil Rework / FOV Fix with Continue as Scav, transit arrivals, refused Scav preparation, Core 1.0.18. |
 | [Redeploy 1.1.0 release notes](RELEASE-1.1.0.md) | Own-Scav continuation and recovery, optional integrations, Core 1.0.17 and update instructions. |
 | [Native release check, 2026-10-29](RELEASE-CHECK-20261029.md) | Standalone respawn, corpse loot, own-Scav transfer, exact candidates and quieter routine logging. |
@@ -20,7 +21,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | [ImpactCue and Enemy Markers](ITEMS-HUD-COMPAT-20261025.md) | Core 1.0.14: HUD, body and camera handover; native tests for both drivers. |
 | [Quick Cancel, PiP and Amand's Graphics](REMAINING-BODY-COMPAT-20261026.md) | Core 1.0.15: body/camera integrations, standalone evidence and the Labyrinth limit. |
 | [Standalone compatibility](STANDALONE-COMPAT-20261029.md) | Core 1.0.17: AI Limit, Healing Autocancel, Quest Tracker and Audio Accessibility Indicators. |
-| [Recording and popular-mod compatibility](RECORDING-AND-POPULAR-COMPAT-20261102.md) | Core 1.0.20 development: Raid Review, HollywoodFX and Hands Are Not Busy; popular-mod audit and performance constraints. |
+| [Recording and popular-mod compatibility](RECORDING-AND-POPULAR-COMPAT-20261102.md) | Core 1.0.20 (released with Redeploy 1.1.2): Raid Review, HollywoodFX and Hands Are Not Busy; popular-mod audit and performance constraints. |
 | [Published owned-mod audit](OWN-MOD-COMPATIBILITY-20261024.md) | All 27 published mod repositories and four beta packages: body-replacement handling, consumer-side hardening candidates, release coordination and native test gaps. |
 | [Native probe instructions](../tools/RespawnApiProbe/README.md) | Developer-only in-game checks. The probe is not included in normal installation. |
 | [Probe results, 2026-09-21](RESPAWN-API-PROBE-RESULTS-2026-09-21.md) | Tested scenarios and remaining coverage limits for the recorded builds. |

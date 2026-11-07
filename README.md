@@ -4,8 +4,8 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-**Redeploy 1.1.1** for SPT 4.1.x bundles **Core 1.0.18**. See the
-[release notes](docs/RELEASE-1.1.1.md) and [changelog](docs/CHANGELOG.md).
+**Redeploy 1.1.2** for SPT 4.1.x bundles **Core 1.0.20**. See the
+[release notes](docs/RELEASE-1.1.2.md) and [changelog](docs/CHANGELOG.md).
 
 ## Features
 
@@ -31,9 +31,9 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; Redeploy.Core is included.
-- **Version lines:** Redeploy 1.1.1 contains Client/Server `1.1.1` and Core `1.0.18`.
+- **Version lines:** Redeploy 1.1.2 contains Client/Server `1.1.2` and Core `1.0.20`.
   Core has its own version and is a library, not a separate BepInEx plugin.
-  The client requires Core `1.0.18` or newer with a compatible API.
+  The client requires Core `1.0.20` or newer with a compatible API.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -56,6 +56,9 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
   - **DynamicMaps** — your position marker follows the replacement character.
   - **Freecam** (Terkoiz) — the free camera keeps working after a respawn.
   - **Killcam** (formerly KillcamReplay) — the death replay stays visible behind the respawn prompt. A chosen respawn waits for the replay to release the camera; Space skips the replay.
+  - **Raid Review 1.10.0+** (Core 1.0.20) — records each physical life separately, PMC respawns and the own-Scav continuation included, while the recording owner, session and profile identities stay the real ones; earlier deaths and old-body combat events keep their original lives. Validated offline against the published build, not in the game.
+  - **HollywoodFX 3.0.0+** (Core 1.0.20) — refreshes its impact and optic player cache after a confirmed replacement without reinitializing the world or changing its settings. Validated offline, not in the game.
+  - **Hands Are Not Busy 1.7.1+** (Core 1.0.20) — its hands reset is fenced off Core's prepared, uncommitted and retired bodies; the replacement body keeps its normal component. Validated offline, not in the game.
 - **Fika is deliberately unsupported.** Redeploy disables respawning when `com.fika.core` is loaded and warns at raid start. Its replacement-character flow has no co-op synchronisation.
 
 These body-replacement integrations live in shared Core and do not require
@@ -97,11 +100,12 @@ checked. The test profile had no active quests, so actual quest-objective progre
 was covered by the automated harness rather than by that raid. See
 [standalone compatibility evidence](docs/STANDALONE-COMPAT-20261029.md).
 
-**In development, Core 1.0.20 (not included in the 1.1.1 release):** Raid Review
-1.10.0 records separate lives across respawns and own-Scav continuation;
-HollywoodFX 3.0.0 follows the replacement player; Hands Are Not Busy 1.7.1
-cannot reset the retired body's hands. Raid Review keeps separate statistics
-for each life. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
+**New in Core 1.0.20 (Redeploy 1.1.2):** Raid Review 1.10.0 records separate
+lives across respawns and own-Scav continuation and keeps separate statistics for
+each life; HollywoodFX 3.0.0 follows the replacement player; Hands Are Not Busy
+1.7.1 cannot reset the retired body's hands. The three adapters were validated
+offline against the mods' published builds and real Harmony targets, not in the
+game. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
@@ -122,7 +126,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.1 requires Core **1.0.18 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.2 requires Core **1.0.20 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 

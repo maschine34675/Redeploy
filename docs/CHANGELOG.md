@@ -2,10 +2,16 @@
 
 Notable changes since **v1.0.0**, reconstructed from Git history and published
 release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
-1.1.1 bundles Core 1.0.18; 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13,
-1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
+1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
+1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Shared Core 1.0.20
+## [1.1.2] - 2026-11-07
+
+Client/Server **1.1.2**, bundled and minimum Core **1.0.20**. The Client and
+Server code is unchanged since 1.1.1; this release carries the new Core and the
+drivers' Core 1.0.20 stamp.
+
+### Optional integrations — Core 1.0.20
 
 - **Raid Review 1.10.0:** record Core-controlled physical lives separately,
   including own-Scav continuation, while preserving the real recording owner,
@@ -20,11 +26,13 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 - The two new Harmony adapters are included in the absent-plugin performance
   guards below; HollywoodFX needs no Harmony hook. See the
   [focused popular-mod audit and validation report](RECORDING-AND-POPULAR-COMPAT-20261102.md).
-- Core's public API remains version 1. Client/Server versions remain 1.1.1;
-  drivers built from this checkout stamp and require Core 1.0.20. These source
-  changes do not replace the published 1.1.1 binaries.
+- Core's public API remains version 1. Client/Server 1.1.2 contain no code change
+  since 1.1.1; they stamp and require Core 1.0.20 and refuse an older Core at
+  startup. The three adapters were validated offline against the mods' published
+  builds and real Harmony targets; none of the three mods has run with Core in
+  the game.
 
-### Earlier unreleased performance fix — Core 1.0.19
+### Performance — Core 1.0.19
 
 - **Performance.** Every `GetRejectionReason` of the Quick Cancel, PiP Disabler,
   Quest Tracker, Audio Accessibility Indicators and Healing Autocancel adapters
@@ -46,10 +54,15 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
   `Patch` call (an unconditional statement of an enclosing block, after the
   method's last return before it); a flag raised on the absent-plugin path is
   rejected.
-- Core **1.0.19**. A driver built from this source (Redeploy.Client,
-  ArenaMode.Client) stamps and requires Core 1.0.19 and refuses an older Core at
-  startup, so ArenaMode and Redeploy builds from this state must ship together
-  with this Core. Not yet measured natively; not released.
+- Core **1.0.19** was never released on its own. ArenaMode measured the fix on
+  its map screen natively (48 to about 60 FPS on the GPU test host, 2026-10-31,
+  Core `1.0.19+51ac95c`) and ships it inside Core 1.0.20 with ArenaMode 0.5.0.
+
+### Documentation
+
+- `AGENTS.md` was rewritten as short working notes for agent sessions; the
+  previous CorpseRun handoff is archived verbatim in
+  `docs/history/CORPSERUN-HANDOFF.md`. No user-facing change.
 
 ## [1.1.1] - 2026-10-29
 
