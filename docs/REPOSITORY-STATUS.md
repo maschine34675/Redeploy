@@ -10,13 +10,16 @@
   `docs/README.md` row. The release notes' native-check and package sections are
   filled by the record commit after packaging.
 - Branch state: `main` only; the merged `fix/absent-adapter-unpatch` was deleted on
-  2026-11-07. `main` is ahead of `origin/main` and not pushed.
+  2026-11-07. `origin/main` holds the Core 1.0.20 state (`eb64dae`); the 1.1.2 release
+  commit `3b68193` and this record commit are not pushed.
 - Offline checks on this state (no deploy, `-p:SPTModType=Library`): Core, Client and
   Server build (eight pre-existing client warnings); `Redeploy.Tests` 601 passed,
   `Redeploy.Server.Tests` 162 passed, `RESPAWN_INTEROP_CHECKS_PASSED`.
-- Next: package `Redeploy-1.1.2.zip` from the release commit; ArenaMode 0.5.0 bundles
-  the byte-identical Core; native GPU cycle with the package binaries; then the record
-  commit. The tag and the push are the user's.
+- Packaged from `3b68193`: `artifacts/publish-112/package-20261107-203151/Redeploy-1.1.2.zip`
+  (SHA-256 `e3a4a511…447d4`, 234,823 bytes; Core `1.0.20+3b68193`, SHA-256 `150851f5…`), the
+  three DLLs clean on VirusTotal; ArenaMode 0.5.0 bundles the byte-identical Core. The record
+  of the native GPU cycle is in the release notes. The tag (on `3b68193`) and the push are
+  the user's.
 
 ## Recorder and popular-mod integration — 2026-11-02 (unreleased)
 

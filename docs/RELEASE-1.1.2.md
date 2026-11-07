@@ -60,9 +60,33 @@ records the complete changes.
 
 ## Native release check
 
-Pending: recorded after the GPU cycle with the exact package binaries.
+On the GPU test host SPT-GPU-2 (SPT 4.1.6) with these exact binaries loaded (Client 1.1.2,
+Core 1.0.20, Server 1.1.2, built from `3b68193`), a Factory PMC raid with few bots: a death
+followed by "PMC near corpse" produced the respawn 14.5 s after the death ("Respawn complete."),
+a new body at full health without equipment, the Killcam recorder re-initialised, and no
+warning or error from any mod; the raid was left through the result screens. The same Core
+carried ArenaMode 0.5.0's own respawns on Iceberg and Bowl and a PitFireTeam Tactical match
+over three rounds in the same session. Continue as Scav, transit arrivals, and Raid Review,
+HollywoodFX and Hands Are Not Busy (none installed on the host) were not run. Record:
+ArenaMode's `docs/reports/2026-11/GPU-RELEASE-050-20261107.md`.
 
 ## Package checks
 
-Pending: recorded after packaging (build commit, ZIP SHA-256 and size, fresh
-test counts, VirusTotal results of the three DLLs).
+Built from `3b68193d07aa1a6d0d40b9a37843123681124b3a`. ZIP SHA-256:
+`e3a4a5111d36b58aec61ded39311ce0d5255ab38b8ef8afb885c0789d6a447d4` (234,823 bytes). The ZIP
+holds exactly Client/Server 1.1.2 and Core 1.0.20 (`1.0.20+3b68193`); its Core is
+byte-identical to the Core in ArenaMode 0.5.0.
+
+Fresh checks on the release commit without deploying: 601 client/Core and 162 server tests
+passed with none skipped, plus the respawn interoperability checks. The package holds only
+the three compiled DLLs; no credential scan was run for this release (the source change since
+1.1.1 is the Core work of the 2026-11-02 report and version strings).
+
+VirusTotal results below apply to these exact binaries (7 November 2026). None of the three
+DLLs had a malicious or suspicious label (71, 71 and 70 engines without detection).
+
+| File | SHA-256 / scan |
+|---|---|
+| `maschine-Redeploy.Client.dll` | [103e3d73d5f5…](https://www.virustotal.com/gui/file/103e3d73d5f549a2578d69432c9ebb528151cc571dc0f9a87d46089b6bd26b03) |
+| `maschine-Redeploy.Core.dll` | [150851f557dc…](https://www.virustotal.com/gui/file/150851f557dc14356de53f75023128b591fb607d2cac99388e91c54148e8c87b) |
+| `maschine-Redeploy.Server.dll` | [b90d0176a349…](https://www.virustotal.com/gui/file/b90d0176a349b02fc27624f5b3ddc4cf90e29c5a79e7a403d3b5cefa31eb47f7) |
