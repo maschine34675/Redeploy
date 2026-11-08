@@ -86,6 +86,7 @@ public static class BodyReplacementCompatibility
         var handsAreNotBusy = HandsAreNotBusyCompat.GetRejectionReason();
         var raidReview = RaidReviewCompat.GetRejectionReason();
         var plate = PlateCompat.GetRejectionReason();
+        var vicinity = LootInVicinityCompat.GetRejectionReason();
         var skills = SkillsExtendedCompat.GetRejectionReason();
         var ladders = ClimbableLaddersCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
@@ -93,7 +94,7 @@ public static class BodyReplacementCompatibility
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
             ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics
             ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
-            ?? raidReview ?? plate ?? skills ?? ladders ?? _tickFailure;
+            ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -150,6 +151,7 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(HandsAreNotBusyContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(RaidReviewContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(PlateCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(LootInVicinityCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(SkillsExtendedCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ClimbableLaddersCompat.PluginGuid);
 
@@ -181,6 +183,7 @@ public static class BodyReplacementCompatibility
         HandsAreNotBusyCompat.Prepare(game, oldBody);
         RaidReviewCompat.Prepare(game, oldBody);
         PlateCompat.Prepare(game, oldBody);
+        LootInVicinityCompat.Prepare(game, oldBody);
         SkillsExtendedCompat.Prepare(game, oldBody);
         var climbs = ClimbableLaddersCompat.Capture(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
@@ -191,6 +194,7 @@ public static class BodyReplacementCompatibility
         MagazineCheckCompat.CompletePreparation();
         SimpleCrosshairCompat.CompletePreparation();
         SkillsExtendedCompat.CompletePreparation();
+        LootInVicinityCompat.CompletePreparation();
         ClimbableLaddersCompat.Dismount(game, oldBody, climbs);
     }
 
@@ -232,6 +236,7 @@ public static class BodyReplacementCompatibility
         HandsAreNotBusyCompat.AbortPreparation();
         RaidReviewCompat.AbortPreparation();
         PlateCompat.AbortPreparation();
+        LootInVicinityCompat.AbortPreparation();
         SkillsExtendedCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
@@ -262,6 +267,7 @@ public static class BodyReplacementCompatibility
             HandsAreNotBusyCompat.Tick();
             RaidReviewCompat.Tick();
             PlateCompat.Tick();
+            LootInVicinityCompat.Tick();
             SkillsExtendedCompat.Tick();
         }
         catch (Exception ex)
@@ -306,6 +312,7 @@ public static class BodyReplacementCompatibility
         HandsAreNotBusyCompat.RetireWorld(world);
         RaidReviewCompat.RetireWorld(world);
         PlateCompat.RetireWorld(world);
+        LootInVicinityCompat.RetireWorld(world);
         SkillsExtendedCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;

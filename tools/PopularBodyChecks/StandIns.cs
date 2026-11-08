@@ -57,7 +57,7 @@ namespace EFT
         public Health HealthController = new(); public int HandResets;
     }
     public class LocalPlayer : Player { }
-    public class GameWorld : UnityEngine.MonoBehaviour
+    public partial class GameWorld : UnityEngine.MonoBehaviour
     {
         public Player MainPlayer; public readonly List<IPlayer> RegisteredPlayers = new();
         public void UnregisterPlayer(IPlayer player) => RegisteredPlayers.Remove(player);

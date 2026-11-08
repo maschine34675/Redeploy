@@ -43,6 +43,7 @@ public class AdapterUnpatchGuardTests
         "HealingAutoCancel/HealingAutoCancelCompat.cs",
         "HandsAreNotBusy/HandsAreNotBusyCompat.cs",
         "ImpactCue/ImpactCueCompat.cs",
+        "LootInVicinity/LootInVicinityCompat.cs",
         "MagazineCheckCompat.cs",
         "ManimalAmmoCompat.cs",
         "PipDisabler/PipDisablerCompat.cs",
