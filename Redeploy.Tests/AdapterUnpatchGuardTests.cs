@@ -53,6 +53,7 @@ public class AdapterUnpatchGuardTests
         "RaidReview/RaidReviewCompat.cs",
         "RecoilLegacyCompat.cs",
         "SimpleCrosshair/SimpleCrosshairCompat.cs",
+        "SkillsExtended/SkillsExtendedCompat.cs",
     };
 
     public static IEnumerable<object[]> Adapters() => AdapterFiles.Select(file => new object[] { file });

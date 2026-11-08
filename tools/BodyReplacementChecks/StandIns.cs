@@ -158,8 +158,8 @@ namespace Redeploy.Core.Compat
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
         internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
-        internal static readonly AdapterProbe Ladders = new("ladders"), Plate = new("plate");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Ladders];
+        internal static readonly AdapterProbe Ladders = new("ladders"), Plate = new("plate"), Skills = new("skills");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Skills, Ladders];
         internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel) && !ReferenceEquals(p, Ladders)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
@@ -211,6 +211,16 @@ namespace Redeploy.Core.Compat
         internal static void AbortPreparation() => Probes.Plate.Abort();
         internal static void Tick() => Probes.Plate.Tick();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.Plate.Retired.Add(world);
+    }
+    internal static class SkillsExtendedCompat
+    {
+        internal const string PluginGuid = "fixture.Skills";
+        internal static string GetRejectionReason() => Probes.Skills.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Skills.Prepare(game, body);
+        internal static void CompletePreparation() => Probes.Skills.Complete();
+        internal static void AbortPreparation() => Probes.Skills.Abort();
+        internal static void Tick() => Probes.Skills.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Skills.Retired.Add(world);
     }
     internal static class ClimbableLaddersCompat
     {

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>SkillsExtended.Client.Skills</AssemblyName>
+    <AssemblyVersion>3.1.4.0</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../PopularBodyChecks/StandIns.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/FikaCompatCheck.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/BodyReplacementContext.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/QuestTracker/StandaloneHudScope.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/QuestTracker/StandaloneHudContract.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/SkillsExtended/*.cs" />
+    <Reference Include="0Harmony"><HintPath>../../../../../BepInEx/core/0Harmony.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>../../../../../BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>../../../../../BepInEx/core/MonoMod.Utils.dll</HintPath></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>../../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

@@ -51,7 +51,7 @@ namespace EFT
     public class LocalGame : AbstractGame { public GameWorld GameWorld; public LocalPlayer LocalPlayer; public Profile Profile; public GameStatus Status = GameStatus.Running; }
     public interface IPlayer { }
     public class Health { public bool IsAlive = true; }
-    public class Player : UnityEngine.MonoBehaviour, IPlayer
+    public partial class Player : UnityEngine.MonoBehaviour, IPlayer
     {
         public GameWorld GameWorld; public Profile Profile = new(); public bool IsYourPlayer = true;
         public Health HealthController = new(); public int HandResets;
