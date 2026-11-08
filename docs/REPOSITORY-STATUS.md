@@ -1,5 +1,12 @@
 # Redeploy repository status
 
+## Core 1.0.21 in development — 2026-11-08
+
+The shared library now handles body replacement for P.L.A.T.E., Loot In Vicinity,
+Skills Extended and Climbable Ladders. Drivers built from this checkout require
+Core 1.0.21. Redeploy 1.1.2 ships Core 1.0.20. See the [handoff and verification
+record](BODY-HANDOFF-20261108.md).
+
 ## Redeploy 1.1.2 published — 2026-11-07
 
 - Tag `v1.1.2` = `3b68193`; [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.2)

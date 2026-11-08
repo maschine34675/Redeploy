@@ -108,6 +108,13 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
+**In development for Core 1.0.21.** P.L.A.T.E. starts a new blood record for a
+replacement life. Loot In Vicinity follows the new inventory controller. Skills
+Extended keeps weapon and medical XP on the current body, and releases a hacking
+or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old
+climb before the replacement takes control. See the [versions, loot limitations
+and validation record](docs/BODY-HANDOFF-20261108.md).
+
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
 **Older ArenaMode builds:** ArenaMode 0.1.3 still contains the older Arena-owned Recoil Rework, Continuous Load Ammo and Continuous Healing adapters. If it is loaded together with any of those three mods, Core refuses replacement to prevent duplicate hooks. Use ArenaMode 0.2.0 or newer, which delegates these adapters to Core. Standalone Redeploy does not require ArenaMode.

@@ -5,6 +5,19 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
+## Unreleased — Core 1.0.21
+
+- Keep P.L.A.T.E. 1.6.0 blood, injury and movement state with the physical life
+  that incurred it, including when a PMC respawn reuses the same profile.
+- Rebind Loot In Vicinity 3.0.6 to the current inventory. Safely close a display
+  of ground loot. A real item staged in the virtual stash or an unfinished take
+  can prevent replacement before teardown to protect item ownership.
+- Rebind the weapon mastery and medical XP handlers in Skills Extended 3.1.4.
+  Hits after a kit change or respawn can complete with empty or replaced hands.
+  An active hacking or lockpicking attempt on the outgoing player is cancelled.
+- Complete a Climbable Ladders 1.0.4 dismount on the outgoing character before
+  starting its replacement. [Compatibility details](BODY-HANDOFF-20261108.md)
+
 ## [1.1.2] - 2026-11-07
 
 Client/Server **1.1.2**, bundled and minimum Core **1.0.20**. The Client and
