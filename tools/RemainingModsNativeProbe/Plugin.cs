@@ -75,10 +75,21 @@ public sealed class Plugin : BaseUnityPlugin
             var fields = Fields(amand, instance, "Player", "FPSCamera", "FPSCameraCamera", "GraphicsMode", "scene", "levelSettings", "backLens", "sightComponent", "ChromaticAberrationAnimation");
             fields["bodyMatches"] = player != null && ReferenceEquals(player, Read(amand, "Player"));
             fields["cameraMatches"] = camera != null && ReferenceEquals(camera, Read(amand, "FPSCameraCamera"));
+            var level = Read(amand, "levelSettings") as LevelSettings;
+            fields["levelObject"] = level != null ? level.gameObject.name : null;
+            fields["levelMatchesScene"] = level != null && ReferenceEquals(level, Singleton<LevelSettings>.Instance);
             foreach (var name in new[] { "registeredLights", "registeredVolumetricLights" })
                 if (Read(amand, name) is IDictionary lights)
                     fields[name] = new { count = lights.Count, destroyed = lights.Keys.Cast<object>().Count(k => k is UnityEngine.Object o && o == null) };
             result["amand"] = fields;
+        }
+        var sense = Find("AmandsSense.Components.AmandsSenseClass");
+        if (sense != null)
+        {
+            var fields = Fields(sense, null, "SenseWorlds", "DeadPlayers");
+            fields["bodyMatches"] = player != null && ReferenceEquals(player, Read(sense, "Player"));
+            fields["inventoryMatches"] = inventory != null && ReferenceEquals(inventory, Read(sense, "inventoryControllerClass"));
+            result["sense"] = fields;
         }
         var hud = Find("HudBreakout.HudRoot");
         if (hud != null)

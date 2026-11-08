@@ -5,7 +5,12 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Core 1.0.21
+## Unreleased — Core 1.0.22
+
+- Amand's Sense Updated 3.1.0 can keep an active loot marker through a body
+  change. The new player keeps using the same raid's markers and corpse history.
+  If creation fails before the player handoff, Sense returns to the old player
+  and inventory. [Compatibility record](AMANDS-SENSE-20261108.md)
 
 - Keep P.L.A.T.E. 1.6.0 blood, injury and movement state with the physical life
   that incurred it, including when a PMC respawn reuses the same profile.

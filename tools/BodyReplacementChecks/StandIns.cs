@@ -304,6 +304,19 @@ namespace Redeploy.Core.Compat
         internal static void Tick() => Probes.Pip.Tick();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.Pip.Retired.Add(world);
     }
+    internal static class AmandsSenseCompat
+    {
+        internal const string PluginGuid = "fixture.amandsSense";
+        internal static string Rejection;
+        internal static EFT.GameWorld Retired;
+        internal static bool ThrowOnEnd;
+        internal static string GetRejectionReason() => Rejection;
+        internal static void RetireWorld(EFT.GameWorld world) => Retired = world;
+        internal static void EndAttempt()
+        {
+            if (ThrowOnEnd) throw new InvalidOperationException("synthetic Sense recovery failure");
+        }
+    }
     internal static class AmandsGraphicsCompat
     {
         internal const string PluginGuid = "fixture.Amands";

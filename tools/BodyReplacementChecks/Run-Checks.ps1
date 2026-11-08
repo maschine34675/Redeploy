@@ -35,7 +35,7 @@ Invoke-DotnetChecked -Arguments @('build', $project, '--no-restore', '--disable-
 $baselineDll = Join-Path $PSScriptRoot 'bin/Release/net10.0/BodyReplacementChecks.dll'
 Invoke-DotnetChecked -Arguments @($baselineDll) -LogName 'baseline-checks.log'
 $baselineText = Get-Content -LiteralPath (Join-Path $artifacts 'baseline-checks.log') -Raw
-if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=20 assertions=\d+') { throw 'Baseline success token missing' }
+if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=21 assertions=\d+') { throw 'Baseline success token missing' }
 
 if ($Mutations) {
     $mutants = @(

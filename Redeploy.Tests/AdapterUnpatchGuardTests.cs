@@ -35,6 +35,7 @@ public class AdapterUnpatchGuardTests
     public static readonly string[] AdapterFiles =
     {
         "AmandsGraphics/AmandsGraphicsCompat.cs",
+        "AmandsSense/AmandsSenseCompat.cs",
         "AudioIndicators/AudioIndicatorsCompat.cs",
         "ContinuousHealingCompat.cs",
         "ContinuousLoadAmmoCompat.cs",

@@ -108,7 +108,11 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
-**In development for Core 1.0.21.** P.L.A.T.E. starts a new blood record for a
+**In development for Core 1.0.22.** Amand's Sense Updated 3.1.0 keeps its
+active markers and the raid's corpse history across a respawn, with the new
+inventory bound to the current player. [Sense compatibility](docs/AMANDS-SENSE-20261108.md)
+
+Core 1.0.21 introduced four other integrations. P.L.A.T.E. starts a new blood record for a
 replacement life. Loot In Vicinity follows the new inventory controller. Skills
 Extended keeps weapon and medical XP on the current body, and releases a hacking
 or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old

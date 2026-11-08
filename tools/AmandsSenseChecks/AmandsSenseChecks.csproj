@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>AmandsSense</AssemblyName>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <SptRoot Condition="'$(SptRoot)' == ''">../../../..</SptRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Redeploy.Core/Compat/AmandsSense/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Compile Include="../../Redeploy.Core/Compat/QuestTracker/StandaloneHudContract.cs" Link="Production/StandaloneHudContract.cs" />
+    <Reference Include="0Harmony"><HintPath>$(SptRoot)/BepInEx/core/0Harmony.dll</HintPath></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>$(SptRoot)/BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>$(SptRoot)/BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>$(SptRoot)/BepInEx/core/MonoMod.Utils.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

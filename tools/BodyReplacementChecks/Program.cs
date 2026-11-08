@@ -29,6 +29,7 @@ internal static class Program
         ("exact-candidate", ExactCandidate),
         ("profile-replacement", ProfileReplacement),
         ("created-fault", CreatedFault),
+        ("amands-sense", AmandsSense),
         ("stale-candidate", StaleCandidate),
         ("cached-ui", CachedUi),
         ("pump-current", PumpCurrent),
@@ -280,6 +281,28 @@ internal static class Program
         Check(!BodyReplacementContext.OwnsRaid(new LocalGame(), valid.World), "Wrong game must not own a raid");
         Check(!BodyReplacementContext.OwnsRaid(valid.Game, new GameWorld()), "Wrong world must not own a raid");
         BodyReplacementContext.CancelPreparation();
+    }
+
+    private static void AmandsSense()
+    {
+        var raid = NewRaid();
+        Install(AmandsSenseCompat.PluginGuid);
+        AmandsSenseCompat.Rejection = "synthetic Sense drift";
+        Throws(() => BodyReplacementCompatibility.Prepare(raid.Game, raid.Body), "synthetic Sense drift");
+        Check(!BodyReplacementContext.IsCreating, "Sense admission failure allocated a replacement");
+        AmandsSenseCompat.Rejection = null;
+        BodyReplacementCompatibility.Prepare(raid.Game, raid.Body);
+        Check(BodyReplacementContext.IsCreating, "Sense alone must open Core's exact replacement scope");
+        AmandsSenseCompat.ThrowOnEnd = true;
+        BodyReplacementCompatibility.EndAttempt();
+        Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null,
+            "a failed Sense recovery must release the shared replacement context");
+        Check(CoreLog.Warnings.Any(w => w.Contains("synthetic Sense recovery failure")), "Sense recovery failure was not diagnosed");
+        AmandsSenseCompat.ThrowOnEnd = false;
+        BodyReplacementCompatibility.Prepare(raid.Game, raid.Body);
+        BodyReplacementCompatibility.WorldDisposed(raid.World);
+        Same(raid.World, AmandsSenseCompat.Retired, "Sense world was not retired");
+        Check(!BodyReplacementContext.IsCreating, "ensuing replacement refused to clean up");
     }
 
     private static void PrepareOrder()

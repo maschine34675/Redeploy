@@ -78,6 +78,7 @@ public static class BodyReplacementCompatibility
         var quickCancel = QuickCancelCompat.GetRejectionReason();
         var pipDisabler = PipDisablerCompat.GetRejectionReason();
         var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
+        var amandsSense = AmandsSenseCompat.GetRejectionReason();
         var aiLimit = AiLimitCompat.GetRejectionReason();
         var healingAutoCancel = HealingAutoCancelCompat.GetRejectionReason();
         var questTracker = QuestTrackerCompat.GetRejectionReason();
@@ -93,7 +94,7 @@ public static class BodyReplacementCompatibility
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
             ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics
-            ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
+            ?? amandsSense ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
             ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
     }
 
@@ -143,6 +144,7 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(QuickCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
            || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(AmandsSenseCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AiLimitContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HealingAutoCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(QuestTrackerContract.PluginGuid)
@@ -209,8 +211,13 @@ public static class BodyReplacementCompatibility
 
     internal static void EndAttempt()
     {
-        _prepared = false;
-        BodyReplacementContext.EndAttempt();
+        try { AmandsSenseCompat.EndAttempt(); }
+        catch (Exception ex) { CoreLog.LogWarning("Amand's Sense could not finish the body switch: " + ex.GetBaseException().Message); }
+        finally
+        {
+            _prepared = false;
+            BodyReplacementContext.EndAttempt();
+        }
     }
 
     internal static void CancelPreparation()
@@ -304,6 +311,7 @@ public static class BodyReplacementCompatibility
         QuickCancelCompat.RetireWorld(world);
         PipDisablerCompat.RetireWorld(world);
         AmandsGraphicsCompat.RetireWorld(world);
+        AmandsSenseCompat.RetireWorld(world);
         AiLimitCompat.RetireWorld(world);
         HealingAutoCancelCompat.RetireWorld(world);
         QuestTrackerCompat.RetireWorld(world);

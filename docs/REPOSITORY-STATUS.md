@@ -1,5 +1,11 @@
 # Redeploy repository status
 
+## Core 1.0.22 in development — 2026-11-08
+
+Core adds a body handoff for [Amand's Sense Updated 3.1.0](AMANDS-SENSE-20261108.md).
+Drivers built from this source require Core 1.0.22. Published Redeploy 1.1.2
+ships Core 1.0.20.
+
 ## Core 1.0.21 in development — 2026-11-08
 
 The shared library now handles body replacement for P.L.A.T.E., Loot In Vicinity,

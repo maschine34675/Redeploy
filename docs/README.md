@@ -23,6 +23,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | [Standalone compatibility](STANDALONE-COMPAT-20261029.md) | Core 1.0.17: AI Limit, Healing Autocancel, Quest Tracker and Audio Accessibility Indicators. |
 | [Recording and popular-mod compatibility](RECORDING-AND-POPULAR-COMPAT-20261102.md) | Core 1.0.20 (released with Redeploy 1.1.2): Raid Review, HollywoodFX and Hands Are Not Busy; popular-mod audit and performance constraints. |
 | [Body handoff for blood, loot, skills and ladders](BODY-HANDOFF-20261108.md) | Development Core 1.0.21. Supported versions, Skills Extended issue 136, item ownership and test coverage. |
+| [Amand's Sense Updated](AMANDS-SENSE-20261108.md) | Development Core 1.0.22. Same-raid markers, recorded corpses and inventory ownership across body replacement. |
 | [Published owned-mod audit](OWN-MOD-COMPATIBILITY-20261024.md) | All 27 published mod repositories and four beta packages: body-replacement handling, consumer-side hardening candidates, release coordination and native test gaps. |
 | [Native probe instructions](../tools/RespawnApiProbe/README.md) | Developer-only in-game checks. The probe is not included in normal installation. |
 | [Probe results, 2026-09-21](RESPAWN-API-PROBE-RESULTS-2026-09-21.md) | Tested scenarios and remaining coverage limits for the recorded builds. |
