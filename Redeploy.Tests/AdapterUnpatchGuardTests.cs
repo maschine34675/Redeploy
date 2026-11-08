@@ -46,6 +46,7 @@ public class AdapterUnpatchGuardTests
         "MagazineCheckCompat.cs",
         "ManimalAmmoCompat.cs",
         "PipDisabler/PipDisablerCompat.cs",
+        "Plate/PlateCompat.cs",
         "QuestTracker/QuestTrackerCompat.cs",
         "QuickCancel/QuickCancelCompat.cs",
         "Radar/RadarCompat.cs",

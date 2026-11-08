@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PLATE.Client</AssemblyName>
+    <AssemblyVersion>1.6.0.0</AssemblyVersion>
+    <NoWarn>$(NoWarn);CS0649</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../Redeploy.Core/Compat/Plate/*.cs" Link="Production/%(Filename)%(Extension)" />
+    <Compile Include="../../../Redeploy.Core/Compat/QuestTracker/StandaloneHudScope.cs" Link="Production/StandaloneHudScope.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/QuestTracker/StandaloneHudContract.cs" Link="Production/StandaloneHudContract.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/BodyReplacementContext.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/FikaCompatCheck.cs" Link="Production/FikaCompatCheck.cs" />
+    <Reference Include="Mono.Cecil"><HintPath>../../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="0Harmony"><HintPath>../../../../../BepInEx/core/0Harmony.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>../../../../../BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>../../../../../BepInEx/core/MonoMod.Utils.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

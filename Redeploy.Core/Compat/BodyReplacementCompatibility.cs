@@ -85,13 +85,14 @@ public static class BodyReplacementCompatibility
         var hollywoodFx = HollywoodFxCompat.GetRejectionReason();
         var handsAreNotBusy = HandsAreNotBusyCompat.GetRejectionReason();
         var raidReview = RaidReviewCompat.GetRejectionReason();
+        var plate = PlateCompat.GetRejectionReason();
         var ladders = ClimbableLaddersCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
             ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics
             ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
-            ?? raidReview ?? ladders ?? _tickFailure;
+            ?? raidReview ?? plate ?? ladders ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -147,6 +148,7 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(HollywoodFxContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HandsAreNotBusyContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(RaidReviewContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(PlateCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ClimbableLaddersCompat.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
@@ -176,6 +178,7 @@ public static class BodyReplacementCompatibility
         HollywoodFxCompat.Prepare(game, oldBody);
         HandsAreNotBusyCompat.Prepare(game, oldBody);
         RaidReviewCompat.Prepare(game, oldBody);
+        PlateCompat.Prepare(game, oldBody);
         var climbs = ClimbableLaddersCompat.Capture(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
@@ -224,6 +227,7 @@ public static class BodyReplacementCompatibility
         HollywoodFxCompat.AbortPreparation();
         HandsAreNotBusyCompat.AbortPreparation();
         RaidReviewCompat.AbortPreparation();
+        PlateCompat.AbortPreparation();
         _prepared = false;
         BodyReplacementContext.CancelPreparation();
     }
@@ -252,6 +256,7 @@ public static class BodyReplacementCompatibility
             HollywoodFxCompat.Tick();
             HandsAreNotBusyCompat.Tick();
             RaidReviewCompat.Tick();
+            PlateCompat.Tick();
         }
         catch (Exception ex)
         {
@@ -294,6 +299,7 @@ public static class BodyReplacementCompatibility
         HollywoodFxCompat.RetireWorld(world);
         HandsAreNotBusyCompat.RetireWorld(world);
         RaidReviewCompat.RetireWorld(world);
+        PlateCompat.RetireWorld(world);
         // A late OnDestroy from an older pump must never clear a newer replacement.
         if (!ReferenceEquals(world, BodyReplacementContext.CurrentWorld)) return;
         EndAttempt();
