@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Reproduce the released plugin identity so the real resolver runs. -->
+    <AssemblyName>tarkin.ladders.bep</AssemblyName>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../PopularBodyChecks/StandIns.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/BodyReplacementContext.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/FikaCompatCheck.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/QuestTracker/StandaloneHudContract.cs" />
+    <Compile Include="../../../Redeploy.Core/Compat/ClimbableLadders/ClimbableLaddersCompat.cs" />
+    <Reference Include="Mono.Cecil"><HintPath>../../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

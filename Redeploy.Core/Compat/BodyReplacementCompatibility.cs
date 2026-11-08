@@ -85,9 +85,13 @@ public static class BodyReplacementCompatibility
         var hollywoodFx = HollywoodFxCompat.GetRejectionReason();
         var handsAreNotBusy = HandsAreNotBusyCompat.GetRejectionReason();
         var raidReview = RaidReviewCompat.GetRejectionReason();
+        var ladders = ClimbableLaddersCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy ?? raidReview ?? _tickFailure;
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
+            ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics
+            ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
+            ?? raidReview ?? ladders ?? _tickFailure;
     }
 
     private static string LegacyArenaConflict()
@@ -142,7 +146,8 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(AudioIndicatorsContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HollywoodFxContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HandsAreNotBusyContract.PluginGuid)
-           || Chainloader.PluginInfos.ContainsKey(RaidReviewContract.PluginGuid);
+           || Chainloader.PluginInfos.ContainsKey(RaidReviewContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(ClimbableLaddersCompat.PluginGuid);
 
     internal static void Prepare(LocalGame game, LocalPlayer oldBody, Profile replacementProfile = null)
     {
@@ -171,6 +176,7 @@ public static class BodyReplacementCompatibility
         HollywoodFxCompat.Prepare(game, oldBody);
         HandsAreNotBusyCompat.Prepare(game, oldBody);
         RaidReviewCompat.Prepare(game, oldBody);
+        var climbs = ClimbableLaddersCompat.Capture(game, oldBody);
         var pump = game.GameWorld.gameObject.GetComponent<BodyReplacementCompatPump>();
         if (pump == null) pump = game.GameWorld.gameObject.AddComponent<BodyReplacementCompatPump>();
         pump.World = game.GameWorld;
@@ -178,6 +184,7 @@ public static class BodyReplacementCompatibility
         FovFixCompat.CompletePreparation();
         MagazineCheckCompat.CompletePreparation();
         SimpleCrosshairCompat.CompletePreparation();
+        ClimbableLaddersCompat.Dismount(game, oldBody, climbs);
     }
 
     internal static void ValidateCreated(LocalPlayer body)

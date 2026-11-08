@@ -158,8 +158,9 @@ namespace Redeploy.Core.Compat
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
         internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview];
-        internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel)).ToArray();
+        internal static readonly AdapterProbe Ladders = new("ladders");
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Ladders];
+        internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel) && !ReferenceEquals(p, Ladders)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -201,6 +202,21 @@ namespace Redeploy.Core.Compat
         internal static void AbortPreparation() => Probes.HandsAreNotBusy.Abort();
         internal static void Tick() => Probes.HandsAreNotBusy.Tick();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.HandsAreNotBusy.Retired.Add(world);
+    }
+    internal static class ClimbableLaddersCompat
+    {
+        internal const string PluginGuid = "fixture.Ladders";
+        internal static string GetRejectionReason() => Probes.Ladders.GetRejectionReason();
+        internal static EFT.LocalPlayer Capture(EFT.LocalGame game, EFT.LocalPlayer body)
+        {
+            Probes.Ladders.Prepare(game, body);
+            return body;
+        }
+        internal static void Dismount(EFT.LocalGame game, EFT.LocalPlayer body, EFT.LocalPlayer captured)
+        {
+            if (!ReferenceEquals(captured, body)) throw new InvalidOperationException("Wrong captured climb");
+            Probes.Ladders.Complete();
+        }
     }
     internal static class RaidReviewCompat
     {

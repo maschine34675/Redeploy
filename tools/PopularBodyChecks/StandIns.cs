@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace UnityEngine
 {
-    public class Object
+    public partial class Object
     {
         public bool Destroyed;
         public static bool operator ==(Object a, Object b) => ReferenceEquals(a, b) || (ReferenceEquals(a, null) && b.Destroyed) || (ReferenceEquals(b, null) && a.Destroyed);
