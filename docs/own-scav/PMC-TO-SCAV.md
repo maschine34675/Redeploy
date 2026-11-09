@@ -12,7 +12,7 @@ tests passed. Focused native recovery and control tests passed on SPT-GPU-1.**
 See the [new native evidence and limitations](PMC-SCAV-RECOVERY-20261028.md) and
 [release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md). The earlier normal-flow
 tests below retain their original dated scope. These tests used pre-1.1.0
-binaries; see the [1.1.0 release notes](RELEASE-1.1.0.md) for release scope.
+binaries; see the [1.1.0 release notes](../releases/RELEASE-1.1.0.md) for release scope.
 
 ## Behavior
 

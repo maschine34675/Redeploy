@@ -112,4 +112,4 @@ is `docs/HUD-MOD-COMPAT-20261025.md`.
 
 Core's own exact candidate builds, tests and peer reviews are retained under
 `artifacts/archived-worktrees/compat-hud-20261025/`. See
-[worktree cleanup](WORKTREE-CLEANUP-20261025.md) for the verified archives.
+[worktree cleanup](../reports/WORKTREE-CLEANUP-20261025.md) for the verified archives.

@@ -37,7 +37,7 @@ the raid stash or moves a staged item into a successor's inventory.
 
 ### Verification
 
-The focused runners in [tools/CaseBodyChecks](../tools/CaseBodyChecks) exercise
+The focused runners in [tools/CaseBodyChecks](../../tools/CaseBodyChecks) exercise
 the production adapters against published DLL metadata and model the affected
 callbacks. The ladder check verifies that native `OnDestroy` in the reviewed
 DLL cancels the transition, unregisters input and releases its movement lock.

@@ -45,7 +45,7 @@ ordinary unowned failing fixture is deliberately unchanged.
 The temporary `tools/HudBodyNativeProbe` only reads identities and snapshots.
 It does not implement the fix or refresh telemetry. It must never be shipped.
 The accompanying Use Items Anywhere fix belongs to Arena and is not duplicated
-in Core. See Arena's `docs/ITEMS-HUD-COMPAT-20261025.md` for inventory tests and
+in Core. See Arena's `docs/compatibility/ITEMS-HUD-COMPAT-20261025.md` for inventory tests and
 the complete final cleanup/exit retest record.
 
 ImpactCue's existing startup warning for its optional EftBattleUIScreen.Show

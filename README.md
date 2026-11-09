@@ -5,7 +5,7 @@
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
 **Redeploy 1.1.2** for SPT 4.1.x bundles **Core 1.0.20**. See the
-[release notes](docs/RELEASE-1.1.2.md) and [changelog](docs/CHANGELOG.md).
+[release notes](docs/releases/RELEASE-1.1.2.md) and [changelog](docs/CHANGELOG.md).
 
 ## Features
 
@@ -22,8 +22,8 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
   raid after PMC death, provided the normal Scav cooldown has expired. Successful
   extraction opens the usual Scav-to-stash transfer screen. A Scav cooldown only
   disables this choice; the normal PMC respawn remains available. See
-  [behavior and test scope](docs/PMC-TO-SCAV.md) and
-  [recovery validation](docs/PMC-SCAV-RECOVERY-20261028.md). This feature is new
+  [behavior and test scope](docs/own-scav/PMC-TO-SCAV.md) and
+  [recovery validation](docs/own-scav/PMC-SCAV-RECOVERY-20261028.md). This feature is new
   in 1.1.0.
 
 ## Requirements and compatibility
@@ -74,21 +74,21 @@ exit; their final candidates were not separately rerun in standalone Redeploy.
 Offline checks cover their common lifecycle and ownership rules. These tests do
 not establish every optic, delayed callback race, practice-mode setting,
 PitFireTeam combination or long-session behavior. See the dated reports for
-[Recoil/CLA/Healing](docs/BODY-REPLACEMENT-COMPAT-20261023.md),
-[FOV/Manimal](docs/FOV-MANIMAL-COMPAT-20261025.md),
-[Magazine Check Interrupt](docs/MAGCHECK-COMPAT-20261025.md) and
-[Radar/Crosshair](docs/HUD-COMPAT-20261025.md).
+[Recoil/CLA/Healing](docs/compatibility/BODY-REPLACEMENT-COMPAT-20261023.md),
+[FOV/Manimal](docs/compatibility/FOV-MANIMAL-COMPAT-20261025.md),
+[Magazine Check Interrupt](docs/compatibility/MAGCHECK-COMPAT-20261025.md) and
+[Radar/Crosshair](docs/compatibility/HUD-COMPAT-20261025.md).
 
 ImpactCue and Enemy Markers subsequently passed three respawns and raid exit per
 driver with their final Core 1.0.14 correction; see
-[HUD body/camera verification](docs/ITEMS-HUD-COMPAT-20261025.md).
+[HUD body/camera verification](docs/compatibility/ITEMS-HUD-COMPAT-20261025.md).
 The final Core 1.0.15 candidate additionally passed two Factory respawns with Arena
 absent. A scoped M700 death retired PiP's old cache; Amand's graphics and HUD
 Breakout followed both replacement bodies. Actual medical cancellation and a
 Fast Grenade Throw RGD throw worked after respawn. These are bounded tests, not
 validation of every HUD feature, optic or map. The rare Quick Cancel interrupted
 drop/death race has offline coverage only; a completed native cancel does not
-prove that timing window. See [remaining body integrations](docs/REMAINING-BODY-COMPAT-20261026.md)
+prove that timing window. See [remaining body integrations](docs/compatibility/REMAINING-BODY-COMPAT-20261026.md)
 for exact scenarios, the Amand blocker and outstanding limits. Fast Grenade Throw's
 grenade-priority/input correction is Arena-specific and is not added to Core.
 
@@ -98,26 +98,26 @@ Accessibility Indicators installed. The current player/controller references,
 retained HUD objects, compass rotation and a post-respawn Salewa treatment were
 checked. The test profile had no active quests, so actual quest-objective progress
 was covered by the automated harness rather than by that raid. See
-[standalone compatibility evidence](docs/STANDALONE-COMPAT-20261029.md).
+[standalone compatibility evidence](docs/compatibility/STANDALONE-COMPAT-20261029.md).
 
 **New in Core 1.0.20 (Redeploy 1.1.2):** Raid Review 1.10.0 records separate
 lives across respawns and own-Scav continuation and keeps separate statistics for
 each life; HollywoodFX 3.0.0 follows the replacement player; Hands Are Not Busy
 1.7.1 cannot reset the retired body's hands. The three adapters were validated
 offline against the mods' published builds and real Harmony targets, not in the
-game. See the [implementation and validation scope](docs/RECORDING-AND-POPULAR-COMPAT-20261102.md)
+game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
 **In development for Core 1.0.22.** Amand's Sense Updated 3.1.0 keeps its
 active markers and the raid's corpse history across a respawn, with the new
-inventory bound to the current player. [Sense compatibility](docs/AMANDS-SENSE-20261108.md)
+inventory bound to the current player. [Sense compatibility](docs/compatibility/AMANDS-SENSE-20261108.md)
 
 **Also in development, Core 1.0.21 (unreleased):** four other integrations.
 P.L.A.T.E. starts a new blood record for a replacement life. Loot In Vicinity follows the new inventory controller. Skills
 Extended keeps weapon and medical XP on the current body, and releases a hacking
 or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old
 climb before the replacement takes control. See the [versions, loot limitations
-and validation record](docs/BODY-HANDOFF-20261108.md).
+and validation record](docs/compatibility/BODY-HANDOFF-20261108.md).
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
@@ -177,7 +177,7 @@ before starting another raid. Unproven partial results remain blocked for diagno
 During an own-Scav continuation, BTR item delivery is unavailable. In its loot
 transfer, **Sell All** is also unavailable: move wanted items into the stash and
 finish the transfer. Ordinary PMC/Scav BTR use and ordinary Scav Sell All keep
-their native behavior. See the [dated native checks](docs/PMC-SCAV-RECOVERY-20261028.md)
+their native behavior. See the [dated native checks](docs/own-scav/PMC-SCAV-RECOVERY-20261028.md)
 for the tested scenarios and remaining limits.
 
 After respawning, run back to your body and loot your equipment from it. Redeploy leaves the corpse in the world, but does not protect its loot or prevent another mod from cleaning it up. The raid and its timer keep running while the prompt or replay is open; respawning does not restart the raid.
@@ -224,7 +224,7 @@ BepInEx `LogLevels=All` setting still writes Debug messages.
   a missing `!settings` scene object before a Core replacement. Core cannot safely
   capture the incomplete graphics baseline and refuses replacement. The Factory
   camera repair does not resolve this map blocker; an ordinary PMC control has
-  not been run. See [native evidence](docs/REMAINING-BODY-COMPAT-20261026.md).
+  not been run. See [native evidence](docs/compatibility/REMAINING-BODY-COMPAT-20261026.md).
 - **Progress from earlier lives is only partly carried over.** Kills are restored to the end-of-raid screen, but the game starts a fresh statistics session for the replacement character, so session XP and other counters from before the last respawn are lost. This is intentional and keeps repeated respawns from paying off.
 - **Items carried through a normal respawn lose their found-in-raid status** through the game's player-creation path. Do not rely on respawning to preserve FiR loot; transit-raid edge cases have not been validated.
 - **Scav raids** work the same way, but have seen less testing than PMC raids.

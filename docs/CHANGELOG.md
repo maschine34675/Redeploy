@@ -10,7 +10,7 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 - Amand's Sense Updated 3.1.0 can keep an active loot marker through a body
   change. The new player keeps using the same raid's markers and corpse history.
   If creation fails before the player handoff, Sense returns to the old player
-  and inventory. [Compatibility record](AMANDS-SENSE-20261108.md)
+  and inventory. [Compatibility record](compatibility/AMANDS-SENSE-20261108.md)
 
 - Keep P.L.A.T.E. 1.6.0 blood, injury and movement state with the physical life
   that incurred it, including when a PMC respawn reuses the same profile.
@@ -21,7 +21,7 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
   Hits after a kit change or respawn can complete with empty or replaced hands.
   An active hacking or lockpicking attempt on the outgoing player is cancelled.
 - Complete a Climbable Ladders 1.0.4 dismount on the outgoing character before
-  starting its replacement. [Compatibility details](BODY-HANDOFF-20261108.md)
+  starting its replacement. [Compatibility details](compatibility/BODY-HANDOFF-20261108.md)
 
 ### Public API and interop
 
@@ -58,7 +58,7 @@ drivers' Core 1.0.20 stamp.
   and retired bodies; retain the replacement body's normal component.
 - The two new Harmony adapters are included in the absent-plugin performance
   guards below; HollywoodFX needs no Harmony hook. See the
-  [focused popular-mod audit and validation report](RECORDING-AND-POPULAR-COMPAT-20261102.md).
+  [focused popular-mod audit and validation report](compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md).
 - Core's public API remains version 1. Client/Server 1.1.2 contain no code change
   since 1.1.1; they stamp and require Core 1.0.20 and refuse an older Core at
   startup. The three adapters were validated offline against the mods' published
@@ -209,9 +209,9 @@ settings. Each mod is installed separately.
   fresh release hashes, every map/optic, optional-mod combination or timing race.
   Fika remains unsupported; future optional-mod versions need matching APIs.
 
-See the [release notes](RELEASE-1.1.0.md), [native release check](RELEASE-CHECK-20261029.md),
-[own-Scav recovery](PMC-SCAV-RECOVERY-20261028.md) and
-[standalone integration checks](STANDALONE-COMPAT-20261029.md) for exact scope.
+See the [release notes](releases/RELEASE-1.1.0.md), [native release check](releases/RELEASE-CHECK-20261029.md),
+[own-Scav recovery](own-scav/PMC-SCAV-RECOVERY-20261028.md) and
+[standalone integration checks](compatibility/STANDALONE-COMPAT-20261029.md) for exact scope.
 
 ## [1.0.2]
 
@@ -230,7 +230,7 @@ together; a newer compatible Core already supplied by ArenaMode can be retained.
   settings and ordinary unowned raids remain unchanged. Radar colors retain
   their faction/role meaning rather than indicating team hostility.
 
-See [implementation and verification](HUD-COMPAT-20261025.md).
+See [implementation and verification](compatibility/HUD-COMPAT-20261025.md).
 
 ### Magazine panel — Core 1.0.12
 
@@ -241,7 +241,7 @@ See [implementation and verification](HUD-COMPAT-20261025.md).
 - Expected pooled-panel teardown diagnostics now use Debug; ambiguous live
   ownership still produces a warning.
 
-See [implementation and verification](MAGCHECK-COMPAT-20261025.md).
+See [implementation and verification](compatibility/MAGCHECK-COMPAT-20261025.md).
 
 ### FOV and loading animations — Core 1.0.11
 
@@ -252,7 +252,7 @@ See [implementation and verification](MAGCHECK-COMPAT-20261025.md).
 - Install Manimal's custom animation iterator hooks before their callers so
   the replacement body's own loading animation is retained.
 
-See [implementation and verification](FOV-MANIMAL-COMPAT-20261025.md).
+See [implementation and verification](compatibility/FOV-MANIMAL-COMPAT-20261025.md).
 
 ### Verification boundaries
 
@@ -305,7 +305,7 @@ See [implementation and verification](FOV-MANIMAL-COMPAT-20261025.md).
   replacements and solo Zombie wave refills. These do not establish every
   asynchronous race, PitFireTeam behavior, or future mod-version compatibility.
 
-See [shared compatibility and verification boundaries](BODY-REPLACEMENT-COMPAT-20261023.md)
+See [shared compatibility and verification boundaries](compatibility/BODY-REPLACEMENT-COMPAT-20261023.md)
 for the tested builds, scenarios and remaining limits.
 
 ## [1.0.0] - 2026-10-19

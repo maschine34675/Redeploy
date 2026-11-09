@@ -16,7 +16,7 @@
 > faction-specific extraction. `InfilSpawnSelector(ISpawnSelector, Profile)` can
 > resolve a target faction's native spawn before profile replacement; it refuses
 > missing faction spawns. The original constructor and RespawnApi v1 are unchanged.
-> See [PMC-to-Scav implementation and limits](PMC-TO-SCAV.md). The historical
+> See [PMC-to-Scav implementation and limits](own-scav/PMC-TO-SCAV.md). The historical
 > design record below does not describe this optional identity change.
 
 > **Status (12.09.2026, Entwicklerdokument, deutsch):** Entwurf vom 11.09.2026 aus drei
@@ -362,7 +362,7 @@
 >   in jedem Raid seit D vor (3–8 Mal), ist also nicht neu.
 >
 > **21.09.2026, Probe-Szenarien im Spiel (GPU, Factory Tag, Arena Deathmatch Endless):**
-> `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Core 1.0.6+`3f2125f`, Probe 0.9.0+`33c79a7`,
+> `docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Core 1.0.6+`3f2125f`, Probe 0.9.0+`33c79a7`,
 > ArenaMode.Client `be7c49d`. P3/F10, P4/F11 und P5 bestanden (Reentranz aus `Replaced`, Reentranz
 > während der Pipeline, Ablehnung bei `Stopping`; kein `ItemOwners`/`RegisterPlayer`, kein
 > `ReplacementFailed`). P2/F2 bestätigt (`Replaced`+`BodyChanged` gleicher Frame, `MainPlayer` N+1,
@@ -1501,7 +1501,7 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
      - "Tod kurz nach dem Raidstart-Swap" (offene Frage 3).
 
    Die Szenarien stehen in Abschnitt 10. GPU-Lauf 21.09.2026:
-   `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
+   `docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
 6. **Bestehende Checks** müssen grün bleiben: `ArenaMode.Tests`, `tools/TdmMatchChecks`, `tools/PitFireTeamChecks`, `tools/BleedingCleanupChecks`.
 
 ---
@@ -1542,7 +1542,7 @@ Für Redeploy 1.0 muss sich kein Drittkonsument ändern. Das heutige Polling fun
 
 Alle Punkte laufen über die Probe aus Abschnitt 8.5.
 
-**Stand 21.09.2026** (`docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`): 1 teilweise; 2, 3
+**Stand 21.09.2026** (`docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`): 1 teilweise; 2, 3
 (0,50 s nach dem Raidstart-Swap, Arena beansprucht, kein Redeploy-Prompt), 4
 (Hideout-Zweig), 10 und 11 im Spiel belegt; 5 nur über die Bot-Layer, nicht über
 `PlayerComponent`. Unverändert offen: 4 Narrate, 6 hier nicht wiederholt, 7–9, 12, 13.

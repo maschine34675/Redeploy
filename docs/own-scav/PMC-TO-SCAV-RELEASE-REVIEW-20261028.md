@@ -1,7 +1,7 @@
 # PMC-to-Scav release readiness — 2026-10-28
 
 > **Historical.** This report is a snapshot of 2026-10-28, before publication.
-> It is superseded by the 1.1.0 release; see [RELEASE-1.1.0.md](RELEASE-1.1.0.md).
+> It is superseded by the 1.1.0 release; see [RELEASE-1.1.0.md](../releases/RELEASE-1.1.0.md).
 > Statements below about the published package or about no public release
 > describe that date.
 
@@ -169,7 +169,7 @@ SHA-256 `CC70BB90D488022F49576DC1BA85281A1821F4037835F67F6815254B3061871F`.
 
 The completed R1-R3/Sell All checks support the requested consolidation after
 test-host restoration. The [native report](PMC-SCAV-RECOVERY-20261028.md) and
-[repository status](REPOSITORY-STATUS.md) record that completion. The published
+[repository status](../REPOSITORY-STATUS.md) record that completion. The published
 package is still Client/Server 1.0.2 with Core 1.0.13; the development feature uses
 Core 1.0.16. Publishing a new package
 also requires a new synchronized Client/Server version, a committed-source build

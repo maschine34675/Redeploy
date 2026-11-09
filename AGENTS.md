@@ -245,7 +245,11 @@ the long versions.
   internals in `../_decompiled/`; when a playtest disagrees with the explanation, the
   explanation is wrong.
 - A native GPU cycle with the exact package binaries comes before a release tag.
-- New documents go to `docs/` with a row in `docs/README.md`; dated validation records keep
-  their date in the name. Update `docs/REPOSITORY-STATUS.md` when handing over.
+- The `docs/` root holds only the eight current documents (index, the four consumer documents,
+  CHANGELOG, REPOSITORY-STATUS, the German design record). New release notes go to
+  `docs/releases/`, per-mod compatibility records to `docs/compatibility/`, own-Scav material to
+  `docs/own-scav/`, other dated reports to `docs/reports/`, superseded material to
+  `docs/history/`; each gets a row in `docs/README.md`, and dated records keep their date in the
+  name. Update `docs/REPOSITORY-STATUS.md` when handing over.
 - User-facing communication is normally German; code, commits and documents are English, except
   the German design record `docs/RESPAWN-API.md` and the probe README.

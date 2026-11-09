@@ -90,7 +90,7 @@ mit `The respawn engine is unavailable` ab, und das ist dann kein Testergebnis.
 ## Stand 21.09.2026
 
 GPU-Lauf auf Factory Tag (Arena Deathmatch Endless):
-`docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
+`docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
 
 | Szenario | Ergebnis |
 |---|---|

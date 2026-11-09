@@ -12,7 +12,7 @@ next release.
 
 ## Core 1.0.22 in development — 2026-11-08
 
-Core adds a body handoff for [Amand's Sense Updated 3.1.0](AMANDS-SENSE-20261108.md).
+Core adds a body handoff for [Amand's Sense Updated 3.1.0](compatibility/AMANDS-SENSE-20261108.md).
 Drivers built from this source require Core 1.0.22. Published Redeploy 1.1.2
 ships Core 1.0.20.
 
@@ -21,7 +21,7 @@ ships Core 1.0.20.
 The shared library now handles body replacement for P.L.A.T.E., Loot In Vicinity,
 Skills Extended and Climbable Ladders. Drivers built from this checkout require
 Core 1.0.21. Redeploy 1.1.2 ships Core 1.0.20. See the [handoff and verification
-record](BODY-HANDOFF-20261108.md).
+record](compatibility/BODY-HANDOFF-20261108.md).
 
 ## Redeploy 1.1.2 published — 2026-11-07
 
@@ -32,7 +32,7 @@ record](BODY-HANDOFF-20261108.md).
 - Client/Server bumped to **1.1.2** in `Shared.props`, `Redeploy.Server.csproj`,
   `ModMetadata.cs` and `Plugin.cs`; Core stays **1.0.20** (`CoreVersion.props`,
   unchanged since 2026-11-02). No Client or Server code change since 1.1.1.
-- Documentation: `docs/RELEASE-1.1.2.md` (new), changelog section `[1.1.2]`, README
+- Documentation: `docs/releases/RELEASE-1.1.2.md` (new), changelog section `[1.1.2]`, README
   version lines and the three Core 1.0.20 integrations in the optional list,
   `docs/README.md` row. The release notes' native-check and package sections are
   filled by the record commit after packaging.
@@ -53,7 +53,7 @@ record](BODY-HANDOFF-20261108.md).
   2026-10-31 entry below describe that earlier state.
 - Shared Core is now **1.0.20** in source. Added Raid Review 1.10.0,
   HollywoodFX 3.0.0 and Hands Are Not Busy 1.7.1 body replacement adapters.
-  See [design, popular-mod audit and validation](RECORDING-AND-POPULAR-COMPAT-20261102.md).
+  See [design, popular-mod audit and validation](compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md).
 - Client/Server stay 1.1.1 and API stays v1. Source builds of both drivers must
   accompany Core 1.0.20 because their minimum-version stamp follows it.
 - No release, push or Arena whitelist change is part of this work. Deployment
@@ -110,7 +110,7 @@ GitHub digests. 522 client/Core and 162 server tests, the interop checks and the
 guard passed. All three DLLs had no malicious or suspicious VirusTotal labels. Core matches
 the copy in ArenaMode 0.4.1 exactly. One native GPU check with these binaries and Recoil
 Rework Legacy 2.0.0 passed Continue as Scav through extraction; see the
-[release notes](RELEASE-1.1.1.md). The v1.1.0 release page now names 1.1.1 as its successor
+[release notes](releases/RELEASE-1.1.1.md). The v1.1.0 release page now names 1.1.1 as its successor
 and lists the fixed issues. Later documentation commits do not move the verified tag or
 change the published package.
 
@@ -124,7 +124,7 @@ The public ZIP/checksum were downloaded and verified against local bytes and Git
 469 client/Core and 149 server cases plus 47 interop checks passed; initially absent sibling
 Arena fixtures were rerun successfully against the final 0.4.0 source/binary. All three DLLs
 had no malicious/suspicious VirusTotal labels. Core matches ArenaMode's supplied copy exactly.
-See [release notes](RELEASE-1.1.0.md) for scanner links, install steps and native evidence limits.
+See [release notes](releases/RELEASE-1.1.0.md) for scanner links, install steps and native evidence limits.
 No live deployment/settings/synchronization changes were performed for publication. Later
 documentation commits do not move the verified tag or change the published package.
 
@@ -132,7 +132,7 @@ documentation commits do not move the verified tag or change the published packa
 
 - The source then targeted Client/Server **1.1.0** and shared Core **1.0.17**.
   Existing assembly names, plugin identities and install paths are unchanged.
-- [Release notes](RELEASE-1.1.0.md) and the [versioned changelog](CHANGELOG.md)
+- [Release notes](releases/RELEASE-1.1.0.md) and the [versioned changelog](CHANGELOG.md)
   cover the changes since the published 1.0.2 package.
 - The native checks below used pre-version-bump binaries. Fresh 1.1.0 builds,
   final archive validation and publication are separate release work; this
@@ -146,7 +146,7 @@ documentation commits do not move the verified tag or change the published packa
 - Fresh GPU-2 checks cover naked PMC respawn, original corpse-weapon recovery and
   firing, second-death give-up, own-Scav extraction and native partial transfer.
   GPU-1 separately covers Core through Arena modes and a final TDM respawn/end.
-  See [candidate identities and exact limits](RELEASE-CHECK-20261029.md).
+  See [candidate identities and exact limits](releases/RELEASE-CHECK-20261029.md).
 
 ## Own-Scav validation and consolidation — 2026-10-28
 
@@ -158,7 +158,7 @@ documentation commits do not move the verified tag or change the published packa
 - At that date Client/Server remained 1.0.2; development required shared Core 1.0.16.
 - Default-on additional own-Scav choice alongside naked PMC respawn, using the
   regular account Scav, its normal cooldown and the native loot transfer. This replaces the earlier independent
-  generated-Scav/mail prototype. See [contract and validation](PMC-TO-SCAV.md).
+  generated-Scav/mail prototype. See [contract and validation](own-scav/PMC-TO-SCAV.md).
 - The readiness checks and requested local consolidation are complete.
   No new public release is part of these corrections. The published 1.0.2 package
   is unchanged; publication work is listed in the release review below.
@@ -174,21 +174,21 @@ documentation commits do not move the verified tag or change the published packa
   were restored and hash-verified; the probe was removed and synchronization
   restored. Exact tested Client/Server DLLs/PDBs are deployed in the development
   installation and GPU1; Core remains unchanged. See the
-  [native report and remaining limits](PMC-SCAV-RECOVERY-20261028.md) and
-  [resolved release blockers](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
+  [native report and remaining limits](own-scav/PMC-SCAV-RECOVERY-20261028.md) and
+  [resolved release blockers](own-scav/PMC-TO-SCAV-RELEASE-REVIEW-20261028.md).
 - Earlier choice/menu update added an explicit naked-PMC / own-Scav death-menu choice
   and readable F12 settings with advanced diagnostics. It passed 394 unit tests,
   76 config checks and focused native choice/cooldown tests on SPT-GPU-1. The
   exact tested Client/PDB were installed in the development installation and both
   GPU hosts at that stage; GPU-2 was not restarted or tested for that change. The test profile,
   configuration and original synchronization state were restored. See
-  [choice and menu validation](PMC-TO-SCAV.md#explicit-respawn-choice-and-configuration-menu--2026-10-28).
+  [choice and menu validation](own-scav/PMC-TO-SCAV.md#explicit-respawn-choice-and-configuration-menu--2026-10-28).
 - Earlier follow-up deployment retained `RespawnAsScav=true`.
   A server-only correction allowed fresh PMC starts with the native Common
   transit flag. It passed 103 server tests and a focused native PMC-to-Scav/death
   run on SPT-GPU-1. The corrected server was installed in the development installation
   and both GPU hosts, resolving GPU-2's earlier locked-file deployment.
-  See the [correction and validation record](PMC-TO-SCAV.md#fresh-raid-transit-registration-correction--2026-10-28).
+  See the [correction and validation record](own-scav/PMC-TO-SCAV.md#fresh-raid-transit-registration-correction--2026-10-28).
 
 ## Historical development snapshot — 2026-10-25
 
@@ -196,12 +196,12 @@ documentation commits do not move the verified tag or change the published packa
 - Public repository: <https://github.com/maschine34675/Redeploy>.
 - Local `origin` fetch/push URL: `https://github.com/maschine34675/Redeploy.git`.
 - Published release: Client/Server 1.0.2 and shared Core 1.0.13; see
-  [final package verification](RELEASE-1.0.2.md#final-package-verification).
+  [final package verification](releases/RELEASE-1.0.2.md#final-package-verification).
 - Current development uses Core 1.0.14 for ImpactCue and Enemy Markers body and
   camera handover. Client/Server remain 1.0.2; no replacement release is implied.
-  See [implementation and native verification](ITEMS-HUD-COMPAT-20261025.md).
+  See [implementation and native verification](compatibility/ITEMS-HUD-COMPAT-20261025.md).
 - Compatibility worktrees have been consolidated; the retained archives and
-  their verification are recorded in [worktree cleanup](WORKTREE-CLEANUP-20261025.md).
+  their verification are recorded in [worktree cleanup](reports/WORKTREE-CLEANUP-20261025.md).
 
 The record below describes the earlier private-repository consolidation. Its
 private URLs and versions are historical, not the current installation target.

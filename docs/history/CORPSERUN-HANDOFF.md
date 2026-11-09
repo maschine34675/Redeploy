@@ -314,7 +314,7 @@ Tests: `Redeploy.Tests` (net10.0, xunit) deckt `SignalDispatcher` und `RespawnPr
 - Weiter offen (Stand 13.09., historisch): 8.4, Bindungstest gegen den echten Core,
   ArenaMode-Migration 4 und 5, die Probe-Szenarien im Spiel. 8.4 und der Bindungstest sind
   seit 17.09. umgesetzt. Die Probe-Szenarien 3–6 liefen am 21.09. im Spiel; Beleg
-  `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
+  `docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`.
 
 In-Game-Testauftrag für den GPU-Rechner (gemeinsam mit ArenaMode, gebunden an die deployten
 Hashes): `../ArenaMode/GPU-RESPAWN-STAGE0-TEST-INSTRUCTIONS-r1.md` (Ergebnis r1: Respawn bestanden,
@@ -429,7 +429,7 @@ noch ungetestet.
   1.0.6+`3f2125f`, Probe 0.9.0+`33c79a7`. P3/P4/P5 bestanden, P2 bestätigt, P6 Arena
   beansprucht ohne Redeploy-Prompt, P1 weiter nur teilweise, Hideout-`GameEnd` bleibt
   aus. Alle Schalter danach aus. Details:
-  `docs/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Offen: Fika, Fail-closed,
+  `docs/reports/RESPAWN-API-PROBE-RESULTS-2026-09-21.md`. Offen: Fika, Fail-closed,
   Pool-Bodies, PitFireTeam, `ReplacementFailed`.
 - Core 1.0.7 (11.10.2026): `DoorDashCompatHelper.FollowBody` — DoorDashs Ramm-Komponente folgt
   dem Körper bei jedem Respawn und Kit-Tausch (Ursache, Regel, Platzierung und Belege unter

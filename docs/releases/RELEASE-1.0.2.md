@@ -46,9 +46,9 @@ rerun in standalone Redeploy. The tests do not establish every optic, delayed
 callback race, PitFireTeam combination, practice-mode setting or long session.
 
 Exact builds and scenarios:
-[FOV/Manimal](FOV-MANIMAL-COMPAT-20261025.md),
-[Magazine Check Interrupt](MAGCHECK-COMPAT-20261025.md),
-[Radar/Crosshair](HUD-COMPAT-20261025.md).
+[FOV/Manimal](../compatibility/FOV-MANIMAL-COMPAT-20261025.md),
+[Magazine Check Interrupt](../compatibility/MAGCHECK-COMPAT-20261025.md),
+[Radar/Crosshair](../compatibility/HUD-COMPAT-20261025.md).
 
 ## Final package verification
 
