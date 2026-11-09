@@ -42,7 +42,8 @@ namespace YourMod.Interop
         public static LocalBodyTracker Instance { get; private set; }
 
         /// <summary>(previous or null, current or null, reason). Chained: each current becomes the next previous;
-        /// at most one event per real change; previous == null always comes with "raid-start".
+        /// at most one event per real change; previous == null always comes with "raid-start",
+        /// current == null always with "raid-end".
         /// Treat any reason other than the constants above like "unknown".
         /// previous.ProfileId differs from current.ProfileId after Redeploy's own-Scav continuation (reason "death"):
         /// a new identity, not only a new body.

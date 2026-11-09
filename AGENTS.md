@@ -23,7 +23,7 @@ non-negotiable 1; toasts are used today).
 | `Redeploy.Server/` | SPT server mod `maschine-Redeploy.Server` (net10.0; patches derive from `AbstractPatch`): `/redeploy/...` routes, inventory root repair, Scav continuation and recovery. Deploys to `SPT_Runtime/user/mods/Redeploy/`. |
 | `Redeploy.Tests/`, `Redeploy.Server.Tests/` | xunit (net10.0). Besides unit tests of the linked Core/Client sources: `ApiContractTests` (frozen v1 surface against the built Core and the installed consumers), `CoreVersionTests` (version line and driver stamps), `SourceGuardTests` (golden statement order of `RunRespawn`, event-raise positive list, Freecam patches inside `try`), `CoreBindingTests` (the interop file bound to the real Core). |
 | `drivers/CoreVersionGate.cs` | Linked into every driver (Redeploy.Client, ArenaMode.Client): refuses an older or unknown Core before any Core type is touched. Must not use Core types. |
-| `interop/RedeployRespawnInterop.cs` | Master copy of the `LocalBodyTracker` that consumers copy verbatim (only the namespace changes); binds by reflection, falls back to polling `GameWorld.MainPlayer`. Revisioned: every change bumps `LocalBodyTracker.Revision` and the header, stays compatible with API v1 and gets a line under "Public API and interop" in `docs/CHANGELOG.md`. `interop/examples/RespawnConsumerExample.cs` and every snippet in `docs/RECIPES.md` and `docs/SOFT-DEPENDENCY.md` that declares a whole type are compiled with it against the game by `CoreBindingTests`. |
+| `interop/RedeployRespawnInterop.cs` | Master copy of the `LocalBodyTracker` that consumers copy verbatim (only the namespace changes); binds by reflection, falls back to polling `GameWorld.MainPlayer`. Revisioned: every change bumps `LocalBodyTracker.Revision` and the header, stays compatible with API v1 and gets a line under "Public API and interop" in `docs/CHANGELOG.md`. `interop/examples/RespawnConsumerExample.cs` and every snippet in `docs/RECIPES.md` and `docs/SOFT-DEPENDENCY.md` written as a complete file are compiled with it against the game by `CoreBindingTests`. |
 | `docs/API.md`, `docs/SOFT-DEPENDENCY.md`, `docs/RULES.md`, `docs/RECIPES.md` | The English consumer contract for other mods. Update them with every consumer-visible change; `docs/RESPAWN-API.md` is the German design record behind them. |
 | `tools/` | Offline checks (`RespawnInteropChecks`, `BodyReplacementChecks` and the other `*Checks` projects, each with its own README or Verify.ps1), in-game probes that are never part of a release (`RespawnApiProbe`, `*NativeProbe`), `Assert-CoreStartup.ps1`, `pipeline-timing/`. |
 
@@ -113,8 +113,7 @@ dotnet run --project tools/RespawnInteropChecks -c Release      # success token 
   engine types are for Redeploy's own drivers; third-party drivers are not supported. Core gets
   no adapter for a mod that can integrate itself through the interop file; an adapter is only for
   a mod whose per-body state is unreachable from outside. Additions only as `ApiVersion` 2, never
-  a veto or stall. The first external consumer is expected soon; do not name it in public docs
-  before it ships.
+  a veto or stall. Public docs name no third-party consumer mod besides Killcam and ArenaMode.
 - Public Core events are raised only through `CoreSignals.<Signal>.Raise(...)` (per
   subscriber isolated, invocation list snapshotted, destroyed Unity targets skipped); the
   legacy events `OnDeathIntercepted`/`OnPlayerRespawned` stay next to `DeathClaimed`/`Replaced`.

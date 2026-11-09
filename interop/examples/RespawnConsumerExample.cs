@@ -25,6 +25,10 @@ namespace YourMod
             _bodies = gameObject.AddComponent<LocalBodyTracker>();
             _bodies.Log = message => Logger.LogInfo(message);
             _bodies.BodyChanged += OnBodyChanged;
+
+            // The tracker's own first bind line goes to Unity's log, which BepInEx writes to disk only with
+            // WriteUnityLog on. This line is the one to quote in a bug report.
+            Logger.LogInfo("Redeploy interop revision " + LocalBodyTracker.Revision + ", bound: " + _bodies.IsBound);
         }
 
         private void OnDestroy()

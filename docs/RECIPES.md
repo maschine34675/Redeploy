@@ -4,7 +4,7 @@ Worked how-tos for a mod that has to keep working when Redeploy.Core replaces th
 
 All snippets are C# 7.3 and use only members of [`LocalBodyTracker`](../interop/RedeployRespawnInterop.cs) (revision 1), the public game types and BepInEx/Harmony. Names `YourModPlugin` and `YourBodyBehaviour` come from the example; `_bodies` is the tracker field of that plugin, and `LocalBodyTracker.Instance` is the same tracker for code that has no reference to the plugin.
 
-**Status.** Redeploy's tests compile the complete example in [`../interop/examples/RespawnConsumerExample.cs`](../interop/examples/RespawnConsumerExample.cs) and every snippet in this file and in [SOFT-DEPENDENCY.md](SOFT-DEPENDENCY.md) that declares a whole type (the plugins, the `OnDead` and `GameEnd` patches, `DeferredWork`, `CameraFollower`, the sketch in 8.5), each together with the interop file against the game's assemblies, BepInEx and Harmony, as C# 7.3. Shorter fragments are checked by reading. A name that no snippet defines (`RunStats`, `ResetPerLifeState`, `ReleasePerLifeResources`, `StartRaidLatches`, `SendRequest`, `Store`) stands for your own code. `_deferred` is the `DeferredWork` class in recipe 4. Where something is untested natively, the text says so.
+**Status.** Redeploy's tests compile the complete example in [`../interop/examples/RespawnConsumerExample.cs`](../interop/examples/RespawnConsumerExample.cs) and every snippet in this file and in [SOFT-DEPENDENCY.md](SOFT-DEPENDENCY.md) that is written as a complete file (the plugins, `YourBodyBehaviour`, the `OnDead` and `GameEnd` patches, `DeferredWork`, `CameraFollower`, the sketch in 8.5), each together with the interop file against the game's assemblies, BepInEx and Harmony, as C# 7.3, whenever the game sits next to the repository. Shorter fragments are checked by reading. A name that no snippet defines (`RunStats`, `ResetPerLifeState`, `ReleasePerLifeResources`, `StartRaidLatches`, `SendRequest`, `Store`) stands for your own code. `_deferred` is the `DeferredWork` class in recipe 4. Where something is untested natively, the text says so.
 
 Terms as in the other documents: **Core** is `maschine-Redeploy.Core.dll`, the shared respawn engine; a **driver** is a mod that owns respawn policy and asks Core to replace the body (Redeploy and ArenaMode); a **body** is an `EFT.Player` instance; a replacement ends in reason `"death"` (the old body stays as the corpse) or `"swap"` (the old body is alive and is disposed later by whoever requested the replacement).
 
@@ -75,7 +75,7 @@ namespace YourMod
 
 A mod built from static classes subscribes once in the plugin's `Awake` and points the event at static handlers.
 
-3. Read the log. With Core installed and bindable, the bind line is written when the tracker is added, before your `Log` is set, so it appears as a Unity log line starting `[RespawnInterop] ` (BepInEx's log shows Unity log lines by default): `bound to RespawnApi v1 (interop revision 1)`. A bind retried later, when a new `GameWorld` appears, uses your `Log`. `binding failed, polling only` means an exception during binding; the rest of the line says why. A Core that is older than API v1, or that lacks `Replaced`, is skipped silently, so check `IsBound`. Without Core you see nothing from the tracker and it polls `GameWorld.MainPlayer`; that is the intended fallback, not an error.
+3. Read the log. With Core installed and bindable, the bind line is written when the tracker is added, before your `Log` is set, so it appears as a Unity log line starting `[RespawnInterop] `: `bound to RespawnApi v1 (interop revision 1)`. That line reaches `LogOutput.log` only when BepInEx's `[Logging.Disk] WriteUnityLog` is true (default false), so log `LocalBodyTracker.Revision` and `IsBound` yourself right after setting `Log`, as [SOFT-DEPENDENCY.md](SOFT-DEPENDENCY.md#setup) does. A bind retried later, when a new `GameWorld` appears, uses your `Log`. `binding failed, polling only` means an exception during binding; the rest of the line says why. A Core that is older than API v1, or that lacks `Replaced`, is skipped silently, so check `IsBound`. Without Core you see nothing from the tracker and it polls `GameWorld.MainPlayer`; that is the intended fallback, not an error.
 
 **What can go wrong.**
 
@@ -97,6 +97,10 @@ private void OnBodyChanged(Player previous, Player current, string reason)
 ```
 
 ```csharp
+using EFT;
+using UnityEngine;
+using YourMod.Interop;
+
 public sealed class YourBodyBehaviour : MonoBehaviour
 {
     private Player _player;
@@ -152,7 +156,7 @@ Do not replace every `IsYourPlayer` with `IsCurrentLocalBody`: that breaks every
 
 - Attaching only at raid start: the new body never gets the component after the first respawn.
 - `GetOrAdd` instead of `AttachFresh`: a stale component from a pooled body keeps its old state.
-- Gating per-tick logic on `IsYourPlayer`: the corpse keeps running it, for example reaching for a weapon or opening doors.
+- Gating a component's per-frame logic on `IsYourPlayer`: the corpse keeps running it, for example reaching for a weapon or opening doors. A patch on `Player.UpdateTick` is different: the game ticks only registered living players, so it does not tick the corpse, but it does tick the new body, which must not inherit the old life's state.
 - Caching the local `Player` in a static.
 
 <a id="reacting-to-a-death"></a>
@@ -458,7 +462,7 @@ Things that are **not** a raid end on their own, whatever they look like:
 
 | Looks like a raid end | Why it is not |
 |---|---|
-| a prefix on `LocalGame.Stop` / `BaseLocalGame.Stop` | Fine as an additional idempotent safety reset, not as the only signal. It may not run for a death Core is holding (Core blocks the Killed `LocalGame.Stop`), it can run later if the player gives up and Core lets the Stop through (Harmony orders the prefixes, so do not depend on running before or after Core's), and a replacement never runs it. |
+| a prefix on `LocalGame.Stop` / `BaseLocalGame.Stop` | Fine as an additional idempotent safety reset, not as the only signal. While Core holds a death it blocks the Killed `LocalGame.Stop` override, so a prefix on `BaseLocalGame.Stop` does not run then; a prefix on `LocalGame.Stop` itself depends on Harmony order. Both run later if the player gives up and Core lets the Stop through, and a replacement never runs either. |
 | `OnDestroy` of something | Destroyed for many reasons. |
 | `GameWorld.UnregisterPlayer` | Vanilla calls it one frame after every death, bots included. |
 | unspawn of the player | Happens in every replacement. |
@@ -556,7 +560,7 @@ The same applies to everything else that hangs off the old body: `Profile`, `Ski
 
 This is the recipe for mods that keep a body alive instead of letting it die: critical or downed states, bleed-out timers, revive by a team mate or an item. The usual mechanism is a prefix on `ActiveHealthController.Kill` that returns `false`.
 
-What follows is derived from reading Core and one such mod's code. It has not been run natively with every downed-state mod and not with Fika (Core idles under Fika). Where a statement rests on that, it says so.
+What follows is derived from reading Core's code and the common downed-state pattern. It has not been run natively with a downed-state mod and not with Fika (Core idles under Fika). Where a statement rests on that, it says so.
 
 **Do these six things, in this order.**
 
@@ -678,7 +682,7 @@ namespace YourMod
         private LocalBodyTracker _tracker;
         private DownedState _state;                    // at most one: the local body
         private int _livesLeft = StartingLives;
-        private readonly HashSet<string> _botIgnore = new HashSet<string>();
+        private readonly Dictionary<string, Player> _botIgnore = new Dictionary<string, Player>();   // ProfileId -> the downed instance
 
         private void Awake()
         {
@@ -737,7 +741,7 @@ namespace YourMod
             state.SavedDamageCoeff = coeff > 0f ? coeff : 1f;
 
             _state = state;
-            _botIgnore.Add(state.ProfileId);
+            _botIgnore[state.ProfileId] = body;
             // Lock input, show the HUD, apply god mode (8.7), tell bots to look away ...
             StartCoroutine(BleedOut(state));
         }
@@ -787,15 +791,24 @@ namespace YourMod
             if (state == null) return;
             _state = null;                    // every timer compares against this field and stops
             EndDownedEffects(state);
+            StartCoroutine(RestoreNextFrame(state));   // touches the old body: never inside the handler (recipe 4)
         }
 
+        /// <summary>Flags and lists only, so it is safe inside a BodyChanged handler.</summary>
         private void EndDownedEffects(DownedState state)
         {
             if (state.EffectsEnded) return;
             state.EffectsEnded = true;
-            _botIgnore.Remove(state.ProfileId);
-            RestoreDamageCoeff(state);        // 8.7: on the old body only, and only if it lives
+            Player ignored;
+            if (_botIgnore.TryGetValue(state.ProfileId, out ignored) && ReferenceEquals(ignored, state.Body))
+                _botIgnore.Remove(state.ProfileId);
             // Unlock input, hide the HUD, clear whatever else the downed phase set on this body.
+        }
+
+        private IEnumerator RestoreNextFrame(DownedState state)
+        {
+            yield return null;
+            RestoreDamageCoeff(state);        // 8.7: on the old body only, and only if it still lives
         }
 
         private static void RestoreDamageCoeff(DownedState state)
@@ -806,9 +819,11 @@ namespace YourMod
             if (controller != null && state.SavedDamageCoeff > 0f) controller.SetDamageCoeff(state.SavedDamageCoeff);
         }
 
-        internal bool IsBotIgnored(string profileId)
+        /// <summary>For your bot patches: true only for the very instance that is downed, never for a later body.</summary>
+        internal bool IsBotIgnored(IPlayer player)
         {
-            return profileId != null && _botIgnore.Contains(profileId);
+            Player ignored;
+            return player != null && _botIgnore.TryGetValue(player.ProfileId, out ignored) && ReferenceEquals(ignored, player);
         }
     }
 
@@ -840,13 +855,14 @@ A ghost-style implementation does more than hold a `ProfileId` set: it can edit 
 1. Call your exit routine on `previous` first: restore the groups, remove the `ProfileId` from the ignore set, cancel the re-sweep for it. Only then do anything for `current`.
 2. The `ProfileId` is the same, so an entry keyed by it matches the new body at once. Remove it before the new body is exposed and do not re-add it from a cached `Player`.
 3. Bot enemy memory that holds a reference to the old `Player` instance still points at the corpse or the retired body. Refresh or clear it on that old instance.
+4. Do not re-add the old instance to bot groups or enemy lists when you end the ghost state after a replacement: clear your flag and your group bookkeeping only. Core has already removed the old body from the bots and registered the new one with them. A lookup of a living player by `ProfileId` now finds the new body, so an exit routine that "restores" by `ProfileId` acts on the wrong body.
 
 What bots do after the replacement is vanilla behaviour and has not been observed natively with every AI mod. Per-bot caches kept by third-party AI mods are untested.
 
 <a id="8-7"></a>
 ### 8.7 DamageCoeff and spawn protection
 
-If your god mode or damage scaling uses `ActiveHealthController.SetDamageCoeff`, note how Core's spawn protection (used by the Redeploy driver) treats the same value on the new body: it captures the body's current coefficient (falling back to 1 if it reads 0 or less), sets it to 0, and writes its captured value back when the protection ends. It starts right after `Replaced`, in the same frame.
+If your god mode or damage scaling uses `ActiveHealthController.SetDamageCoeff` (a coefficient of 0 also suppresses the game's stun and pain effects, which a flag in a damage patch does not), keep the original value per downed state, never in a static shared by all bodies, and note how Core's spawn protection (applied by Redeploy after every respawn; ArenaMode uses the same routine) treats the same value on the new body: it captures the body's current coefficient (falling back to 1 if it reads 0 or less), sets it to 0, and writes its captured value back when the protection ends. It starts right after `Replaced`, in the same frame.
 
 So:
 

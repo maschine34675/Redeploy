@@ -116,7 +116,7 @@ Passing `null` as the body means `game.LocalPlayer`, in the tracker as in the ra
 - **Poll, with Core.** While Core reports `IsReplacing`, the poll holds back for up to 35 seconds so that the exact `Replaced` event reports the change; after that it reports whatever `MainPlayer` is. If a `ReplacementFailed` arrives, the hold is released and the poll reconciles with `MainPlayer` as soon as `IsReplacing` is false.
 - **After a failed replacement** the poll may report old body to an unwired orphan body, and orphan back to old if the requester recovers the old one. Both are real changes of `MainPlayer`. If the requester instead rescues the replacement, there is no `Replaced`, and the poll reports the change.
 - **`"raid-end"`** is exact only with Core (from `RaidEnded`). Without Core it arrives late, when the `GameWorld` goes away.
-- **Hideout and trader narrate scenes** have a `GameWorld` with a `MainPlayer`, so the poll reports `"raid-start"` for them, and `"raid-end"` when their world goes away. Core raises `RaidEnded` for neither. Filter them by the game type: only a `LocalGame` is a raid (hideout and narrate games are not, and under Fika neither is `CoopGame`). The code is in [RECIPES.md, recipe 6](RECIPES.md#6-raid-scoped-latches). The alternative is your own postfix on `GameWorld.OnGameStarted`, which Core uses itself: the hideout never calls it, and Core ignores a `NarrateGameWorld` there. Either way, do not assume that every `"raid-start"` is paired with a `RaidEnded`.
+- **Hideout and trader narrate scenes** have a `GameWorld` with a `MainPlayer`, so the poll reports `"raid-start"` for them, and `"raid-end"` when their world goes away. Core raises `RaidEnded` for neither. Filter them by the game type: only a `LocalGame` is a raid (hideout and narrate games are not, and under Fika neither is `CoopGame`). The code is in [RECIPES.md, recipe 6](RECIPES.md#6-raid-scoped-latches). The alternative is your own postfix on `GameWorld.OnGameStarted`, which Core uses itself. The hideout never calls it, but trader narrate scenes do, so filter it the same way (Core ignores a `NarrateGameWorld` there). Either way, do not assume that every `"raid-start"` is paired with a `RaidEnded`.
 
 ### Binding
 
@@ -128,7 +128,7 @@ Early binding in `Awake` is untested natively; it does not affect you, see [SOFT
 
 ## Timelines
 
-Each timeline lists what happens in order and what is already true at that point. "Frame N" is the frame in which the replacement happens. Everything inside frame N runs synchronously on the main thread.
+Each timeline lists what happens in order and what is already true at that point. "Frame N" is the frame in which the replacement happens. On today's code everything inside frame N runs synchronously on the main thread; that is observed behaviour, not a promise.
 
 ### Timeline of a death
 
@@ -202,7 +202,7 @@ A request is refused with nothing changed when the preflight finds that it canno
 
 `RaidEnded` is not raised for the hideout, trader narrate scenes or Fika's `CoopGame`. If you bind late, nothing already raised is replayed.
 
-**What is not a raid-end signal:** a prefix on `LocalGame.Stop` or `BaseLocalGame.Stop`, `OnDestroy`, `UnregisterPlayer` (vanilla calls it one frame after every death), an unspawn, and a local death. Core blocks the Killed `LocalGame.Stop` while it holds a death. Whether your own prefix on `Stop` runs in that case depends on Harmony ordering that Core does not control, so do not rely on either outcome.
+**What is not a raid-end signal:** a prefix on `LocalGame.Stop` or `BaseLocalGame.Stop`, `OnDestroy`, `UnregisterPlayer` (vanilla calls it one frame after every death), an unspawn, and a local death. Core blocks the Killed `LocalGame.Stop` (the override) while it holds a death. A prefix on `BaseLocalGame<EftGamePlayerOwner>.Stop` therefore does not run then, because the override never reaches the base method; a prefix on `LocalGame.Stop` itself depends on Harmony ordering that Core does not control. Keep such a hook only as an extra, idempotent reset.
 
 A prefix on `GameWorld.Dispose` fires when a world is torn down, for raids, the hideout and narrate scenes alike. Core makes no promise about its order relative to `RaidEnded`. It is a backstop for freeing resources, not an exact raid-end signal and not a per-life boundary.
 
@@ -210,7 +210,7 @@ A prefix on `GameWorld.Dispose` fires when a world is torn down, for raids, the 
 
 | Boundary | Signal |
 |---|---|
-| Per-raid start | No Core event. The tracker's `BodyChanged` with `"raid-start"` (filter hideout and narrate worlds, see [`BodyChanged` semantics](#bodychanged-semantics)), or your own postfix on `GameWorld.OnGameStarted`. |
+| Per-raid start | No Core event. The tracker's `BodyChanged` with `"raid-start"` (filter hideout and narrate worlds, see [`BodyChanged` semantics](#bodychanged-semantics)), or your own postfix on `GameWorld.OnGameStarted` with the same filter (narrate scenes call it too). |
 | Per-life boundary | Core's `Replaced`, or the tracker's `BodyChanged` with a non-null `previous` and a non-null `current`. |
 | Raid end | Core's `RaidEnded` (exact, `LocalGame` raids only), the tracker's `BodyChanged` with `current == null`, or your own `BaseLocalGame.GameEnd` postfix filtered to `LocalGame`. |
 
@@ -232,7 +232,7 @@ These hold for `DeathClaimed`, `Replaced`, `ReplacementFailed` and `RaidEnded` a
 - **Nesting is allowed.** An event raised while a handler runs, for example the death of the new body inside a `Replaced` handler, is dispatched and isolated on its own.
 - **Re-entrancy refusal.** A replacement request made from inside a `DeathClaimed`, `Replaced` or `ReplacementFailed` handler is refused before teardown. (A request from a `RaidEnded` handler is refused because the raid is tearing down.) This applies to drivers; as an observer you do not make requests.
 - **Defer by one frame.** If you need something from the "defer" row below, start a coroutine, `yield return null`, then re-check that the body you meant is still the one you want (`ReferenceEquals(GameWorld.MainPlayer, body)`) and do it. The same rule applies to every `BodyChanged` handler of the tracker, because a handler cannot tell whether it runs from `Replaced` or from the poll.
-- **Observers outside Core are not isolated.** Core isolates only its own events. The game's `GameWorld.OnPersonAdd`, patches on `Player.Init` and the static `PlayerCameraController` events fire in the middle of the replacement, in a half-wired state. A throw there aborts the replacement after teardown (stage `"create"` or `"rewire"`). Handlers on those must never throw.
+- **Observers outside Core are not isolated.** Core isolates only its own events. The game's `GameWorld.OnPersonAdd`, patches on `Player.Init` and the static `PlayerCameraController` events fire in the middle of the replacement, in a half-wired state. A throw there aborts the replacement after teardown (stage `"create"` or `"rewire"`). Handlers on those must never throw, and a prefix that skips one of the game methods the replacement calls for the new body blocks it in the same way.
 - **Hooks on creation run again.** Anything you hook on `Player.Init` or player creation runs for every replacement, not only at raid start.
 
 **Inside a `Replaced`, `BodyChanged` or other Core event handler:**
@@ -254,8 +254,15 @@ Consequences:
 
 - Never use `ProfileId` to decide whether a body is the current local body. It is shared by the old and new body of a respawn, and it can change in an own-Scav continuation. Use `ReferenceEquals(MainPlayer, body)`, and `IsAlive` for living bodies.
 - Never use `IsYourPlayer` for it either. Both the corpse and the new body report `IsYourPlayer == true`; only `MainPlayer` identifies the living one. A scan of players for `IsYourPlayer` can return the corpse if you hold a list of your own: the corpse is unregistered from the world, so a scan over the world's registered players does not see it.
-- State that belongs to one life should be keyed by the `Player` instance, or reset on every body change. State keyed by ProfileId survives into the next life with the same ProfileId. A set of ProfileIds that bots ignore, a dictionary of per-player state, an "allow the next death" latch: each one applies to the new body the moment it appears, because the id is the same. Clear or re-key it on every `BodyChanged` that has a previous body.
+- State that belongs to one life should be keyed by the `Player` instance, or reset on every body change. Player objects come from a shared pool, so do not rely on an instance key alone either: remove the entry on that change. State keyed by ProfileId survives into the next life with the same ProfileId. A set of ProfileIds that bots ignore, a dictionary of per-player state, an "allow the next death" latch: each one applies to the new body the moment it appears, because the id is the same. Clear or re-key it on every `BodyChanged` that has a previous body.
 - A registry keyed by ProfileId is overwritten by the new body; remove an entry on unspawn only if the stored instance is the body that went away.
+
+### What the new body is
+
+- A new `Player` with its own health controller, inventory controller, hands controller and movement context. Subscriptions on the old body's objects stay with the old body ([RULES.md](RULES.md#rule-14), rule 14).
+- `Profile` and `Skills` are the same objects after an ordinary respawn or swap, and different objects after an own-Scav continuation.
+- Equipment and health are the driver's choice, not Core's. Redeploy: no armour, firearms or carried loot; the secure container, melee weapon, armband and pocket special slots move to the new body and everything else stays on the corpse; health is set from the player's `RespawnHealthPercent` setting. Own-Scav continuation: the Scav's own equipment. ArenaMode: the kit of the current mode.
+- During spawn protection Core may empty the new body's hands to stow an automatically drawn weapon, when the driver asks for that.
 
 ## Availability and Fika
 
@@ -317,7 +324,7 @@ All members are `public static` on `RespawnApi`. Reflection signatures are exact
 
 #### IsReplacing
 
-`IsReplacing` is `true` from the moment a replacement request passes its [preflight](#refusals) until the synchronous end of that request, and for one more frame when it fails. A successful replacement completes inside a single call (the new body is created synchronously), so on the success path you cannot observe `IsReplacing == true` from another frame. You see it across frames only after a failure. It is still `true` while `Replaced` handlers run, and already `false` while `ReplacementFailed` handlers run.
+`IsReplacing` is `true` from just before teardown (after the preflight, the profile validation and the per-mod preparation have passed, see [refusals](#refusals)) until the synchronous end of that request, and for one more frame when it fails. On today's code a successful replacement completes inside a single call (the new body is created synchronously), so on the success path you cannot observe `IsReplacing == true` from another frame. That is observed behaviour, not part of the contract: the engine still allows creation up to 30 seconds. You see it across frames only after a failure. It is still `true` while `Replaced` handlers run, and already `false` while `ReplacementFailed` handlers run.
 
 #### IsRespawnPending
 

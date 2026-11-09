@@ -11,7 +11,7 @@ You have an existing mod and want it to survive a body replacement. Five steps:
 1. Copy the interop file into your project ([Setup](#setup)).
 2. Subscribe to `BodyChanged` in your plugin's `Awake`.
 3. On every `BodyChanged` with `previous != null`, drop everything that belonged to the previous life (timers, latches, god mode, bot-ignore entries, input locks, HUD) and attach per-body components to `current` again.
-4. Move any per-raid reset that hangs on a `Stop` prefix, `OnDestroy` or `UnregisterPlayer` to `RaidEnded` plus your own `GameEnd` postfix ([RULES.md](RULES.md#the-rules), rule 3).
+4. Make your per-raid reset one idempotent routine and call it from `RaidEnded`, from `BodyChanged` with `current == null` and from your own `GameEnd` postfix. Keep `Stop` or `GameWorld.Dispose` hooks you already have as extra callers; take resets off `OnDestroy` and `UnregisterPlayer`, which fire mid-raid ([RULES.md](RULES.md#rule-3), rule 3).
 5. Test the four availability tiers ([Verify your integration](#verify-your-integration)).
 
 Then work through [Which of these does your mod hold?](RULES.md#which-of-these-does-your-mod-hold). If your mod vetoes `ActiveHealthController.Kill` (downed, critical or revive mods), read [RECIPES.md](RECIPES.md#mods-that-hold-death) as well. The rest of this file is reference.
@@ -39,6 +39,7 @@ Then work through [Which of these does your mod hold?](RULES.md#which-of-these-d
                _bodies = gameObject.AddComponent<LocalBodyTracker>();
                _bodies.Log = message => Logger.LogInfo(message);
                _bodies.BodyChanged += OnBodyChanged;
+               Logger.LogInfo("Redeploy interop revision " + LocalBodyTracker.Revision + ", bound: " + _bodies.IsBound);
            }
 
            private void OnDestroy()
@@ -64,12 +65,12 @@ Then work through [Which of these does your mod hold?](RULES.md#which-of-these-d
 
    Three shapes reach the handler: `previous == null` is a raid start, `current == null` is a raid end, and both non-null is a replacement of any reason. Do not branch on `reason` for teardown; use it for display and logging only, because reasons are an open set. `AddComponent` belongs in the plugin's `Awake`, on the plugin's own GameObject, never in a patch, a static class or a per-raid object, where the tracker would be created again per raid or lost.
 
-   Set `Log` straight after `AddComponent`. The default writes through Unity's `Debug.Log` with the prefix `[RespawnInterop] `; assigning your logger puts the lines into your BepInEx log source instead. The first bind attempt happens inside `AddComponent`, in the tracker's `Awake`, so a line from that first attempt can still use the default.
+   Set `Log` straight after `AddComponent`. The default writes through Unity's `Debug.Log` with the prefix `[RespawnInterop] `; assigning your logger puts later lines into your BepInEx log source. The first bind attempt happens inside `AddComponent`, in the tracker's `Awake`, before you can set `Log`, so its line goes to Unity's log. BepInEx writes Unity log lines to `LogOutput.log` only when `[Logging.Disk] WriteUnityLog` is true, and its default is false. That is why the snippet logs the revision and `IsBound` itself: that line is the one to look for and to quote in a bug report.
 4. Unsubscribe in your plugin's `OnDestroy`, as above.
 
 Add one tracker per plugin. `LocalBodyTracker.Instance` is the first tracker of your plugin; Harmony patches that need `IsRespawnPending` read it from there. Check it for null, and call `IsRespawnPending` only from a death handler, never from a veto itself (see the note after the tier table).
 
-[`../interop/examples/RespawnConsumerExample.cs`](../interop/examples/RespawnConsumerExample.cs) is a complete plugin that follows the body, resets per-life state, handles an identity change and reads `IsRespawnPending`. Redeploy's test suite compiles it together with the interop file against the real game assemblies and BepInEx, as C# 7.3, on every run, so it stays buildable.
+[`../interop/examples/RespawnConsumerExample.cs`](../interop/examples/RespawnConsumerExample.cs) is a complete plugin that follows the body, resets per-life state, handles an identity change and reads `IsRespawnPending`. Redeploy's test suite compiles it together with the interop file against the real game assemblies and BepInEx, as C# 7.3, whenever the game sits next to the repository (otherwise those tests skip), so it stays buildable.
 
 The early bind in `Awake` has been exercised in an offline harness only, not in a native raid. That does not affect you: the tracker retries per `GameWorld` and polls `MainPlayer` meanwhile, so a late bind loses nothing but the earliest events.
 
@@ -87,7 +88,7 @@ If you already have a reliable raid-start hook, keep it as the owner of per-raid
 |---|---|
 | Language | C# 7.3 or newer, so latest or preview projects are fine. |
 | Target | net471 or netstandard2.1. |
-| References | `Assembly-CSharp`, `Comfort`, `UnityEngine` (CoreModule). The interop file does not need `BepInEx`; only your own plugin does. |
+| References | `Assembly-CSharp`, `Comfort` and the `UnityEngine` modules (CoreModule at least), which every EFT plugin references anyway; if the compiler asks for another game assembly, add it. The interop file does not need `BepInEx`; only your own plugin does. |
 | Nullable | The file has no annotations and no `#nullable` directive. It has not been tried with a nullable context enabled or with warnings as errors. If your project does either and the file warns, add `#nullable disable` (C# 8 or newer) below the header and say so in a comment, as the [Licence](#licence-and-attribution) section asks for any edit. |
 | Redeploy references | None. No reference to `maschine-Redeploy.Core`, `maschine-Redeploy.Client` or ArenaMode. |
 | Threading | Unity main thread only. |
@@ -123,7 +124,7 @@ Things to take from the table:
 - The poll is always running, so a respawn done by a mod that is not Core still produces a `BodyChanged`. A respawn that Core performs is reported once, not twice: the tracker de-duplicates by body reference.
 - Without Core, raid end is late. For per-raid resets keep an exact boundary of your own: a postfix on `BaseLocalGame<EftGamePlayerOwner>.GameEnd` filtered to `LocalGame`, and reset on `RaidEnded` as well when you have it. Do not use a `Stop` prefix, `OnDestroy` or `UnregisterPlayer` ([RULES.md](RULES.md#the-rules), rule 3).
 - The hideout and the trader narrate scenes also appear as `"raid-start"`. See the end of [Where your handler runs](#where-your-handler-runs) for which hook should own per-raid setup.
-- In a normal respawn there is no wait: `BodyChanged` arrives inside the replacing frame. While Core reports a replacement in progress (`IsReplacing`) the poll waits for Core's `Replaced` instead of reporting the intermediate state, but that only matters after a failed replacement, as a last-resort reconciliation with `MainPlayer` after at most 35 seconds. Do not add timeouts of your own.
+- On today's code a normal respawn has no wait: `BodyChanged` arrives inside the replacing frame. While Core reports a replacement in progress (`IsReplacing`) the poll waits for Core's `Replaced` instead of reporting the intermediate state, but that only matters after a failed replacement, as a last-resort reconciliation with `MainPlayer` after at most 35 seconds. Do not add timeouts of your own.
 
 `IsRespawnPending` answers only for a body that is already dead. Do not call it from a prefix on `ActiveHealthController.Kill`: the body is alive there and the answer is false, so it cannot tell you whether to down the player. A mod that vetoes `Kill` needs no change to its veto; Core stays silent while you hold death and claims only after you let a real death through. Use `IsRespawnPending` in death handlers (after `Kill` went through), for UI or sounds; it is a prediction, not a promise.
 
@@ -133,8 +134,8 @@ The tiers can be produced on one machine. For each, check the log lines below an
 
 | Tier | How to produce it | What you should see |
 |---|---|---|
-| Core absent | Remove `maschine-Redeploy.Core.dll` from `BepInEx/plugins` (and with it Redeploy and ArenaMode, which need it) | No `bound` line. `BodyChanged` with `"raid-start"` still fires; your own log reads `IsBound=False` |
-| Core idle | Core installed with Fika loaded, or with no driver installed | A `bound` line, `IsBound=True`, `IsRespawnAvailable=False`. A death is not claimed |
+| Core absent | Remove `maschine-Redeploy.Core.dll` from `BepInEx/plugins` (and with it Redeploy and ArenaMode, which need it) | Your own line reads `bound: False`. `BodyChanged` with `"raid-start"` still fires and logs `IsBound=False` |
+| Core idle | Load Fika; or keep `maschine-Redeploy.Core.dll` but remove `maschine-Redeploy.Client.dll` and ArenaMode's client | `bound: True`, then `IsRespawnAvailable=False`; no `Death-interception driver registered` line. A death is not claimed |
 | Redeploy disabled | Core with Redeploy installed; turn Redeploy's `Enabled` setting off | `IsRespawnAvailable=True`. No `DeathClaimed` on a death |
 | Core active | Die in a raid with Redeploy on | In your log, in order: your mod's death path, `DeathClaimed`, then (after the player accepts the respawn) `BodyChanged(old, new, "death")` |
 
@@ -142,7 +143,7 @@ Run each tier at least through a raid start, a death and a raid end. The log-lin
 
 ## Log lines to look for
 
-Interop lines come out through your `Log` delegate, except the first bind attempt, which runs in `Awake` before you can assign `Log` and goes to Unity's log with the prefix `[RespawnInterop] ` (so does every line if you never set one):
+Interop lines come out through your `Log` delegate, except the first bind attempt, which runs in `Awake` before you can assign `Log` and goes to Unity's log with the prefix `[RespawnInterop] ` (so does every line if you never set one). Unity log lines reach `LogOutput.log` only with BepInEx's `[Logging.Disk] WriteUnityLog = true` (default false), so rely on your own revision line from [Setup](#setup) and treat these as extra evidence:
 
 - `bound to RespawnApi v1 (interop revision 1)` - Core was found and the tracker subscribed.
 - `binding failed, polling only (interop revision 1): <message>` - Core's type resolved but binding threw. The tracker unbinds and keeps polling. Report this one.
@@ -199,7 +200,7 @@ The interop file and the example are MIT, copyright 2026 maschine, part of [Rede
 Open an issue at https://github.com/maschine34675/Redeploy/issues. Include:
 
 - The Core version line: `Redeploy.Core <version> initialized`, or a statement that Core is not installed.
-- The interop revision line: `bound to RespawnApi v1 (interop revision 1)` or the `binding failed, polling only` line. If neither appears, say so.
+- Your own interop line (`Redeploy interop revision <n>, bound: <true|false>`, see [Setup](#setup)), and the tracker's `bound to RespawnApi v1 (interop revision 1)` or `binding failed, polling only` line if your log has it.
 - The SPT version, and whether Fika is installed.
 - Which driver was active: Redeploy, ArenaMode or both, and, for Redeploy, whether its `Enabled` setting was on. The `Death-interception driver registered` lines show which registered.
 - The BepInEx log from the session (`LogOutput.log`), from game start to the point of failure. Remove anything personal first.

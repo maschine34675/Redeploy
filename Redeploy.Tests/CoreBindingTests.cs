@@ -51,7 +51,7 @@ public class CoreBindingTests
                 Invoke(tracker, "TryBind");
 
                 Assert.True((bool)trackerType.GetProperty("IsBound").GetValue(tracker), "not bound; tracker log:\n" + string.Join("\n", log));
-                Assert.Contains(log, line => line.StartsWith("bound to RespawnApi v1 (interop revision ", StringComparison.Ordinal));
+                Assert.Contains($"bound to RespawnApi v1 (interop revision {InteropRevision()})", log);
                 foreach (var name in Events)
                     Assert.True(Subscribers(api, name) == 1, $"{name} has {Subscribers(api, name)} subscribers after TryBind, expected 1");
                 foreach (var name in Queries)
@@ -70,6 +70,31 @@ public class CoreBindingTests
         {
             context.Unload();
         }
+    }
+
+    /// <summary>
+    /// The interop file states its revision three times: the header comment a reader sees in
+    /// every copy, the Revision constant and (through it) the bind log line. A change that bumps
+    /// one and forgets the other would make bug reports point at the wrong copy.
+    /// </summary>
+    [Fact]
+    public void TheInteropHeaderAndTheRevisionConstantAgree()
+    {
+        var source = File.ReadAllText(Path.Combine(ApiContractTests.RepoRoot, "interop", "RedeployRespawnInterop.cs"));
+        var header = Regex.Match(source, @"^// RedeployRespawnInterop\.cs - interop revision (\d+) for maschine-Redeploy\.Core", RegexOptions.Multiline);
+        Assert.True(header.Success, "the header line naming the interop revision is missing");
+        Assert.Equal(InteropRevision(), int.Parse(header.Groups[1].Value));
+        Assert.Contains("// SPDX-License-Identifier: MIT", source);
+        Assert.Contains("https://github.com/maschine34675/Redeploy/blob/main/interop/RedeployRespawnInterop.cs", source);
+        Assert.Contains("\"bound to RespawnApi v\" + version.GetValue(null, null) + \" (interop revision \" + Revision + \")\"", source);
+    }
+
+    private static int InteropRevision()
+    {
+        var source = File.ReadAllText(Path.Combine(ApiContractTests.RepoRoot, "interop", "RedeployRespawnInterop.cs"));
+        var constant = Regex.Match(source, @"public const int Revision = (\d+);");
+        Assert.True(constant.Success, "LocalBodyTracker.Revision is missing from the interop file");
+        return int.Parse(constant.Groups[1].Value);
     }
 
     /// <summary>
@@ -133,7 +158,9 @@ public class CoreBindingTests
             .SelectMany(doc => CompleteSnippets(Path.Combine(ApiContractTests.RepoRoot, "docs", doc))
                 .Select(snippet => (Doc: doc, snippet.Line, snippet.Code)))
             .ToList();
-        Assert.True(snippets.Count >= 8, $"found only {snippets.Count} complete snippets; did the fences or the selection rule change?");
+        Assert.True(snippets.Count >= 8,
+            $"found only {snippets.Count} complete snippets (" + string.Join(", ", snippets.Select(s => s.Doc + ":" + s.Line))
+            + "); did the fences or the selection rule change?");
 
         var failures = new List<string>();
         foreach (var (doc, line, code) in snippets)
@@ -152,16 +179,21 @@ public class CoreBindingTests
     private const string SnippetUsings =
         "using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing Comfort.Common;\nusing EFT;\nusing UnityEngine;\nusing YourMod.Interop;\n";
 
-    /// <summary>The csharp blocks of a document that declare a type and start like a file (using, namespace or a type).</summary>
+    /// <summary>
+    /// The csharp blocks of a document that declare a type and are written as a complete file:
+    /// after leading comment lines they start with a using, a namespace, an attribute or a type
+    /// declaration. Blocks that start with a member (a field, a handler) are fragments.
+    /// </summary>
     private static IEnumerable<(int Line, string Code)> CompleteSnippets(string path)
     {
         var text = File.ReadAllText(path).Replace("\r\n", "\n");
         foreach (Match block in Regex.Matches(text, "```csharp\n(.*?)```", RegexOptions.Singleline))
         {
             var code = block.Groups[1].Value;
-            if (!Regex.IsMatch(code, @"^[ \t]*(?:(?:public|internal|private)[ \t]+)?(?:(?:sealed|static)[ \t]+)*(?:class|struct)[ \t]", RegexOptions.Multiline))
+            if (!Regex.IsMatch(code, @"^[ \t]*(?:(?:public|internal|private)[ \t]+)?(?:(?:sealed|static|abstract|partial)[ \t]+)*(?:class|struct)[ \t]", RegexOptions.Multiline))
                 continue;
-            if (!Regex.IsMatch(code.TrimStart(), @"^(?:using|namespace|public|internal)\b"))
+            var start = Regex.Replace(code, @"^(?:[ \t]*(?://[^\n]*)?\n)*", "").TrimStart();
+            if (!Regex.IsMatch(start, @"^(?:using\b|namespace\b|\[|(?:public|internal|sealed|static|abstract|partial|class|struct)\b)"))
                 continue;
             var line = text.Take(block.Index).Count(c => c == '\n') + 1;
             if (!code.Contains("namespace "))

@@ -112,8 +112,8 @@ before treating these as tested gameplay combinations.
 active markers and the raid's corpse history across a respawn, with the new
 inventory bound to the current player. [Sense compatibility](docs/AMANDS-SENSE-20261108.md)
 
-Core 1.0.21, also unreleased, introduced four other integrations. P.L.A.T.E. starts a new blood record for a
-replacement life. Loot In Vicinity follows the new inventory controller. Skills
+**Also in development, Core 1.0.21 (unreleased):** four other integrations.
+P.L.A.T.E. starts a new blood record for a replacement life. Loot In Vicinity follows the new inventory controller. Skills
 Extended keeps weapon and medical XP on the current body, and releases a hacking
 or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old
 climb before the replacement takes control. See the [versions, loot limitations
@@ -241,7 +241,7 @@ every replacement through a small, frozen API, `Redeploy.Core.Api.RespawnApi`
 
 | | |
 |---|---|
-| Contract | `RespawnApi` v1: four events, three queries. Additions only ever as a new API version; nothing can veto or stall a respawn |
+| Contract | `RespawnApi` v1: four events, four queries. Additions only ever as a new API version; nothing can veto or stall a respawn |
 | How you use it | copy [`interop/RedeployRespawnInterop.cs`](interop/RedeployRespawnInterop.cs) (revision 1), change only its namespace line, add one `LocalBodyTracker` component |
 | Dependency | none: no assembly reference, no `BepInDependency`. Core is a library without a plugin GUID, and without it the tracker follows `GameWorld.MainPlayer` by polling |
 | Needs | C# 7.3 or newer, net471 or netstandard2.1, Unity main thread |
@@ -252,7 +252,7 @@ every replacement through a small, frozen API, `Redeploy.Core.Api.RespawnApi`
 var bodies = gameObject.AddComponent<LocalBodyTracker>();   // once, in your plugin's Awake
 bodies.BodyChanged += (previous, current, reason) =>
 {
-    // reason: "raid-start", "death", "swap", "raid-end" or "unknown".
+    // reason: "raid-start" (previous is null), "death", "swap", "raid-end" (current is null) or "unknown".
     // After "death", previous is the corpse; reset what belonged to the old life here.
 };
 ```
@@ -266,10 +266,16 @@ Start from the compiled [example plugin](interop/examples/RespawnConsumerExample
 | [docs/RECIPES.md](docs/RECIPES.md) | worked cases, including mods with a downed or revive state |
 | [docs/API.md](docs/API.md) | every member, timelines, guarantees and versions |
 
+If your mod keeps a dying player alive (a downed or revive state), read
+[recipe 8](docs/RECIPES.md#mods-that-hold-death) right after the soft-dependency guide.
+Core itself carries adapters only for the mods listed above whose per-body state cannot be
+reached from outside; every other mod follows the body through the interop file
+([why](docs/API.md#what-the-contract-is-and-what-it-is-not)).
+
 Report integration problems and requests for API additions as
 [GitHub issues](https://github.com/maschine34675/Redeploy/issues). Include the
-`Redeploy.Core <version> initialized` line and your tracker's
-`bound to RespawnApi v1 (interop revision N)` line from the client log.
+`Redeploy.Core <version> initialized` line from the client log and the interop revision
+your mod logs (`LocalBodyTracker.Revision`).
 
 **Used by:** [Killcam](https://github.com/maschine34675/Killcam) follows the body through the
 interop file; [ArenaMode](https://github.com/maschine34675/ArenaMode) is a second driver that
