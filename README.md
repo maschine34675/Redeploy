@@ -112,7 +112,7 @@ before treating these as tested gameplay combinations.
 active markers and the raid's corpse history across a respawn, with the new
 inventory bound to the current player. [Sense compatibility](docs/AMANDS-SENSE-20261108.md)
 
-Core 1.0.21 introduced four other integrations. P.L.A.T.E. starts a new blood record for a
+Core 1.0.21, also unreleased, introduced four other integrations. P.L.A.T.E. starts a new blood record for a
 replacement life. Loot In Vicinity follows the new inventory controller. Skills
 Extended keeps weapon and medical XP on the current body, and releases a hacking
 or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old
@@ -233,16 +233,47 @@ BepInEx `LogLevels=All` setting still writes Debug messages.
 
 ## For mod authors
 
-Mods that keep a reference to the local player can follow body replacements through
-`Redeploy.Core.Api.RespawnApi` (events `DeathClaimed`, `Replaced`, `ReplacementFailed`,
-`RaidEnded`; queries `IsAvailable`, `IsReplacing`, `IsRespawnPending`). You do not need to
-reference the DLL: copy [interop/RedeployRespawnInterop.cs](interop/RedeployRespawnInterop.cs) into your project, change its
-namespace, and add the `LocalBodyTracker` component to your plugin. It binds to Core by
-reflection when it is installed and falls back to polling `GameWorld.MainPlayer` otherwise,
-so the same code runs with or without Redeploy. The contract is frozen at `ApiVersion` 1;
-the reasoning and the guarantees are in [docs/RESPAWN-API.md](docs/RESPAWN-API.md). Core's own version
-(`maschine-Redeploy.Core.dll`, 1.0.1 and up) is independent of Redeploy's and only tells fix
-levels apart; check `ApiVersion`, not the file version, before using the API.
+Mods that keep a reference to the local player break when Redeploy or ArenaMode replaces
+that player mid-raid: the old body stays behind as the corpse (or, after an ArenaMode kit
+swap, as a retired living body) and a new `EFT.Player` takes over. Redeploy.Core announces
+every replacement through a small, frozen API, `Redeploy.Core.Api.RespawnApi`
+(`ApiVersion` 1, unchanged since Redeploy 1.0.0).
+
+| | |
+|---|---|
+| Contract | `RespawnApi` v1: four events, three queries. Additions only ever as a new API version; nothing can veto or stall a respawn |
+| How you use it | copy [`interop/RedeployRespawnInterop.cs`](interop/RedeployRespawnInterop.cs) (revision 1), change only its namespace line, add one `LocalBodyTracker` component |
+| Dependency | none: no assembly reference, no `BepInDependency`. Core is a library without a plugin GUID, and without it the tracker follows `GameWorld.MainPlayer` by polling |
+| Needs | C# 7.3 or newer, net471 or netstandard2.1, Unity main thread |
+| Under Fika | Core stands down; the tracker only polls |
+| Not for other mods | registering a respawn driver, calling the engine, shipping `maschine-Redeploy.Core.dll`, telling players your mod needs Redeploy |
+
+```csharp
+var bodies = gameObject.AddComponent<LocalBodyTracker>();   // once, in your plugin's Awake
+bodies.BodyChanged += (previous, current, reason) =>
+{
+    // reason: "raid-start", "death", "swap", "raid-end" or "unknown".
+    // After "death", previous is the corpse; reset what belonged to the old life here.
+};
+```
+
+Start from the compiled [example plugin](interop/examples/RespawnConsumerExample.cs), then:
+
+| | |
+|---|---|
+| [docs/SOFT-DEPENDENCY.md](docs/SOFT-DEPENDENCY.md) | setup, availability tiers, how players get Core, keeping your copy current |
+| [docs/RULES.md](docs/RULES.md) | the checklist: what breaks when the body is replaced, and the rule for each case |
+| [docs/RECIPES.md](docs/RECIPES.md) | worked cases, including mods with a downed or revive state |
+| [docs/API.md](docs/API.md) | every member, timelines, guarantees and versions |
+
+Report integration problems and requests for API additions as
+[GitHub issues](https://github.com/maschine34675/Redeploy/issues). Include the
+`Redeploy.Core <version> initialized` line and your tracker's
+`bound to RespawnApi v1 (interop revision N)` line from the client log.
+
+**Used by:** [Killcam](https://github.com/maschine34675/Killcam) follows the body through the
+interop file; [ArenaMode](https://github.com/maschine34675/ArenaMode) is a second driver that
+brings its own respawn rules.
 
 ## Building and checking the source
 

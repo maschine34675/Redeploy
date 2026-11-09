@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -101,6 +102,76 @@ public class CoreBindingTests
         var result = compilation.Emit(output);
         var errors = result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).ToList();
         Assert.True(result.Success, "the consumer example does not compile against the game:\n" + string.Join("\n", errors));
+    }
+
+    /// <summary>
+    /// Every C# snippet in docs/RECIPES.md and docs/SOFT-DEPENDENCY.md that declares a whole type
+    /// compiles, each on its own, together with the unchanged interop file against the game,
+    /// BepInEx and Harmony, as C# 7.3. A snippet without a namespace gets the usings a reader
+    /// would add and a namespace of its own. Fragments (a handler, a few statements) are left to
+    /// reading; the count guard notices when the selection stops finding the snippets.
+    /// </summary>
+    [SkippableFact]
+    public void TheCompleteSnippetsInTheConsumerDocsCompile()
+    {
+        var install = Path.GetFullPath(Environment.GetEnvironmentVariable("REDEPLOY_TEST_SPT_ROOT")
+            ?? Path.Combine(ApiContractTests.RepoRoot, "..", ".."));
+        var managed = Path.Combine(install, "EscapeFromTarkov_Data", "Managed");
+        var bepinexCore = Path.Combine(install, "BepInEx", "core");
+        var bepinex = Path.Combine(bepinexCore, "BepInEx.dll");
+        var harmony = Path.Combine(bepinexCore, "0Harmony.dll");
+        Skip.If(!Directory.Exists(managed), "the game's Managed folder is not next to the repo");
+        Skip.If(!File.Exists(bepinex) || !File.Exists(harmony), "BepInEx/core (BepInEx.dll, 0Harmony.dll) is not next to the repo");
+
+        var options = new CSharpParseOptions(LanguageVersion.CSharp7_3);
+        var interopPath = Path.Combine(ApiContractTests.RepoRoot, "interop", "RedeployRespawnInterop.cs");
+        var interop = CSharpSyntaxTree.ParseText(File.ReadAllText(interopPath), options, interopPath);
+        var references = Directory.GetFiles(managed, "*.dll").Where(HasMetadata).Append(bepinex).Append(harmony)
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path)).ToList();
+
+        var snippets = new[] { "RECIPES.md", "SOFT-DEPENDENCY.md" }
+            .SelectMany(doc => CompleteSnippets(Path.Combine(ApiContractTests.RepoRoot, "docs", doc))
+                .Select(snippet => (Doc: doc, snippet.Line, snippet.Code)))
+            .ToList();
+        Assert.True(snippets.Count >= 8, $"found only {snippets.Count} complete snippets; did the fences or the selection rule change?");
+
+        var failures = new List<string>();
+        foreach (var (doc, line, code) in snippets)
+        {
+            var tree = CSharpSyntaxTree.ParseText(code, options, $"{doc}:{line}");
+            var compilation = CSharpCompilation.Create(
+                "Snippet", new[] { interop, tree }, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            using var output = new MemoryStream();
+            var errors = compilation.Emit(output).Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).ToList();
+            if (errors.Count > 0)
+                failures.Add($"docs/{doc}, snippet at line {line}:\n  " + string.Join("\n  ", errors));
+        }
+        Assert.True(failures.Count == 0, "consumer-doc snippets that do not compile:\n" + string.Join("\n", failures));
+    }
+
+    private const string SnippetUsings =
+        "using System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing Comfort.Common;\nusing EFT;\nusing UnityEngine;\nusing YourMod.Interop;\n";
+
+    /// <summary>The csharp blocks of a document that declare a type and start like a file (using, namespace or a type).</summary>
+    private static IEnumerable<(int Line, string Code)> CompleteSnippets(string path)
+    {
+        var text = File.ReadAllText(path).Replace("\r\n", "\n");
+        foreach (Match block in Regex.Matches(text, "```csharp\n(.*?)```", RegexOptions.Singleline))
+        {
+            var code = block.Groups[1].Value;
+            if (!Regex.IsMatch(code, @"^[ \t]*(?:(?:public|internal|private)[ \t]+)?(?:(?:sealed|static)[ \t]+)*(?:class|struct)[ \t]", RegexOptions.Multiline))
+                continue;
+            if (!Regex.IsMatch(code.TrimStart(), @"^(?:using|namespace|public|internal)\b"))
+                continue;
+            var line = text.Take(block.Index).Count(c => c == '\n') + 1;
+            if (!code.Contains("namespace "))
+            {
+                var usings = string.Concat(Regex.Matches(code, @"^[ \t]*using [\w.]+;[ \t]*\n", RegexOptions.Multiline).Select(m => m.Value.TrimStart()));
+                var body = Regex.Replace(code, @"^[ \t]*using [\w.]+;[ \t]*\n", "", RegexOptions.Multiline);
+                code = SnippetUsings + usings + $"namespace Snippet{line}\n{{\n{body}\n}}\n";
+            }
+            yield return (line, code);
+        }
     }
 
     /// <summary>The interop file exactly as shipped, compiled like a consumer mod compiles it.</summary>

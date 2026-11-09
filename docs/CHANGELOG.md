@@ -23,6 +23,21 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 - Complete a Climbable Ladders 1.0.4 dismount on the outgoing character before
   starting its replacement. [Compatibility details](BODY-HANDOFF-20261108.md)
 
+### Public API and interop
+
+- `RespawnApi` is unchanged: `ApiVersion` 1, same baseline as in every release since 1.0.0.
+- Interop file **revision 1**. `interop/RedeployRespawnInterop.cs` now carries an MIT
+  header and its revision, exposes `LocalBodyTracker.Revision`, and names the revision in
+  its bind log line (`bound to RespawnApi v1 (interop revision 1)`). Its comments no longer
+  claim that every body shares the ProfileId: the own-Scav continuation changes it while the
+  reason stays `"death"`. Behaviour is unchanged; earlier copies without a header count as
+  revision 0 and keep working.
+- English consumer documentation: [soft dependency](SOFT-DEPENDENCY.md),
+  [rules](RULES.md), [recipes](RECIPES.md) and the [API reference](API.md), plus an
+  [example plugin](../interop/examples/RespawnConsumerExample.cs). The tests compile the
+  example and every complete snippet of the recipes and the soft-dependency guide together
+  with the interop file against the game's assemblies.
+
 ## [1.1.2] - 2026-11-07
 
 Client/Server **1.1.2**, bundled and minimum Core **1.0.20**. The Client and
@@ -307,6 +322,8 @@ already belong to this baseline. See its
 [README](https://github.com/maschine34675/Redeploy/blob/v1.0.0/README.md)
 for the features and limitations at release.
 
+[1.1.2]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.2
+[1.1.1]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.1
 [1.1.0]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0
 [1.0.2]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.2
 [1.0.1]: https://github.com/maschine34675/Redeploy/releases/tag/v1.0.1

@@ -1,5 +1,16 @@
 # Redeploy repository status
 
+## Consumer documentation and interop revision 1 — 2026-11-09
+
+The first external mod is expected to consume `RespawnApi` soon. The API is unchanged
+(`ApiVersion` 1). New: the English consumer set ([API](API.md),
+[soft dependency](SOFT-DEPENDENCY.md), [rules](RULES.md), [recipes](RECIPES.md)), interop
+file revision 1 (header, `LocalBodyTracker.Revision`, revision in the bind log line,
+corrected ProfileId comments) and a compiled [example plugin](../interop/examples/RespawnConsumerExample.cs).
+Killcam's copy is still revision 0; it works unchanged and can be recopied with Killcam's
+next release. A native acceptance run with the external mod waits for a build of it that
+uses the tracker.
+
 ## Core 1.0.22 in development — 2026-11-08
 
 Core adds a body handoff for [Amand's Sense Updated 3.1.0](AMANDS-SENSE-20261108.md).

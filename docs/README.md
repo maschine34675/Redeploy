@@ -2,6 +2,20 @@
 
 Start with the [project README](../README.md) for installation, settings, updates, removal and build/deployment behaviour.
 
+## For mod authors
+
+How another mod follows the local player through a respawn. English; everything a consumer needs.
+
+| Document | Scope |
+| --- | --- |
+| [Soft dependency](SOFT-DEPENDENCY.md) | Copying the interop file, setup, availability tiers, how players get Core, keeping the copy current, log lines, licence. |
+| [Rules](RULES.md) | The consumer checklist: what breaks when the body is replaced, and what to do instead. |
+| [Recipes](RECIPES.md) | Worked cases with code, including mods with a downed or revive state. |
+| [API reference](API.md) | `RespawnApi` v1 and `LocalBodyTracker`: members, timelines, guarantees, versions, what is not part of the contract. |
+| [Interop file](../interop/RedeployRespawnInterop.cs) and [example plugin](../interop/examples/RespawnConsumerExample.cs) | The file consumers copy (revision 1) and a minimal plugin compiled against the game by the tests. |
+
+## Players, releases and validation records
+
 | Document | Scope |
 | --- | --- |
 | [Changelog](CHANGELOG.md) | Changes since 1.0.0 and the separate Core version line. |
@@ -13,7 +27,7 @@ Start with the [project README](../README.md) for installation, settings, update
 | [Own-Scav release review](PMC-TO-SCAV-RELEASE-REVIEW-20261028.md) | Historical (2026-10-28, superseded by the 1.1.0 release): blockers, implemented fixes and acceptance. |
 | [Own-Scav recovery validation](PMC-SCAV-RECOVERY-20261028.md) | Prepared/Active interruption, partial-transfer restart, BTR/preflight controls and isolated-host restoration. |
 | [Redeploy 1.0.2 release notes](RELEASE-1.0.2.md) | Client/Server 1.0.2, bundled Core 1.0.13, optional integrations and update instructions. |
-| [Respawn API](RESPAWN-API.md) | Core's observer contract, design decisions, implementation history and verification notes. German; dated status entries supersede earlier proposals. |
+| [Respawn API design record](RESPAWN-API.md) | German design record: decisions, implementation history and verification notes behind the API. Not needed to use the API; the English set above is the contract. Dated status entries supersede earlier proposals. |
 | [Shared body compatibility](BODY-REPLACEMENT-COMPAT-20261023.md) | Core 1.0.9: Recoil Rework Legacy, Continuous Load Ammo and Continuous Healing, exact ownership and migration test boundaries. |
 | [FOV and loading animation compatibility](FOV-MANIMAL-COMPAT-20261025.md) | Core 1.0.11: Fontaine FOV Fix and Manimal Ammo Loading Animations; native candidate and test boundaries. |
 | [Magazine panel compatibility](MAGCHECK-COMPAT-20261025.md) | Core 1.0.12: Magazine Check Interrupt; panel retirement and deferred callbacks. |
