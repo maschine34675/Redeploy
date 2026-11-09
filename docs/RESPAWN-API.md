@@ -1,5 +1,12 @@
 # RespawnApi v1 für Redeploy.Core: finaler Vorschlag (revidiert)
 
+> **Für Mod-Autoren gilt dieses Dokument nicht als Anleitung (Stand 2026-11-09).** Es ist das
+> deutsche Designprotokoll mit datierten Statusblöcken, frühere Vorschläge sind darin teils
+> überholt. Der Vertrag für Konsumenten steht auf Englisch in [API.md](API.md),
+> [SOFT-DEPENDENCY.md](SOFT-DEPENDENCY.md), [RULES.md](RULES.md) und [RECIPES.md](RECIPES.md);
+> dort gilt im Zweifel das Englische. Zeilenangaben auf Quelltext beziehen sich auf den jeweils
+> genannten historischen Stand.
+
 > **Experimental addition, 2026-10-27, Core 1.0.16:**
 > `RespawnRequest.ReplacementProfile` is optional. `null` preserves the existing
 > same-profile pipeline. A non-null profile must have a distinct ID, independent
@@ -865,7 +872,9 @@ Zum GameEnd-Postfix in `RaidLifecycle`: Er deklariert `object __instance` und `T
 **`"death"`**
 - Der alte Body war beim Eingang in `RunRespawn` tot.
 - Er bleibt als Leiche: dasselbe GameObject, alle Mod-Komponenten laufen weiter.
-- `IsYourPlayer` bleibt true; Profile und ProfileId teilt er mit dem neuen Body.
+- `IsYourPlayer` bleibt true. Profile und ProfileId teilt er mit dem neuen Body, außer bei der
+  Own-Scav-Fortsetzung von Redeploy (`RespawnRequest.ReplacementProfile`, eingeführt in Core 1.0.16, ausgeliefert ab Redeploy 1.1.0 mit Core 1.0.17):
+  Dort hat der neue Body eine andere ProfileId, der Grund bleibt trotzdem `"death"`.
 - Er ist unregistriert, hat keinen Owner und keinen Death-Handler mehr (`:105`).
 - Er kann später in den Player-Pool zurückkehren, samt Komponenten.
 - Seine Vanilla-Todes-Events sind lange vorher gefeuert.
@@ -1004,7 +1013,10 @@ Core rollt nichts zurück. Für jeden Konsumenten gilt dieselbe Regel: gecachte 
 
 ### 4.1 Die Interop-Datei (von Redeploy gepflegt, wird kopiert)
 
-Die Masterkopie liegt in `Redeploy/interop/RedeployRespawnInterop.cs`.
+Die Masterkopie liegt in `Redeploy/interop/RedeployRespawnInterop.cs`. Maßgeblich ist allein diese
+Datei: Der Abdruck unten zeigt den ursprünglichen Stand vom 13.09.2026 (vor dem Revisionskopf).
+Seit Revision 1 (2026-11-09) trägt die Masterkopie einen MIT-Kopf, `LocalBodyTracker.Revision` und
+die Revision in der Bind-Logzeile; das Verhalten ist unverändert.
 
 ```csharp
 // RedeployRespawnInterop.cs - interop v1 for maschine-Redeploy.Core "RespawnApi" (needs ApiVersion >= 1, degrades below).
@@ -1332,7 +1344,7 @@ Einen Tier für das `OnPlayerRespawned` von Core 0.9 gibt es nicht. 0.9.0 wurde 
 
 ### 4.4 Regeln für respawn-sichere Mods
 
-1. Der aktuelle lebende Body ist nur `ReferenceEquals(GameWorld.MainPlayer, p) && p.HealthController.IsAlive`. Nicht `IsYourPlayer` (die Leiche behält es), nicht `ProfileId` (alle Bodies teilen sie), nicht `==` gegen einen Body, der zerstört sein könnte.
+1. Der aktuelle lebende Body ist nur `ReferenceEquals(GameWorld.MainPlayer, p) && p.HealthController.IsAlive`. Nicht `IsYourPlayer` (die Leiche behält es), nicht `ProfileId` (gewöhnliche Respawns und Swaps teilen sie, die Own-Scav-Fortsetzung wechselt sie), nicht `==` gegen einen Body, der zerstört sein könnte.
 2. Komponenten pro Body beim Wechsel vom vorherigen Body entfernen. Die Leiche lässt sie weiterlaufen und kann sie in den Pool mitnehmen; beim Swap bekommen sie mitten im Raid `OnDestroy`. Beim Anhängen `AttachFresh` statt GetOrAdd verwenden.
 3. `OnDestroy`, `UnregisterPlayer` (vanilla ruft es einen Frame nach **jedem** Tod), Unspawn, ein lokaler Tod und ein Prefix auf `LocalGame.Stop` sind keine Raid-End-Signale. Stattdessen `RaidEnded` oder einen eigenen, auf `LocalGame` gefilterten `GameEnd`-Postfix nehmen.
 4. Kameras nach einem Wechsel neu auflösen. Eine vorher gecachte Kamera stirbt am Ende von Frame N. Eine im `Replaced`/`BodyChanged`-Handler gecachte überlebt, solange bis N+2 niemand den `PlayerCameraController` übernimmt.
