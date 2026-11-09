@@ -1,6 +1,9 @@
-// RedeployRespawnInterop.cs - interop v1 for maschine-Redeploy.Core "RespawnApi" (needs ApiVersion >= 1, degrades below).
-// Master copy (provider-maintained): Redeploy repo, interop/RedeployRespawnInterop.cs.
-// Copy verbatim and change ONLY the namespace. No reference to Redeploy or ArenaMode is needed.
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 maschine. Part of Redeploy, https://github.com/maschine34675/Redeploy (MIT licence).
+// RedeployRespawnInterop.cs - interop revision 1 for maschine-Redeploy.Core "RespawnApi" (needs ApiVersion >= 1, degrades below).
+// Master copy (provider-maintained): https://github.com/maschine34675/Redeploy/blob/main/interop/RedeployRespawnInterop.cs
+// Copy verbatim and change ONLY the namespace line. Keep this header: its revision tells which copy a log came from.
+// No reference to Redeploy, Redeploy.Core or ArenaMode is needed. Guide: docs/SOFT-DEPENDENCY.md in the Redeploy repo.
 //
 // Emits ONE chained, de-duplicated BodyChanged(previous, current, reason) stream from two sources:
 //   1) RespawnApi v1 events, bound by reflection when maschine-Redeploy.Core is installed;
@@ -24,6 +27,10 @@ namespace YourMod.Interop
         public const string ReasonRaidEnd = "raid-end";
         public const string ReasonUnknown = "unknown";
 
+        /// <summary>Revision of this file, as in its header. It changes only when this file changes, never with Core.
+        /// The bind log line names it, so a bug report shows which copy ran.</summary>
+        public const int Revision = 1;
+
         private const string ApiTypeName = "Redeploy.Core.Api.RespawnApi, maschine-Redeploy.Core";
         private const BindingFlags PublicStatic = BindingFlags.Public | BindingFlags.Static;
         private const float MaxReplacingHoldSeconds = 35f;
@@ -37,6 +44,8 @@ namespace YourMod.Interop
         /// <summary>(previous or null, current or null, reason). Chained: each current becomes the next previous;
         /// at most one event per real change; previous == null always comes with "raid-start".
         /// Treat any reason other than the constants above like "unknown".
+        /// previous.ProfileId differs from current.ProfileId after Redeploy's own-Scav continuation (reason "death"):
+        /// a new identity, not only a new body.
         /// Delivery differs by source: with Core it runs inside Core's Replaced dispatch (mid-pipeline, before spawn
         /// protection); without Core it runs from Update. So in EVERY case: never start a respawn, stop the raid or
         /// destroy a body directly from a handler; defer such work by one frame.
@@ -83,7 +92,8 @@ namespace YourMod.Interop
         public bool IsRespawnAvailable { get { return ReadFlag(_isAvailable); } }
 
         /// <summary>The vanilla current-body test for LIVING bodies. Never IsYourPlayer (true on corpses) or ProfileId
-        /// (shared by all bodies). In death handlers use ReferenceEquals(MainPlayer, body) instead: a dead body fails IsAlive.</summary>
+        /// (shared by the bodies of an ordinary respawn or swap, but changed by Redeploy's own-Scav continuation).
+        /// In death handlers use ReferenceEquals(MainPlayer, body) instead: a dead body fails IsAlive.</summary>
         public static bool IsCurrentLocalBody(Player body)
         {
             if (body == null || !Singleton<GameWorld>.Instantiated) return false;  // Unity-null included
@@ -225,12 +235,12 @@ namespace YourMod.Interop
                 if (pending != null && pending.ReturnType == typeof(bool))
                     _isRespawnPending = (Func<Player, bool>)Delegate.CreateDelegate(typeof(Func<Player, bool>), pending, false);
                 IsBound = true;
-                Log("bound to RespawnApi v" + version.GetValue(null, null));
+                Log("bound to RespawnApi v" + version.GetValue(null, null) + " (interop revision " + Revision + ")");
             }
             catch (Exception ex)
             {
                 Unbind();
-                Log("binding failed, polling only: " + ex.Message);
+                Log("binding failed, polling only (interop revision " + Revision + "): " + ex.Message);
             }
         }
 

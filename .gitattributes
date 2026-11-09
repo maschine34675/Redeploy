@@ -2,3 +2,6 @@
 # (ArenaMode tools/Write-ArenaAssets.ps1). Pin it to LF so core.autocrlf=true cannot
 # check it out with CRLF in a fresh clone or worktree.
 LICENSE text eol=lf
+# Consumers copy the interop file verbatim; pin it (and the compiled example) to LF so a copy taken
+# from a Windows checkout does not differ from the master in every line.
+interop/**/*.cs text eol=lf

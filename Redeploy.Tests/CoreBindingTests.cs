@@ -50,7 +50,7 @@ public class CoreBindingTests
                 Invoke(tracker, "TryBind");
 
                 Assert.True((bool)trackerType.GetProperty("IsBound").GetValue(tracker), "not bound; tracker log:\n" + string.Join("\n", log));
-                Assert.Contains("bound to RespawnApi v1", log);
+                Assert.Contains(log, line => line.StartsWith("bound to RespawnApi v1 (interop revision ", StringComparison.Ordinal));
                 foreach (var name in Events)
                     Assert.True(Subscribers(api, name) == 1, $"{name} has {Subscribers(api, name)} subscribers after TryBind, expected 1");
                 foreach (var name in Queries)
@@ -69,6 +69,38 @@ public class CoreBindingTests
         {
             context.Unload();
         }
+    }
+
+    /// <summary>
+    /// The consumer example (interop/examples) compiles together with the unchanged interop file
+    /// against the game's assemblies and BepInEx, as C# 7.3: the documentation's starting point
+    /// cannot rot unnoticed.
+    /// </summary>
+    [SkippableFact]
+    public void TheConsumerExampleCompilesWithTheInteropFileAgainstTheGame()
+    {
+        var install = Path.GetFullPath(Environment.GetEnvironmentVariable("REDEPLOY_TEST_SPT_ROOT")
+            ?? Path.Combine(ApiContractTests.RepoRoot, "..", ".."));
+        var managed = Path.Combine(install, "EscapeFromTarkov_Data", "Managed");
+        var bepinex = Path.Combine(install, "BepInEx", "core", "BepInEx.dll");
+        Skip.If(!Directory.Exists(managed), "the game's Managed folder is not next to the repo");
+        Skip.If(!File.Exists(bepinex), "BepInEx/core/BepInEx.dll is not next to the repo");
+
+        var options = new CSharpParseOptions(LanguageVersion.CSharp7_3);
+        var sources = new[]
+        {
+            Path.Combine(ApiContractTests.RepoRoot, "interop", "RedeployRespawnInterop.cs"),
+            Path.Combine(ApiContractTests.RepoRoot, "interop", "examples", "RespawnConsumerExample.cs"),
+        }.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), options, path));
+        var references = Directory.GetFiles(managed, "*.dll").Where(HasMetadata).Append(bepinex)
+            .Select(path => MetadataReference.CreateFromFile(path));
+        var compilation = CSharpCompilation.Create(
+            "RespawnConsumerExample", sources, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        using var output = new MemoryStream();
+        var result = compilation.Emit(output);
+        var errors = result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).ToList();
+        Assert.True(result.Success, "the consumer example does not compile against the game:\n" + string.Join("\n", errors));
     }
 
     /// <summary>The interop file exactly as shipped, compiled like a consumer mod compiles it.</summary>
