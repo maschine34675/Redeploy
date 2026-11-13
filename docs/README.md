@@ -49,6 +49,8 @@ How Core carries other mods' per-body state across a replacement, one dated reco
 
 | Document | Scope |
 | --- | --- |
+| [DERP](compatibility/DERP-20261113.md) | Development Core 1.0.23. Private player-cache handoff and retired optic callbacks. Native acceptance pending. |
+| [Player Encumbrance Bar](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) | Development Core 1.0.23. Physical health and profile event sources, including own-Scav continuation. |
 | [Amand's Sense Updated](compatibility/AMANDS-SENSE-20261108.md) | Development Core 1.0.22. Same-raid markers, recorded corpses and inventory ownership across body replacement. |
 | [Body handoff for blood, loot, skills and ladders](compatibility/BODY-HANDOFF-20261108.md) | Development Core 1.0.21. Supported versions, Skills Extended issue 136, item ownership and test coverage. |
 | [Recording and popular-mod compatibility](compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md) | Core 1.0.20 (released with Redeploy 1.1.2): Raid Review, HollywoodFX and Hands Are Not Busy; popular-mod audit and performance constraints. |

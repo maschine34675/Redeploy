@@ -5,7 +5,16 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Core 1.0.22
+## Unreleased — Core 1.0.23
+
+- DERP 1.1.2 follows the replacement player instead of its retained outgoing
+  body. Retired optic callbacks cannot reset the successor camera, and empty
+  replacement hands do not reach its unsafe scope access.
+  [Compatibility record](compatibility/DERP-20261113.md)
+- Player Encumbrance Bar 1.3.0 follows the current body's health, inventory and
+  skills after a replacement, including an own-Scav continuation. Old UI event
+  subscriptions are detached before the private health cache changes.
+  [Compatibility record](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md)
 
 - Amand's Sense Updated 3.1.0 can keep an active loot marker through a body
   change. The new player keeps using the same raid's markers and corpse history.

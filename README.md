@@ -108,7 +108,13 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
-**In development for Core 1.0.22.** Amand's Sense Updated 3.1.0 keeps its
+**In development for Core 1.0.23.** DERP 1.1.2 follows the replacement player's
+optics, and Player Encumbrance Bar 1.3.0 follows the current health, inventory and
+skill event sources. Offline lifecycle checks passed; native testing is pending.
+See the [DERP](docs/compatibility/DERP-20261113.md) and
+[encumbrance bar](docs/compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) records.
+
+**Also in development, Core 1.0.22.** Amand's Sense Updated 3.1.0 keeps its
 active markers and the raid's corpse history across a respawn, with the new
 inventory bound to the current player. [Sense compatibility](docs/compatibility/AMANDS-SENSE-20261108.md)
 

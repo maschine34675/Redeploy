@@ -1,5 +1,14 @@
 # Redeploy repository status
 
+## Core 1.0.23 in development — 2026-11-13
+
+Optional body-state integrations for [DERP 1.1.2](compatibility/DERP-20261113.md)
+and [Player Encumbrance Bar 1.3.0](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md).
+The private caches and subscriptions follow exact Core-owned bodies. Initial
+ordinary raids keep upstream behavior. Driver source builds now require Core
+1.0.23. No Client/Server release-version change. Native acceptance and deployment
+are pending; the compatibility records distinguish offline from native evidence.
+
 ## Consumer documentation and interop revision 1 — 2026-11-09
 
 External mods are expected to consume `RespawnApi`. The API is unchanged

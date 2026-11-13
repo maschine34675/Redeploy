@@ -78,6 +78,8 @@ public static class BodyReplacementCompatibility
         var quickCancel = QuickCancelCompat.GetRejectionReason();
         var pipDisabler = PipDisablerCompat.GetRejectionReason();
         var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
+        var derp = DynamicExternalResolutionCompat.GetRejectionReason();
+        var encumbrance = PlayerEncumbranceBarCompat.GetRejectionReason();
         var amandsSense = AmandsSenseCompat.GetRejectionReason();
         var aiLimit = AiLimitCompat.GetRejectionReason();
         var healingAutoCancel = HealingAutoCancelCompat.GetRejectionReason();
@@ -93,7 +95,7 @@ public static class BodyReplacementCompatibility
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
-            ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics
+            ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? derp ?? encumbrance
             ?? amandsSense ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
             ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
     }
@@ -144,6 +146,8 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(QuickCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
            || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(DynamicExternalResolutionContract.Guid)
+           || Chainloader.PluginInfos.ContainsKey(PlayerEncumbranceBarCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AmandsSenseCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AiLimitContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HealingAutoCancelCompat.PluginGuid)
@@ -177,6 +181,8 @@ public static class BodyReplacementCompatibility
         QuickCancelCompat.Prepare(game, oldBody);
         PipDisablerCompat.Prepare(game, oldBody);
         AmandsGraphicsCompat.Prepare(game, oldBody);
+        DynamicExternalResolutionCompat.Prepare(game, oldBody);
+        PlayerEncumbranceBarCompat.Prepare(game, oldBody);
         AiLimitCompat.Prepare(game, oldBody);
         HealingAutoCancelCompat.Prepare(game, oldBody);
         QuestTrackerCompat.Prepare(game, oldBody);
@@ -197,6 +203,7 @@ public static class BodyReplacementCompatibility
         SimpleCrosshairCompat.CompletePreparation();
         SkillsExtendedCompat.CompletePreparation();
         LootInVicinityCompat.CompletePreparation();
+        PlayerEncumbranceBarCompat.CompletePreparation();
         ClimbableLaddersCompat.Dismount(game, oldBody, climbs);
     }
 
@@ -211,6 +218,9 @@ public static class BodyReplacementCompatibility
 
     internal static void EndAttempt()
     {
+        PlayerEncumbranceBarCompat.EndAttempt();
+        try { DynamicExternalResolutionCompat.EndAttempt(); }
+        catch (Exception ex) { CoreLog.LogWarning("DERP could not finish the body switch: " + ex.GetBaseException().Message); }
         try { AmandsSenseCompat.EndAttempt(); }
         catch (Exception ex) { CoreLog.LogWarning("Amand's Sense could not finish the body switch: " + ex.GetBaseException().Message); }
         finally
@@ -235,6 +245,8 @@ public static class BodyReplacementCompatibility
         EnemyMarkersCompat.AbortPreparation();
         PipDisablerCompat.AbortPreparation();
         AmandsGraphicsCompat.AbortPreparation();
+        DynamicExternalResolutionCompat.AbortPreparation();
+        PlayerEncumbranceBarCompat.AbortPreparation();
         AiLimitCompat.AbortPreparation();
         HealingAutoCancelCompat.AbortPreparation();
         QuestTrackerCompat.AbortPreparation();
@@ -311,6 +323,8 @@ public static class BodyReplacementCompatibility
         QuickCancelCompat.RetireWorld(world);
         PipDisablerCompat.RetireWorld(world);
         AmandsGraphicsCompat.RetireWorld(world);
+        DynamicExternalResolutionCompat.RetireWorld(world);
+        PlayerEncumbranceBarCompat.RetireWorld(world);
         AmandsSenseCompat.RetireWorld(world);
         AiLimitCompat.RetireWorld(world);
         HealingAutoCancelCompat.RetireWorld(world);

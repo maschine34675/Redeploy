@@ -388,6 +388,7 @@ internal static class SourceGuards
     {
         ("HealingAutoCancelCompat.cs", "Current"),      // Never true while IsCreating: also needs game.LocalPlayer == body.
         ("PipDisablerCompat.cs", "ObserveLocalOptic"),  // Same: Game.LocalPlayer must already be the observed body.
+        ("PlayerEncumbranceBarCompat.cs", "Current"), // LocalPlayer and PlayerOwner must already be committed to this physical body.
     };
 
     public static List<string> GameProfileReadsOutsideTheReplacementRule(IEnumerable<(string Path, string Source)> files)
