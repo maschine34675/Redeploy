@@ -1,5 +1,27 @@
 # Redeploy repository status
 
+## Core 1.0.24 deployed to the development installation — 2026-11-13
+
+At the user's request, the exact native-tested Core `1.0.24+0a4f242` DLL and its
+matching PDB were deployed from the Release build into `D:\SPT41\BepInEx\plugins`.
+No rebuild was needed: only documentation changed after the tested source commit.
+SHA-256 matches the accepted native candidate:
+`7545749aa7382dace92822d94f4fc9920499a3509c91c36bd5e1c83ff59923bb`;
+MVID `265f2aa2-bfd8-4734-8a10-e4e2e3ae004d`.
+
+Both GPU hosts received byte-identical DLL and PDB files through synchronization.
+Exactly one Core DLL was found in each installation's plugin tree. Redeploy's
+installed Client/Server remain byte-identical `1.1.2+f092f98`. The installed
+Redeploy and Arena clients require at least Core 1.0.23 and accept 1.0.24;
+both passed the metadata startup check. Arena exclusions and API v1 are unchanged.
+
+Previous DLL/PDB and before/after/synchronization manifests are preserved outside
+the synchronized tree in `D:\SPT41-Backups\core-deploy\20261113-225053`.
+This is deployment and disk-identity evidence; no new game process was launched.
+Native acceptance is the preceding GPU-2 test of this exact Core binary, recorded
+in [AI body replacement validation](compatibility/AI-BODY-REPLACEMENT-20261113.md).
+The new Core loads on the next game start. A GitHub release was not requested.
+
 ## Core 1.0.24 implementation — 2026-11-13
 
 Optional private-state adapters now cover ORBIT 3.1.1, Questing Bots 1.2.0
@@ -12,8 +34,8 @@ notifications. Aishi's separate anomaly-reveal feature still rejects the Scav
 profile; see the linked record for that limitation and unexercised branches.
 Temporary packages/profile/configuration were removed or restored, original DLLs
 were hash-verified and synchronization resumed. Candidate Core 1.0.24 was tested
-only in that isolated setup; the shared installation remains on Core 1.0.23 below.
-Implementation commit: `0a4f242`; no push or release performed.
+only in that isolated setup before the later regular deployment recorded above.
+Implementation commit: `0a4f242`; validation record: `7bf1386`.
 
 ## Arena-denied mod audit — 2026-11-13
 

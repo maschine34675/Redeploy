@@ -162,4 +162,6 @@ and both GPU-2 and `D:\SPT41` again matched baseline Core `1.0.23+f092f98` befor
 synchronization was resumed. `restoration-verification.json` and
 `restore-sync-result.json` record the checks and `paused=false` confirmation.
 Off-sync rollback/evidence remains in `C:\Temp\RedeployDenied-20261113` on GPU-2.
-No global deployment, push, release or Arena admission change was performed.
+That isolated test cycle made no global deployment, push, release or Arena
+admission change. The subsequent user-authorized regular deployment of the same
+Core binary is recorded in [repository status](../REPOSITORY-STATUS.md).
