@@ -110,7 +110,9 @@ before treating these as tested gameplay combinations.
 
 **In development for Core 1.0.23.** DERP 1.1.2 follows the replacement player's
 optics, and Player Encumbrance Bar 1.3.0 follows the current health, inventory and
-skill event sources. Offline lifecycle checks passed; native testing is pending.
+skill event sources. Scoped native checks passed in Arena and in standalone
+Redeploy, including a PMC-to-own-Scav continuation. These changes are not yet
+part of a published release.
 See the [DERP](docs/compatibility/DERP-20261113.md) and
 [encumbrance bar](docs/compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) records.
 

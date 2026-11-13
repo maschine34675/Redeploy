@@ -44,8 +44,30 @@ foreign restoration failure, hidden panels, replaced displays/worlds/owners, can
 after an earlier successful swap, and a successful commit without an extra `Show`.
 The final fixture passes 128 checks (including 100 repeated cached-admission calls).
 `Verify.ps1` rejects eight compiled runtime mutants and then reruns that baseline.
-Native acceptance and the tested loaded builds are recorded in ArenaMode's four-mod
-verification report once completed; a fixture is not proof of native compatibility.
+Scoped native checks passed on SPT-GPU-1 on 13 November 2026 with Core 1.0.23,
+SHA-256 `6E4F0BA1D32CACFE584F11C367E97A7957BE1F001142FB422770C712CC7C8696`,
+loaded/disk MVID `c66effad-400f-4697-8788-e94d777750e2`. The frozen binary was built
+from the working source committed as `54093c9`; its informational stamp still
+names preceding commit `8c6cd87`.
+
+In Factory Arena, the bar matched the actual doubled physical limits. After a
+real death and replacement, a native attachment installation with inventory left
+open changed elite-adjusted weight from 15.889 to 15.2890005 kg and the fill from
+0.07936563 to 0.07636864, matching the 200.2 kg upper limit. Earlier test-hook
+item additions produced identical exported before/after values; those pairs are
+not counted as event-update evidence. The complete Arena profile comparison
+changed only the Hideout bookkeeping timestamp.
+
+Standalone Redeploy was then tested with ArenaMode absent. A real PMC death and
+own-Scav continuation changed both physical body and profile. The Scav bar used
+vanilla limits (26/77 and 45/86). Discarding water through the native inventory
+while leaving it open changed total weight 19.244 -> 18.594 kg and fill
+0.249922067 -> 0.241480514. This demonstrates event rebinding to the Scav inventory,
+not merely an initial refresh on opening the panel. No new gameplay errors arose.
+
+The cancellation/hidden-panel/late-callback cases remain offline coverage; they
+were not forced in game. Loaded-build and raw evidence are recorded in the sibling
+ArenaMode four-mod worktree's `artifacts/four-mods-20261113/` and dated GPU report.
 
 Sources: [Forge](https://sp-mod.com/mod/1374/player-encumbrance-bar),
 [release](https://github.com/Lacyway/SPT-PlayerEncumbranceBar/releases/tag/v1.3.0).

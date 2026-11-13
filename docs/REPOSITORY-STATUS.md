@@ -6,8 +6,11 @@ Optional body-state integrations for [DERP 1.1.2](compatibility/DERP-20261113.md
 and [Player Encumbrance Bar 1.3.0](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md).
 The private caches and subscriptions follow exact Core-owned bodies. Initial
 ordinary raids keep upstream behavior. Driver source builds now require Core
-1.0.23. No Client/Server release-version change. Native acceptance and deployment
-are pending; the compatibility records distinguish offline from native evidence.
+1.0.23. No Client/Server release-version change. Source commit `54093c9` passed
+628 unit tests and the scoped GPU-1 checks in Arena and standalone Redeploy,
+including PMC-to-own-Scav replacement. The compatibility records identify the
+frozen tested binaries and unexercised cases. General deployment and publication
+remain pending; the normal installation's newer parallel Arena build is preserved.
 
 ## Consumer documentation and interop revision 1 — 2026-11-09
 
