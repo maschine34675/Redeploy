@@ -6,8 +6,14 @@ Optional private-state adapters now cover ORBIT 3.1.1, Questing Bots 1.2.0
 Lightkeeper-island retirement and ISB SOF Notifier 2.0.4. Client/Server remain
 1.1.2; API v1 and Arena exclusions are unchanged. See
 [implementation and validation](compatibility/AI-BODY-REPLACEMENT-20261113.md).
-Native acceptance is pending host coordination; this does not supersede the
-deployed Core 1.0.23 identity below.
+Scoped standalone native tests passed on GPU-2: PMC and own-Scav replacement for
+all three adapters, ORBIT convergence, Questing island entry/exit and renewed ISB
+notifications. Aishi's separate anomaly-reveal feature still rejects the Scav
+profile; see the linked record for that limitation and unexercised branches.
+Temporary packages/profile/configuration were removed or restored, original DLLs
+were hash-verified and synchronization resumed. Candidate Core 1.0.24 was tested
+only in that isolated setup; the shared installation remains on Core 1.0.23 below.
+Implementation commit: `0a4f242`; no push or release performed.
 
 ## Arena-denied mod audit — 2026-11-13
 

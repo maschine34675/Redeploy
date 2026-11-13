@@ -111,8 +111,10 @@ before treating these as tested gameplay combinations.
 **In development for Core 1.0.24.** ORBIT 3.1.1 keeps the replacement in its shared
 human-player list. Questing Bots 1.2.0 retires the outgoing body's Lightkeeper
 island membership and temporary relationships. ISB SOF Notifier 2.0.4 can resume
-announcements after respawn without resetting raid history. These optional fixes
-do not change ArenaMode's exclusions. See the
+announcements after respawn without resetting raid history. Scoped standalone
+PMC and own-Scav tests passed for these fixes; Aishi's separate anomaly-reveal
+feature still rejects the Scav profile. These optional fixes do not change
+ArenaMode's exclusions and are not yet released. See the
 [implementation and test scope](docs/compatibility/AI-BODY-REPLACEMENT-20261113.md).
 
 **In development for Core 1.0.23.** DERP 1.1.2 follows the replacement player's

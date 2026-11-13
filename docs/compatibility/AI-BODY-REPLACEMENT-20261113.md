@@ -78,27 +78,88 @@ deprecation warnings. The Questing harness additionally models the conditional
 client-world override and an already-unregistered dead player. All three adapter
 harnesses passed their released-binary checks and real-EFT compile checks.
 
-## Native verification status
+## Native verification — SPT-GPU-2, 13 November 2026
 
-Pending. Source/build and offline checks are not in-game acceptance. A test
-installation was prepared on SPT-GPU-2 with synchronization paused and backups of
-profiles, configuration and temporarily disabled mods. Another session started
-that host during preparation; no raid test or candidate deployment was performed
-before coordinating host availability. Native observations and restoration
-evidence will be recorded here after the tests.
+Scoped standalone tests passed after the host was released by the other session.
+Each case used the official mod package, a disposable profile and native Redeploy
+prompt buttons. ArenaMode and Killcam were temporarily disabled. Synchronization
+remained paused throughout the isolated tests. Deaths were triggered through
+UiBridge; the developer-only [probe](../../tools/DeniedModsNativeProbe/README.md)
+observed private state without repairing it.
 
-The paused test setup still needs coordinated completion and cleanup. Its
-off-sync backup is `C:\Temp\RedeployDenied-20261113` on SPT-GPU-2: `disabled.json`
-records displaced mods, `temporary-payload.json` records the full ISB/Aishi
-packages, and the original profile/configuration manifests are stored beside
-them. No candidate Core was copied there. Preserve changes made by the other
-session when restoring; resume synchronization only after the disposable profile,
-probe and temporary packages have been removed and the original layout restored.
+All three processes loaded Core `1.0.24+0a4f242` with disk and loaded MVID
+`265f2aa2-bfd8-4734-8a10-e4e2e3ae004d`. Candidate SHA-256:
+`7545749aa7382dace92822d94f4fc9920499a3509c91c36bd5e1c83ff59923bb`.
+Client remained `1.1.2+0a4f242`. These identities describe the tested candidate,
+not a deployment to the shared installation.
 
-The developer-only [probe](../../tools/DeniedModsNativeProbe/README.md) reads the
-actual body references, shared ORBIT list identity, island membership/snapshots,
-bot allies and ISB latch/history. It never repairs foreign state and is excluded
-from release packages. Target cases are repeated PMC respawn, own-Scav continuation,
-Lightkeeper-island exit/re-entry, enabled convergence and renewed ISB O queries
-and notifications. Visible bot teleport/door recovery requires its own trigger;
-a correct human list alone does not prove every AI recovery scenario.
+| Package and map | Native observation |
+| --- | --- |
+| ISB Special Forces 2.0.4, Aishi 2.0.7, required MoreBotsAPI 2.1.2; Factory | PMC death/respawn followed by own-Scav continuation. The presentation-ended latch changed from true on death to false after each committed replacement. Two live ISB operators and existing counters/history remained. Holding O displayed the real ISB activity notification after both replacements. |
+| ORBIT 3.1.1; Customs | Two PMC respawns and own-Scav continuation. Manager and shared list identities stayed constant; each old body was replaced in the original collection used by all three subsystems. Enabled convergence naturally changed from one live human to zero after death and back to one after each replacement. |
+| Questing Bots 1.2.0; Lighthouse | PMC respawn outside the island, then own Scav. Old physical membership and live ally references were removed. Before the Scav switch, a positive original-snapshot reference was also present; it changed from one to zero. Both replacement bodies entered and left the actual island bounds normally. No null ally appeared. |
+
+Questing's island scenario included a living ordinary scav, since Zryachiy and
+his followers deliberately do not receive the human alliance. That ordinary bot
+survived both replacements. Another ordinary scav arrived after the PMC respawn
+(life-event #37), without reviving old membership or allies. For the subsequent
+Scav switch, frame 34136 recorded one old ally and one old snapshot reference;
+frame 36296 recorded neither, with a different live Savage body in the same world
+and monitor. After Scav entry and exit both old-reference counters remained zero.
+Additional spawn requests after the Scav switch did not produce a recorded bot
+arrival, so the post-Scav newcomer case is not claimed as natively exercised.
+
+ORBIT's five-second sample observed six of ten sampled bots moving and nine using
+its brain layer. This does not establish every door-occupancy or stuck-teleport
+recovery branch. The second PMC near-corpse request correctly fell back to a map
+spawn because the corpse was in a sniper/mine exclusion zone; that was the sole
+Redeploy warning in that run. No Redeploy warning/error was found in the complete
+ISB or Questing client logs. All three tests returned through the normal raid-end
+screens to the main menu.
+
+### Separate findings and limits
+
+- Aishi's anomaly-reveal feature reported `The active profile changed. Try again.`
+  after own-Scav continuation. Its client reads the current player's profile,
+  while its settings/reveal server routes return the PMC profile and consume PMC
+  inventory. Source and released DLL review confirmed this mismatch. This is not
+  a stale-body cache, and bypassing its identity check could charge the wrong
+  inventory. No PMC progression or reveal permission is transferred to Scav.
+  A normal Scav raid was not tested for comparison.
+- The first ISB startup omitted required MoreBotsAPI and the server rejected mod
+  loading. It is not acceptance evidence. The complete dependency was installed
+  before the accepted run. Original profiles were isolated before further tests.
+- Questing logged a missing NavMesh point for `Radio transmitter body` during
+  quest preparation, before the first respawn. It also logged expected island
+  boss-alliance exclusions, missing quests for custom maps, and bot heal/path
+  warnings. These runs therefore do not establish an entirely clean mod stack.
+  The server also logged one Fence armor-slot generation warning during Scav
+  preparation. No observed stack trace linked these findings to the new adapters.
+- Forced replacement failure/recovery remains covered offline, not by native
+  fault injection. Arena combinations remain excluded and were not tested here.
+
+### Evidence and restoration
+
+Local, ignored evidence is in `artifacts/denied-native-20261113`: loaded-process
+JSON for all three runs, complete client logs, the server log, ORBIT's 31-step
+scenario and assertions, and `observations-complete.json`. Accepted client log
+start times are 22:04:52 (ISB), 22:14:42 (ORBIT) and 22:23:38 (Questing), host local
+time. The failed ISB startup at 22:01:14 is kept separately.
+
+After normal raid exit, game and server were stopped. Test packages, generated
+settings, ORBIT debug files and the observation DLL were moved out of the
+synchronized installation. All nine temporarily disabled paths were restored.
+The disposable profile tree was replaced with the initial backup, including
+original files affected by server validation when mod loading failed. The
+intermediate profile state remains preserved off-sync; it was not substituted
+for the initial backup.
+
+Restoration verified 310/310 original profile/configuration files, 84/84 additional
+PFT/SAIN files and 73/73 original DLL/PDB files by SHA-256. These manifests overlap;
+their counts must not be summed as unique files. All temporary package-manifest
+paths and the probe were absent. The four original Core/client files were restored,
+and both GPU-2 and `D:\SPT41` again matched baseline Core `1.0.23+f092f98` before
+synchronization was resumed. `restoration-verification.json` and
+`restore-sync-result.json` record the checks and `paused=false` confirmation.
+Off-sync rollback/evidence remains in `C:\Temp\RedeployDenied-20261113` on GPU-2.
+No global deployment, push, release or Arena admission change was performed.
