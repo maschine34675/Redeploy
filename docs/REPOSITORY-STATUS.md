@@ -1,5 +1,34 @@
 # Redeploy repository status
 
+## Core 1.0.23 deployed to the development installation — 2026-11-13
+
+At the user's request `main` (`f092f98`) was deployed with the normal deploying builds
+(`Redeploy.Client`, which also writes Core, then `Redeploy.Server`), followed by a deploying
+build of ArenaMode `master` `c64846fb`, which writes Core once more from this checkout.
+Installed in `D:\SPT41` and identical on both GPU hosts:
+
+- Core `1.0.23+f092f98`, SHA-256 `c8fe330d0c68d91eae4286e47b07586eb95efada8bdbda79cdfe142c42445a8e`;
+- client `1.1.2+f092f98`, `fdb389cb671fe7ce36165bbea1719690525aee32d6ffcae124467bb2f15e3207`;
+- server `1.1.2+f092f98`, `c1c960e6b1f8daae26e6e9fea56e712606c6163619fe4863e1164223edf63ad6`.
+
+Previous files (Core `1.0.22+b1d69e1`, client and server `1.1.2+3b68193`):
+`D:\SPT41-Backups\master-deploy\20261113-144816`, with `SHA256SUMS.txt`.
+
+Offline on the deployed state (no deployment, `-p:SPTModType=Library`): `Redeploy.Tests` 628
+passed, `Redeploy.Server.Tests` 162 passed, `RESPAWN_INTEROP_CHECKS_PASSED` (47 checks).
+Native on GPU-2: the start log reads `Redeploy.Core 1.0.23.0 initialized` and
+`maschine-Redeploy 1.1.2 loaded (Core 1.0.23.0)`; an Arena Team Deathmatch raid with a death
+and a respawn through Core and three solo Tactical rounds ran without an error. A standalone
+Redeploy raid was not run on the installed binaries; the native record of Core 1.0.23 in
+standalone Redeploy is the GPU-1 run of the same day with the candidate built from `54093c9`
+(section below).
+
+Branch state: `main` only, three commits ahead of `origin/main` before this note, not pushed.
+The detached build worktree `D:\SPT41\Development\_squadorder-build\Redeploy` (`b1d69e1`),
+which an ArenaMode task had used to build against the installed Core 1.0.22, was removed; its
+ignored files are archived under `artifacts/archived-worktrees/squadorder-build-20261113/`
+(126 files, manifest with SHA-256). Publication remains pending.
+
 ## Core 1.0.23 in development — 2026-11-13
 
 Optional body-state integrations for [DERP 1.1.2](compatibility/DERP-20261113.md)
