@@ -5,7 +5,19 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Core 1.0.23
+## Unreleased — Core 1.0.24
+
+- ORBIT 3.1.1 keeps its original shared human-player list and substitutes the
+  exact committed replacement body. Movement safety and enabled convergence
+  can use the new PMC or own Scav without restarting the bot runtime.
+- Questing Bots 1.2.0 removes the retiring body's Lightkeeper-island membership
+  before its successor registers. This prevents stale profile-ID aliasing and
+  null allies; native location checks decide the successor's membership.
+- ISB SOF Notifier 2.0.4 reopens local presentation after a committed respawn,
+  preserving settings, counters and announcement history. This targets the
+  notifier plugin, not ISB's bot spawning or progression rules.
+- These are optional standalone body fixes. ArenaMode's existing mod exclusions
+  remain unchanged. [Implementation and validation](compatibility/AI-BODY-REPLACEMENT-20261113.md)
 
 - DERP 1.1.2 follows the replacement player instead of its retained outgoing
   body. Retired optic callbacks cannot reset the successor camera, and empty

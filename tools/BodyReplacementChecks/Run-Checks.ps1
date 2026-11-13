@@ -35,7 +35,7 @@ Invoke-DotnetChecked -Arguments @('build', $project, '--no-restore', '--disable-
 $baselineDll = Join-Path $PSScriptRoot 'bin/Release/net10.0/BodyReplacementChecks.dll'
 Invoke-DotnetChecked -Arguments @($baselineDll) -LogName 'baseline-checks.log'
 $baselineText = Get-Content -LiteralPath (Join-Path $artifacts 'baseline-checks.log') -Raw
-if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=21 assertions=\d+') { throw 'Baseline success token missing' }
+if ($baselineText -notmatch 'BODY_REPLACEMENT_CHECKS_PASSED cases=23 assertions=\d+') { throw 'Baseline success token missing' }
 
 if ($Mutations) {
     $mutants = @(
@@ -88,6 +88,48 @@ if ($Mutations) {
             Name = 'current-world-leaks'; File = 'BodyReplacementCompatibility.cs'; Case = 'pump-current'
             Before = 'BodyReplacementContext.Reset();'
             After = '// MUTANT: leave current world context alive.'
+        },
+        @{
+            Name = 'isb-admission-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'admission'
+            Before = 'var isbNotifier = IsbNotifierCompat.GetRejectionReason();'
+            After = 'string isbNotifier = null; // MUTANT: skip notifier contract admission.'
+            Expected = 'An earlier rejection must not skip later contract checks'
+        },
+        @{
+            Name = 'orbit-presence-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'prepare-order'
+            Before = '|| Chainloader.PluginInfos.ContainsKey(OrbitCompat.PluginGuid)'
+            After = '// MUTANT: ORBIT alone no longer opens the replacement scope.'
+            Expected = 'Admission/adoption/complete order changed for com.chazut.orbit'
+        },
+        @{
+            Name = 'questing-prepare-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'prepare-order'
+            Before = 'QuestingBotsCompat.Prepare(game, oldBody);'
+            After = '// MUTANT: omit the Questing preparation boundary.'
+            Expected = 'Admission/adoption/complete order changed'
+        },
+        @{
+            Name = 'isb-cancel-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'cancel-first'
+            Before = 'IsbNotifierCompat.AbortPreparation();'
+            After = '// MUTANT: leave notifier preparation alive after refusal.'
+            Expected = 'Cancellation must abort every provisional adapter state'
+        },
+        @{
+            Name = 'orbit-tick-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'pump-current'
+            Before = 'OrbitCompat.Tick();'
+            After = '// MUTANT: omit ORBIT recovery pumping.'
+            Expected = 'Current pump did not tick every adapter'
+        },
+        @{
+            Name = 'questing-retirement-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'pump-old'
+            Before = 'QuestingBotsCompat.RetireWorld(world);'
+            After = '// MUTANT: retain old Questing preparation across world disposal.'
+            Expected = 'questingBots late disposal retired wrong world'
+        },
+        @{
+            Name = 'isb-main-wrong-identity'; File = 'BodyReplacementCompatibility.cs'; Case = 'isb-main-inert'
+            Before = 'Chainloader.PluginInfos.ContainsKey(IsbNotifierCompat.PluginGuid)'
+            After = 'Chainloader.PluginInfos.ContainsKey("com.samc137.isbspecialforces")'
+            Expected = 'Main ISB package alone adopted a notifier replacement scope'
         }
     )
     $index = 0
@@ -114,6 +156,9 @@ if ($Mutations) {
         $combined = $output -join "`n"
         if ($code -ne 1 -or $combined -notmatch "BODY_REPLACEMENT_CHECK_FAILED $([regex]::Escape($mutant.Case)):" -or $combined -match 'BODY_REPLACEMENT_CHECKS_PASSED') {
             throw "Mutation $($mutant.Name) was not rejected by its behavioral assertion (exit $code): $combined"
+        }
+        if ($mutant.ContainsKey('Expected') -and !$combined.Contains($mutant.Expected)) {
+            throw "Mutation $($mutant.Name) failed for a different reason: $combined"
         }
         Write-Host "MUTATION_KILLED $($mutant.Name) by $($mutant.Case)"
     }

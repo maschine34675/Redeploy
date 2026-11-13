@@ -6,8 +6,9 @@ This offline console harness compiles the actual `BodyReplacementContext.cs`,
 reimplement their ownership or lifecycle logic. Lightweight game, Unity,
 Chainloader, public lifecycle-event, and adapter stand-ins expose the external
 boundaries. Adapter-specific tests and native checks establish their individual
-behavior; this harness checks the coordinator, including Radar/Crosshair and
-ImpactCue/Enemy Markers admission, cancellation and exact-world retirement.
+behavior; this harness checks the coordinator, including ORBIT, Questing Bots,
+ISB SOF Notifier, DERP and Player Encumbrance Bar admission, cancellation and
+exact-world retirement. It does not imitate their private-state repair logic.
 
 Run from the repository root with PowerShell 7 and .NET 10:
 
@@ -21,12 +22,16 @@ builds then use `--no-restore --disable-build-servers -p:UseSharedCompilation=fa
 Outputs stay below this tool's `bin`, `obj`, and `artifacts` folders. The sibling
 ArenaMode checkout is required for the production scope file.
 
-The 20 scenarios cover absent optional mods, admission of every adapter family,
+The 23 scenarios cover absent optional mods, admission of every adapter family,
 exact game/world/profile/body ownership (including same-ID impostors and the own-Scav replacement profile), preparation
 order, cancellation before any success and after a successful replacement,
 post-construction contract faults, stale candidates, cached UI reads, current and
 late old-world pumps, missed-end and normal raid cleanup, ordinary second raids,
 explicit Arena medical scope, registration errors/disposal, and sticky tick faults.
+Each optional GUID alone must create one shared pump, in the precise admission,
+preparation and completion order. The main ISB package alone must stay inert:
+the notifier has its own GUID. DERP recovery failures must still release the
+shared context; Encumbrance's completion and cleanup boundaries are counted too.
 Separate in-memory plugin assemblies cover old Arena plus a matching optional
 mod being refused before every Core adapter, old Arena without a matching mod
 remaining unchanged, rebuilt Arena admission, and retry after an unloaded Arena
@@ -34,16 +39,19 @@ instance becomes available. The fixture does not bypass the real assembly check.
 The Unity stand-in models destroyed-object equality so managed tombstones and
 world disposal are checked even when Unity would compare the object to null.
 
-`-Mutations` additionally compiles ten deliberately damaged copies into unique
+`-Mutations` additionally compiles seventeen deliberately damaged copies into unique
 configurations. Each must build successfully and then fail the targeted behavior
 assertion: profile-object identity, the expected replacement profile, provisional lease removal, committed lease
 preservation, no-mod inactivity, legacy Arena double hooks, ordinary-bot exclusion, null-scope quarantine,
-late-world disposal, and current-world cleanup. A compile error or missing success token never counts as
+late-world disposal, current-world cleanup, and omitted admission/presence/
+preparation/cancellation/tick/retirement hooks across the three new adapters.
+An incorrect ISB main-package identity is a separate negative control. The seven
+new controls must fail their specifically named assertion. A compile error or missing success token never counts as
 a killed mutant. The script hashes all three production sources before and after
 the run and retains bounded test/build logs plus hashes in `artifacts/<run-id>`.
 
 Success tokens are `BODY_REPLACEMENT_CHECKS_PASSED`,
-`BODY_REPLACEMENT_MUTATIONS_PASSED killed=10`, and the final
+`BODY_REPLACEMENT_MUTATIONS_PASSED killed=17`, and the final
 `BODY_REPLACEMENT_COMPOSITION_VERIFIED`. Individual cases can be selected on the
 built executable with `--case <name>`; unknown names fail rather than skip checks.
 

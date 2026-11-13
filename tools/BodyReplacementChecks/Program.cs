@@ -18,6 +18,7 @@ internal static class Program
     private static readonly (string Name, Action Check)[] Cases =
     [
         ("no-mod", NoMods),
+        ("isb-main-inert", IsbMainInert),
         ("legacy-arena-conflict", LegacyArenaConflict),
         ("legacy-arena-inert", LegacyArenaInert),
         ("rebuilt-arena", RebuiltArena),
@@ -30,6 +31,7 @@ internal static class Program
         ("profile-replacement", ProfileReplacement),
         ("created-fault", CreatedFault),
         ("amands-sense", AmandsSense),
+        ("end-attempt", EndAttempt),
         ("stale-candidate", StaleCandidate),
         ("cached-ui", CachedUi),
         ("pump-current", PumpCurrent),
@@ -189,6 +191,19 @@ internal static class Program
         }
     }
 
+    private static void IsbMainInert()
+    {
+        // The main package is a separate plugin. Its presence alone must not activate
+        // the optional adapter for the independently registered SOF notifier.
+        Install("com.samc137.isbspecialforces");
+        var raid = NewRaid();
+        BodyReplacementCompatibility.Prepare(raid.Game, raid.Body);
+        Check(Probes.All.All(p => p.Checks == 1 && p.Preparations == 0), "Main ISB package alone adopted a notifier replacement scope");
+        Check(!BodyReplacementContext.IsCreating && !BodyReplacementContext.OwnsBody(raid.Body)
+            && BodyReplacementContext.CurrentWorld == null && GameObject.Adds == 0,
+            "Main ISB package alone changed no-mod ownership/pump behavior");
+    }
+
     private static void LegacyArenaInert()
     {
         InstallArena(LegacyFamilies.Select(f => f.OldType).ToArray());
@@ -307,13 +322,19 @@ internal static class Program
 
     private static void PrepareOrder()
     {
-        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid, MagazineCheckContract.PluginGuid, SimpleCrosshairContract.PluginGuid, RadarContract.PluginGuid, ImpactCueContract.PluginGuid, EnemyMarkersContract.PluginGuid, QuickCancelCompat.PluginGuid, PipDisablerContract.Guid, AmandsGraphicsCompat.PluginGuid, AiLimitContract.PluginGuid, HealingAutoCancelCompat.PluginGuid, QuestTrackerContract.PluginGuid, AudioIndicatorsContract.PluginGuid, HollywoodFxContract.PluginGuid, HandsAreNotBusyContract.PluginGuid, RaidReviewContract.PluginGuid, PlateCompat.PluginGuid, LootInVicinityCompat.PluginGuid, SkillsExtendedCompat.PluginGuid, ClimbableLaddersCompat.PluginGuid })
+        // Independent expectation of coordinator order. This does not read the
+        // production source or derive expected callbacks from the observed trace.
+        string[] families = ["recoil", "ammo", "healing", "fov", "manimal", "magazineCheck", "crosshair", "radar", "impactCue", "enemyMarkers", "quickCancel", "pip", "amands", "derp", "encumbrance", "aiLimit", "orbit", "questingBots", "isbNotifier", "healingAutoCancel", "questTracker", "audioIndicators", "hollywoodFx", "handsAreNotBusy", "raidReview", "plate", "vicinity", "skills", "ladders"];
+        string[] complete = ["recoil", "fov", "magazineCheck", "crosshair", "skills", "vicinity", "encumbrance", "ladders"];
+        var expected = families.Select(name => name + ".check").Concat(families.Select(name => name + ".prepare"))
+            .Concat(complete.Select(name => name + ".complete")).ToArray();
+        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid, MagazineCheckContract.PluginGuid, SimpleCrosshairContract.PluginGuid, RadarContract.PluginGuid, ImpactCueContract.PluginGuid, EnemyMarkersContract.PluginGuid, QuickCancelCompat.PluginGuid, PipDisablerContract.Guid, AmandsGraphicsCompat.PluginGuid, DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid, AiLimitContract.PluginGuid, OrbitCompat.PluginGuid, QuestingBotsCompat.PluginGuid, IsbNotifierCompat.PluginGuid, HealingAutoCancelCompat.PluginGuid, QuestTrackerContract.PluginGuid, AudioIndicatorsContract.PluginGuid, HollywoodFxContract.PluginGuid, HandsAreNotBusyContract.PluginGuid, RaidReviewContract.PluginGuid, PlateCompat.PluginGuid, LootInVicinityCompat.PluginGuid, SkillsExtendedCompat.PluginGuid, ClimbableLaddersCompat.PluginGuid })
         {
             ResetFixture();
             Install(guid);
             var raid = NewRaid();
             var replacement = Replace(raid);
-            Check(string.Join(",", Probes.Trace.Take(55)) == "recoil.check,ammo.check,healing.check,fov.check,manimal.check,magazineCheck.check,crosshair.check,radar.check,impactCue.check,enemyMarkers.check,quickCancel.check,pip.check,amands.check,aiLimit.check,healingAutoCancel.check,questTracker.check,audioIndicators.check,hollywoodFx.check,handsAreNotBusy.check,raidReview.check,plate.check,vicinity.check,skills.check,ladders.check,recoil.prepare,ammo.prepare,healing.prepare,fov.prepare,manimal.prepare,magazineCheck.prepare,crosshair.prepare,radar.prepare,impactCue.prepare,enemyMarkers.prepare,quickCancel.prepare,pip.prepare,amands.prepare,aiLimit.prepare,healingAutoCancel.prepare,questTracker.prepare,audioIndicators.prepare,hollywoodFx.prepare,handsAreNotBusy.prepare,raidReview.prepare,plate.prepare,vicinity.prepare,skills.prepare,ladders.prepare,recoil.complete,fov.complete,magazineCheck.complete,crosshair.complete,skills.complete,vicinity.complete,ladders.complete", "Admission/adoption/complete order changed");
+            Check(Probes.Trace.Take(expected.Length).SequenceEqual(expected), "Admission/adoption/complete order changed for " + guid);
             Check(GameObject.Adds == 1 && raid.World.gameObject.GetComponent<BodyReplacementCompatPump>() != null, "Each optional family must get one world pump");
             Same(raid.World, raid.World.gameObject.GetComponent<BodyReplacementCompatPump>().World, "Pump must carry its exact world");
             Replace(raid, replacement);
@@ -336,7 +357,8 @@ internal static class Program
             Check(!BodyReplacementContext.OwnsBody(raid.Body), "Cancellation leaked first provisional body lease");
             Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null, "Cancellation left an active attempt");
             Same(null, BodyReplacementContext.CurrentWorld, "Cancellation leaked first provisional world");
-            Check(Probes.Recoil.Aborts == 1 && Probes.Ammo.Aborts == 1 && Probes.Fov.Aborts == 1 && Probes.Manimal.Aborts == 1 && Probes.MagazineCheck.Aborts == 1 && Probes.Crosshair.Aborts == 1 && Probes.Radar.Aborts == 1 && Probes.ImpactCue.Aborts == 1 && Probes.EnemyMarkers.Aborts == 1 && Probes.Pip.Aborts == 1 && Probes.Amands.Aborts == 1 && Probes.AiLimit.Aborts == 1 && Probes.HealingAutoCancel.Aborts == 1 && Probes.QuestTracker.Aborts == 1 && Probes.AudioIndicators.Aborts == 1 && Probes.HollywoodFx.Aborts == 1 && Probes.HandsAreNotBusy.Aborts == 1 && Probes.RaidReview.Aborts == 1 && Probes.Plate.Aborts == 1 && Probes.Vicinity.Aborts == 1 && Probes.Skills.Aborts == 1 && Probes.Ladders.Aborts == 0 && Probes.QuickCancel.Aborts == 0, "Cancellation must abort every provisional adapter state");
+            Check(Probes.Aborting.All(p => p.Aborts == 1) && Probes.All.Except(Probes.Aborting).All(p => p.Aborts == 0),
+                "Cancellation must abort every provisional adapter state");
             BodyReplacementCompatibility.ValidateCreated(null);
         }
     }
@@ -461,6 +483,23 @@ internal static class Program
         }
     }
 
+    private static void EndAttempt()
+    {
+        foreach (var guid in new[] { DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid })
+        {
+            ResetFixture();
+            Install(guid);
+            var raid = NewRaid();
+            BodyReplacementCompatibility.Prepare(raid.Game, raid.Body);
+            Probes.Derp.ThrowEnd = true;
+            BodyReplacementCompatibility.EndAttempt();
+            Check(Probes.Encumbrance.Ends == 1 && Probes.Derp.Ends == 1, "Attempt completion skipped an adapter cleanup boundary");
+            Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null,
+                "DERP recovery failure retained the shared preparation context");
+            Check(CoreLog.Warnings.Count(w => w.Contains("derp end fault")) == 1, "DERP recovery failure was not diagnosed once");
+        }
+    }
+
     private static void StaleCandidate()
     {
         Install();
@@ -499,7 +538,7 @@ internal static class Program
         Same(null, BodyReplacementContext.CurrentGame, "Destroyed current world retained game");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], raid.World), "Disposal did not retire exact recoil world");
         Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], raid.World), "Disposal did not retire exact magazine-check world");
-        foreach (var hud in new[] { Probes.Crosshair, Probes.Radar, Probes.ImpactCue, Probes.EnemyMarkers, Probes.QuickCancel, Probes.Pip, Probes.Amands, Probes.AiLimit, Probes.HealingAutoCancel, Probes.QuestTracker, Probes.AudioIndicators, Probes.HollywoodFx, Probes.HandsAreNotBusy, Probes.RaidReview, Probes.Plate, Probes.Vicinity, Probes.Skills })
+        foreach (var hud in Probes.Retiring)
             Check(hud.Retired.Count == 1 && ReferenceEquals(hud.Retired[0], raid.World), hud.Name + " did not retire exact current world");
         Check(Probes.Ticking.All(p => p.Ticks == 2), "Disposal must flush controller cleanup immediately");
         Check(BodyReplacementContext.OwnsBody(replacement), "World retirement removed delayed-body fence");
@@ -521,7 +560,7 @@ internal static class Program
         Check(BodyReplacementContext.IsCreating, "Late old pump ended new attempt");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], old.World), "Late disposal retired wrong recoil world");
         Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], old.World), "Late disposal retired wrong magazine-check world");
-        foreach (var hud in new[] { Probes.Crosshair, Probes.Radar, Probes.ImpactCue, Probes.EnemyMarkers, Probes.QuickCancel, Probes.Pip, Probes.Amands, Probes.AiLimit, Probes.HealingAutoCancel, Probes.QuestTracker, Probes.AudioIndicators, Probes.HollywoodFx, Probes.HandsAreNotBusy, Probes.RaidReview, Probes.Plate, Probes.Vicinity, Probes.Skills })
+        foreach (var hud in Probes.Retiring)
             Check(hud.Retired.Count == 1 && ReferenceEquals(hud.Retired[0], old.World), hud.Name + " late disposal retired wrong world");
         Check(Probes.Ticking.All(p => p.Ticks == 0), "Late disposal flushed new controller state");
         var next = Candidate(current);
@@ -544,7 +583,7 @@ internal static class Program
         Same(null, BodyReplacementContext.CurrentWorld, "Missed-end fallback retained previous world");
         Check(Probes.Recoil.Retired.Count == 1 && ReferenceEquals(Probes.Recoil.Retired[0], old.World), "Missed-end fallback retired wrong world");
         Check(Probes.MagazineCheck.Retired.Count == 1 && ReferenceEquals(Probes.MagazineCheck.Retired[0], old.World), "Missed-end fallback retired wrong magazine-check world");
-        foreach (var hud in new[] { Probes.Crosshair, Probes.Radar, Probes.ImpactCue, Probes.EnemyMarkers, Probes.QuickCancel, Probes.Pip, Probes.Amands, Probes.AiLimit, Probes.HealingAutoCancel, Probes.QuestTracker, Probes.AudioIndicators, Probes.HollywoodFx, Probes.HandsAreNotBusy, Probes.RaidReview, Probes.Plate, Probes.Vicinity, Probes.Skills })
+        foreach (var hud in Probes.Retiring)
             Check(hud.Retired.Count == 1 && ReferenceEquals(hud.Retired[0], old.World), hud.Name + " missed-end retired wrong world");
         Check(Probes.Ticking.All(p => p.Ticks == 1), "Missed-end fallback skipped adapter cleanup");
         Check(!BodyReplacementContext.OwnsBody(ordinary.Body), "Ordinary second raid inherited body ownership");

@@ -128,8 +128,8 @@ namespace Redeploy.Core.Compat
     {
         internal readonly string Name = name;
         internal string Rejection;
-        internal bool ThrowPrepare, ThrowTick;
-        internal int Checks, Preparations, Aborts, Completions, Ticks;
+        internal bool ThrowPrepare, ThrowTick, ThrowEnd;
+        internal int Checks, Preparations, Aborts, Completions, Ticks, Ends;
         internal readonly List<EFT.GameWorld> Retired = new();
         internal string GetRejectionReason() { Checks++; Probes.Trace.Add(Name + ".check"); return Rejection; }
         internal void Prepare(EFT.LocalGame game, EFT.LocalPlayer body)
@@ -144,11 +144,12 @@ namespace Redeploy.Core.Compat
         internal void Abort() { Aborts++; Probes.Trace.Add(Name + ".abort"); }
         internal void Complete() { Completions++; Probes.Trace.Add(Name + ".complete"); }
         internal void Tick() { Ticks++; if (ThrowTick) throw new InvalidOperationException(Name + " tick fault"); }
+        internal void End() { Ends++; if (ThrowEnd) throw new InvalidOperationException(Name + " end fault"); }
         internal void Reset()
         {
             Rejection = null;
-            ThrowPrepare = ThrowTick = false;
-            Checks = Preparations = Aborts = Completions = Ticks = 0;
+            ThrowPrepare = ThrowTick = ThrowEnd = false;
+            Checks = Preparations = Aborts = Completions = Ticks = Ends = 0;
             Retired.Clear();
         }
     }
@@ -156,11 +157,15 @@ namespace Redeploy.Core.Compat
     {
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers");
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
+        internal static readonly AdapterProbe Derp = new("derp"), Encumbrance = new("encumbrance");
+        internal static readonly AdapterProbe Orbit = new("orbit"), QuestingBots = new("questingBots"), IsbNotifier = new("isbNotifier");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
         internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
         internal static readonly AdapterProbe Plate = new("plate"), Vicinity = new("vicinity"), Skills = new("skills"), Ladders = new("ladders");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, AiLimit, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
-        internal static readonly AdapterProbe[] Ticking = All.Where(p => !ReferenceEquals(p, QuickCancel) && !ReferenceEquals(p, Ladders)).ToArray();
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, QuickCancel, Pip, Amands, Derp, Encumbrance, AiLimit, Orbit, QuestingBots, IsbNotifier, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
+        internal static readonly AdapterProbe[] Ticking = All.Where(p => !new[] { QuickCancel, Ladders, Derp, Encumbrance }.Contains(p)).ToArray();
+        internal static readonly AdapterProbe[] Aborting = All.Where(p => !new[] { Healing, QuickCancel, Ladders }.Contains(p)).ToArray();
+        internal static readonly AdapterProbe[] Retiring = All.Where(p => !new[] { Ammo, Healing, Ladders }.Contains(p)).ToArray();
         internal static readonly List<string> Trace = new();
         internal static void Reset() { foreach (var probe in All) probe.Reset(); Trace.Clear(); }
     }
@@ -325,6 +330,52 @@ namespace Redeploy.Core.Compat
         internal static void AbortPreparation() => Probes.Amands.Abort();
         internal static void Tick() => Probes.Amands.Tick();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.Amands.Retired.Add(world);
+    }
+    internal static class DynamicExternalResolutionContract { internal const string Guid = "com.Shibatsu.DynamicExternalResolution"; }
+    internal static class DynamicExternalResolutionCompat
+    {
+        internal static string GetRejectionReason() => Probes.Derp.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Derp.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Derp.Abort();
+        internal static void EndAttempt() => Probes.Derp.End();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Derp.Retired.Add(world);
+    }
+    internal static class PlayerEncumbranceBarCompat
+    {
+        internal const string PluginGuid = "com.mpstark.PlayerEncumbranceBar";
+        internal static string GetRejectionReason() => Probes.Encumbrance.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Encumbrance.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Encumbrance.Abort();
+        internal static void CompletePreparation() => Probes.Encumbrance.Complete();
+        internal static void EndAttempt() => Probes.Encumbrance.End();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Encumbrance.Retired.Add(world);
+    }
+    internal static class OrbitCompat
+    {
+        internal const string PluginGuid = "com.chazut.orbit";
+        internal static string GetRejectionReason() => Probes.Orbit.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Orbit.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Orbit.Abort();
+        internal static void Tick() => Probes.Orbit.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Orbit.Retired.Add(world);
+    }
+    internal static class QuestingBotsCompat
+    {
+        internal const string PluginGuid = "com.danw.questingbots";
+        internal static string GetRejectionReason() => Probes.QuestingBots.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.QuestingBots.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.QuestingBots.Abort();
+        internal static void Tick() => Probes.QuestingBots.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.QuestingBots.Retired.Add(world);
+    }
+    internal static class IsbNotifierCompat
+    {
+        internal const string PluginGuid = "com.samc137.ISBinfo";
+        internal static string GetRejectionReason() => Probes.IsbNotifier.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.IsbNotifier.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.IsbNotifier.Abort();
+        internal static void Tick() => Probes.IsbNotifier.Tick();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.IsbNotifier.Retired.Add(world);
     }
     internal static class EnemyMarkersCompat
     {

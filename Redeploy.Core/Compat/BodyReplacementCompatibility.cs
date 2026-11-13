@@ -82,6 +82,9 @@ public static class BodyReplacementCompatibility
         var encumbrance = PlayerEncumbranceBarCompat.GetRejectionReason();
         var amandsSense = AmandsSenseCompat.GetRejectionReason();
         var aiLimit = AiLimitCompat.GetRejectionReason();
+        var orbit = OrbitCompat.GetRejectionReason();
+        var questingBots = QuestingBotsCompat.GetRejectionReason();
+        var isbNotifier = IsbNotifierCompat.GetRejectionReason();
         var healingAutoCancel = HealingAutoCancelCompat.GetRejectionReason();
         var questTracker = QuestTrackerCompat.GetRejectionReason();
         var audioIndicators = AudioIndicatorsCompat.GetRejectionReason();
@@ -96,7 +99,7 @@ public static class BodyReplacementCompatibility
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
             ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? derp ?? encumbrance
-            ?? amandsSense ?? aiLimit ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
+            ?? amandsSense ?? aiLimit ?? orbit ?? questingBots ?? isbNotifier ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
             ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
     }
 
@@ -150,6 +153,9 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(PlayerEncumbranceBarCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AmandsSenseCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AiLimitContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(OrbitCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(QuestingBotsCompat.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(IsbNotifierCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(HealingAutoCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(QuestTrackerContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(AudioIndicatorsContract.PluginGuid)
@@ -184,6 +190,9 @@ public static class BodyReplacementCompatibility
         DynamicExternalResolutionCompat.Prepare(game, oldBody);
         PlayerEncumbranceBarCompat.Prepare(game, oldBody);
         AiLimitCompat.Prepare(game, oldBody);
+        OrbitCompat.Prepare(game, oldBody);
+        QuestingBotsCompat.Prepare(game, oldBody);
+        IsbNotifierCompat.Prepare(game, oldBody);
         HealingAutoCancelCompat.Prepare(game, oldBody);
         QuestTrackerCompat.Prepare(game, oldBody);
         AudioIndicatorsCompat.Prepare(game, oldBody);
@@ -248,6 +257,9 @@ public static class BodyReplacementCompatibility
         DynamicExternalResolutionCompat.AbortPreparation();
         PlayerEncumbranceBarCompat.AbortPreparation();
         AiLimitCompat.AbortPreparation();
+        OrbitCompat.AbortPreparation();
+        QuestingBotsCompat.AbortPreparation();
+        IsbNotifierCompat.AbortPreparation();
         HealingAutoCancelCompat.AbortPreparation();
         QuestTrackerCompat.AbortPreparation();
         AudioIndicatorsCompat.AbortPreparation();
@@ -279,6 +291,9 @@ public static class BodyReplacementCompatibility
             PipDisablerCompat.Tick();
             AmandsGraphicsCompat.Tick();
             AiLimitCompat.Tick();
+            OrbitCompat.Tick();
+            QuestingBotsCompat.Tick();
+            IsbNotifierCompat.Tick();
             HealingAutoCancelCompat.Tick();
             QuestTrackerCompat.Tick();
             AudioIndicatorsCompat.Tick();
@@ -327,6 +342,9 @@ public static class BodyReplacementCompatibility
         PlayerEncumbranceBarCompat.RetireWorld(world);
         AmandsSenseCompat.RetireWorld(world);
         AiLimitCompat.RetireWorld(world);
+        OrbitCompat.RetireWorld(world);
+        QuestingBotsCompat.RetireWorld(world);
+        IsbNotifierCompat.RetireWorld(world);
         HealingAutoCancelCompat.RetireWorld(world);
         QuestTrackerCompat.RetireWorld(world);
         AudioIndicatorsCompat.RetireWorld(world);

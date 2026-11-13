@@ -108,6 +108,13 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
+**In development for Core 1.0.24.** ORBIT 3.1.1 keeps the replacement in its shared
+human-player list. Questing Bots 1.2.0 retires the outgoing body's Lightkeeper
+island membership and temporary relationships. ISB SOF Notifier 2.0.4 can resume
+announcements after respawn without resetting raid history. These optional fixes
+do not change ArenaMode's exclusions. See the
+[implementation and test scope](docs/compatibility/AI-BODY-REPLACEMENT-20261113.md).
+
 **In development for Core 1.0.23.** DERP 1.1.2 follows the replacement player's
 optics, and Player Encumbrance Bar 1.3.0 follows the current health, inventory and
 skill event sources. Scoped native checks passed in Arena and in standalone

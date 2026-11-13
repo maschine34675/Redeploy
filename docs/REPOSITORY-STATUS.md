@@ -1,5 +1,14 @@
 # Redeploy repository status
 
+## Core 1.0.24 implementation — 2026-11-13
+
+Optional private-state adapters now cover ORBIT 3.1.1, Questing Bots 1.2.0
+Lightkeeper-island retirement and ISB SOF Notifier 2.0.4. Client/Server remain
+1.1.2; API v1 and Arena exclusions are unchanged. See
+[implementation and validation](compatibility/AI-BODY-REPLACEMENT-20261113.md).
+Native acceptance is pending host coordination; this does not supersede the
+deployed Core 1.0.23 identity below.
+
 ## Arena-denied mod audit — 2026-11-13
 
 [Source and released-DLL review](compatibility/ARENA-DENIED-MODS-20261113.md)
