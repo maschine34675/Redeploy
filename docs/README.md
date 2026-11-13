@@ -49,7 +49,8 @@ How Core carries other mods' per-body state across a replacement, one dated reco
 
 | Document | Scope |
 | --- | --- |
-| [DERP](compatibility/DERP-20261113.md) | Development Core 1.0.23. Private player-cache handoff and retired optic callbacks. Native acceptance pending. |
+| [Arena-denied mods in standalone Redeploy](compatibility/ARENA-DENIED-MODS-20261113.md) | Source/release audit: ORBIT human list, Questing Lightkeeper state, ISB notifier, Aishi timing candidate and Adaptive culling. Recommendations, not implemented adapters or native acceptance. |
+| [DERP](compatibility/DERP-20261113.md) | Core 1.0.23. Private player-cache handoff and retired optic callbacks; scoped native checks passed. |
 | [Player Encumbrance Bar](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) | Development Core 1.0.23. Physical health and profile event sources, including own-Scav continuation. |
 | [Amand's Sense Updated](compatibility/AMANDS-SENSE-20261108.md) | Development Core 1.0.22. Same-raid markers, recorded corpses and inventory ownership across body replacement. |
 | [Body handoff for blood, loot, skills and ladders](compatibility/BODY-HANDOFF-20261108.md) | Development Core 1.0.21. Supported versions, Skills Extended issue 136, item ownership and test coverage. |

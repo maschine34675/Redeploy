@@ -1,5 +1,15 @@
 # Redeploy repository status
 
+## Arena-denied mod audit — 2026-11-13
+
+[Source and released-DLL review](compatibility/ARENA-DENIED-MODS-20261113.md)
+identifies targeted standalone fixes for ORBIT 3.1.1's copied human list,
+Questing Bots 1.2.0's Lightkeeper-island state and ISB Special Forces 2.0.4's
+notifier latch. Aishi 2.0.7 has a camera continuation to probe; Adaptive Bot
+Culling 1.2.0 has no demonstrated body-cache defect. These are recommendations:
+no new adapter, native compatibility test, deployment or Arena admission change
+was made by this audit. Core remains 1.0.23.
+
 ## Core 1.0.23 deployed to the development installation — 2026-11-13
 
 At the user's request `main` (`f092f98`) was deployed with the normal deploying builds
