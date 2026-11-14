@@ -1,6 +1,6 @@
 # Amand's Sense Updated 3.1.0
 
-Development Core 1.0.22 handles the client plugin `xyz.drakia.Sense` in a
+Core 1.0.22 (shipped in Core 1.0.24, Redeploy 1.1.3, on 2026-11-14) handles the client plugin `xyz.drakia.Sense` in a
 Core-owned body replacement. The reviewed release DLL has SHA-256
 `861E750D9056B330CC13ACA50D50CE21CF6A1E4C7A70317F4E421D3A190EE872`.
 

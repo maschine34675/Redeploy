@@ -1,6 +1,6 @@
 # AI-mod body replacement integrations
 
-Core 1.0.24, 13 November 2026. Client/Server remain 1.1.2 and API v1 is unchanged.
+Core 1.0.24, 13 November 2026; shipped in Redeploy 1.1.3 on 2026-11-14. API v1 is unchanged.
 This implements the three demonstrated private-state defects from the
 [Arena-denied mod audit](ARENA-DENIED-MODS-20261113.md), which records the exact
 released DLL hashes and source revisions. No Arena whitelist or exclusion is

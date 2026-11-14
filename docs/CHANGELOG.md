@@ -2,47 +2,85 @@
 
 Notable changes since **v1.0.0**, reconstructed from Git history and published
 release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
-1.1.2 bundles Core 1.0.20; 1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17,
-1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
+1.1.3 bundles Core 1.0.24; 1.1.2 bundled Core 1.0.20, 1.1.1 bundled Core 1.0.18,
+1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
+and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Core 1.0.24
+## [1.1.3] - 2026-11-14
 
-- ORBIT 3.1.1 keeps its original shared human-player list and substitutes the
+Client/Server **1.1.3**, bundled and minimum Core **1.0.24**. The Client and
+Server code is unchanged since 1.1.1; this release carries the new Core and the
+drivers' Core 1.0.24 stamp.
+
+### Optional integrations — Core 1.0.24
+
+- **ORBIT 3.1.1** keeps its original shared human-player list and substitutes the
   exact committed replacement body. Movement safety and enabled convergence
   can use the new PMC or own Scav without restarting the bot runtime.
-- Questing Bots 1.2.0 removes the retiring body's Lightkeeper-island membership
+- **Questing Bots 1.2.0** removes the retiring body's Lightkeeper-island membership
   before its successor registers. This prevents stale profile-ID aliasing and
   null allies; native location checks decide the successor's membership.
-- ISB SOF Notifier 2.0.4 reopens local presentation after a committed respawn,
+- **ISB SOF Notifier 2.0.4** reopens local presentation after a committed respawn,
   preserving settings, counters and announcement history. This targets the
   notifier plugin, not ISB's bot spawning or progression rules.
 - These are optional standalone body fixes. ArenaMode's existing mod exclusions
   remain unchanged. [Implementation and validation](compatibility/AI-BODY-REPLACEMENT-20261113.md)
+- Evidence: scoped standalone runs on the GPU test host SPT-GPU-2 on 13 November
+  2026 covered a PMC respawn and the own-Scav continuation for each of the three
+  mods (ORBIT: two PMC respawns, then the Scav). A forced replacement failure and
+  its recovery are covered offline only, and Questing Bots' case of a bot
+  arriving after the switch to Scav was not exercised natively.
+- Known limit: Aishi's anomaly-reveal feature reports "The active profile
+  changed. Try again." after an own-Scav continuation, because its server routes
+  return the PMC profile while its client reads the current player's profile.
+  This is not a stale-body cache; Core does not transfer PMC reveal permission
+  to the Scav.
 
-- DERP 1.1.2 follows the replacement player instead of its retained outgoing
+### Optional integrations — Core 1.0.23
+
+- **DERP 1.1.2** follows the replacement player instead of its retained outgoing
   body. Retired optic callbacks cannot reset the successor camera, and empty
   replacement hands do not reach its unsafe scope access.
   [Compatibility record](compatibility/DERP-20261113.md)
-- Player Encumbrance Bar 1.3.0 follows the current body's health, inventory and
+- **Player Encumbrance Bar 1.3.0** follows the current body's health, inventory and
   skills after a replacement, including an own-Scav continuation. Old UI event
   subscriptions are detached before the private health cache changes.
   [Compatibility record](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md)
+- Evidence: scoped runs on SPT-GPU-1 on 13 November 2026, in an Arena match
+  with an actual death and in standalone Redeploy with ArenaMode absent,
+  including the PMC-to-own-Scav continuation. Not shown in the game: DERP's
+  friendly-marker alignment, a renderer-menu reset and retired-optic callback
+  races, and the encumbrance bar's cancellation, hidden-panel and late-callback
+  cases; those are covered by the offline harnesses only.
+- Core 1.0.23 was never released on its own.
 
-- Amand's Sense Updated 3.1.0 can keep an active loot marker through a body
+### Optional integrations — Core 1.0.22
+
+- **Amand's Sense Updated 3.1.0** can keep an active loot marker through a body
   change. The new player keeps using the same raid's markers and corpse history.
   If creation fails before the player handoff, Sense returns to the old player
   and inventory. [Compatibility record](compatibility/AMANDS-SENSE-20261108.md)
+- Evidence: one run on SPT-GPU-1 in a Factory Arena Deathmatch (Arena driver)
+  with two player deaths. Standalone Redeploy and continuing as Scav were not
+  exercised in the game.
+- Core 1.0.22 was never released on its own.
 
-- Keep P.L.A.T.E. 1.6.0 blood, injury and movement state with the physical life
+### Optional integrations — Core 1.0.21
+
+- **P.L.A.T.E. 1.6.0:** keep blood, injury and movement state with the physical life
   that incurred it, including when a PMC respawn reuses the same profile.
-- Rebind Loot In Vicinity 3.0.6 to the current inventory. Safely close a display
+- **Loot In Vicinity 3.0.6:** rebind to the current inventory. Safely close a display
   of ground loot. A real item staged in the virtual stash or an unfinished take
   can prevent replacement before teardown to protect item ownership.
-- Rebind the weapon mastery and medical XP handlers in Skills Extended 3.1.4.
+- **Skills Extended 3.1.4:** rebind the weapon mastery and medical XP handlers.
   Hits after a kit change or respawn can complete with empty or replaced hands.
   An active hacking or lockpicking attempt on the outgoing player is cancelled.
-- Complete a Climbable Ladders 1.0.4 dismount on the outgoing character before
+- **Climbable Ladders 1.0.4:** complete a dismount on the outgoing character before
   starting its replacement. [Compatibility details](compatibility/BODY-HANDOFF-20261108.md)
+- Evidence: validated offline against the published mod builds and with focused
+  runners; the compatibility record lists in-game verification of these four
+  combinations as pending.
+- Core 1.0.21 was never released on its own.
 
 ### Public API and interop
 
@@ -58,6 +96,15 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
   [example plugin](../interop/examples/RespawnConsumerExample.cs). The tests compile the
   example and every complete snippet of the recipes and the soft-dependency guide together
   with the interop file against the game's assemblies.
+
+### Documentation
+
+- The English consumer documentation listed above (API reference, soft
+  dependency, rules, recipes and the example plugin).
+- `docs/` was reorganised so its root holds only the eight current documents.
+  Release notes moved to `docs/releases/`, per-mod compatibility records to
+  `docs/compatibility/`, and older material to further subfolders; the index in
+  `docs/README.md` lists them.
 
 ## [1.1.2] - 2026-11-07
 
@@ -343,6 +390,7 @@ already belong to this baseline. See its
 [README](https://github.com/maschine34675/Redeploy/blob/v1.0.0/README.md)
 for the features and limitations at release.
 
+[1.1.3]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.3
 [1.1.2]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.2
 [1.1.1]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.1
 [1.1.0]: https://github.com/maschine34675/Redeploy/releases/tag/v1.1.0

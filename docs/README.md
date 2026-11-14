@@ -29,6 +29,7 @@ How another mod follows the local player through a respawn. English; everything 
 
 | Document | Scope |
 | --- | --- |
+| [Redeploy 1.1.3](releases/RELEASE-1.1.3.md) | Core 1.0.24: ten optional integrations (P.L.A.T.E., Loot In Vicinity, Skills Extended, Climbable Ladders, Amand's Sense Updated, DERP, Player Encumbrance Bar, ORBIT, Questing Bots, ISB SOF Notifier), interop revision 1 and update instructions. |
 | [Redeploy 1.1.2](releases/RELEASE-1.1.2.md) | Core 1.0.20: Raid Review, HollywoodFX and Hands Are Not Busy integrations, the absent-adapter performance fix of Core 1.0.19, update instructions. |
 | [Redeploy 1.1.1](releases/RELEASE-1.1.1.md) | Hotfix: Recoil Rework / FOV Fix with Continue as Scav, transit arrivals, refused Scav preparation, Core 1.0.18. |
 | [Redeploy 1.1.0](releases/RELEASE-1.1.0.md) | Own-Scav continuation and recovery, optional integrations, Core 1.0.17 and update instructions. |
@@ -49,12 +50,12 @@ How Core carries other mods' per-body state across a replacement, one dated reco
 
 | Document | Scope |
 | --- | --- |
-| [AI-mod body replacements](compatibility/AI-BODY-REPLACEMENT-20261113.md) | Core 1.0.24: ORBIT, Questing Bots island state and ISB notifier; source, offline and native evidence boundaries. |
+| [AI-mod body replacements](compatibility/AI-BODY-REPLACEMENT-20261113.md) | Core 1.0.24 (released with Redeploy 1.1.3): ORBIT, Questing Bots island state and ISB notifier; source, offline and native evidence boundaries. |
 | [Arena-denied mods in standalone Redeploy](compatibility/ARENA-DENIED-MODS-20261113.md) | Source/release audit: ORBIT human list, Questing Lightkeeper state, ISB notifier, Aishi timing candidate and Adaptive culling. Recommendations, not implemented adapters or native acceptance. |
-| [DERP](compatibility/DERP-20261113.md) | Core 1.0.23. Private player-cache handoff and retired optic callbacks; scoped native checks passed. |
-| [Player Encumbrance Bar](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) | Development Core 1.0.23. Physical health and profile event sources, including own-Scav continuation. |
-| [Amand's Sense Updated](compatibility/AMANDS-SENSE-20261108.md) | Development Core 1.0.22. Same-raid markers, recorded corpses and inventory ownership across body replacement. |
-| [Body handoff for blood, loot, skills and ladders](compatibility/BODY-HANDOFF-20261108.md) | Development Core 1.0.21. Supported versions, Skills Extended issue 136, item ownership and test coverage. |
+| [DERP](compatibility/DERP-20261113.md) | Core 1.0.23 (released with Redeploy 1.1.3). Private player-cache handoff and retired optic callbacks; scoped native checks passed. |
+| [Player Encumbrance Bar](compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) | Core 1.0.23 (released with Redeploy 1.1.3). Physical health and profile event sources, including own-Scav continuation. |
+| [Amand's Sense Updated](compatibility/AMANDS-SENSE-20261108.md) | Core 1.0.22 (released with Redeploy 1.1.3). Same-raid markers, recorded corpses and inventory ownership across body replacement. |
+| [Body handoff for blood, loot, skills and ladders](compatibility/BODY-HANDOFF-20261108.md) | Core 1.0.21 (released with Redeploy 1.1.3). Supported versions, Skills Extended issue 136, item ownership and test coverage. |
 | [Recording and popular-mod compatibility](compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md) | Core 1.0.20 (released with Redeploy 1.1.2): Raid Review, HollywoodFX and Hands Are Not Busy; popular-mod audit and performance constraints. |
 | [Standalone compatibility](compatibility/STANDALONE-COMPAT-20261029.md) | Core 1.0.17: AI Limit, Healing Autocancel, Quest Tracker and Audio Accessibility Indicators. |
 | [Quick Cancel, PiP and Amand's Graphics](compatibility/REMAINING-BODY-COMPAT-20261026.md) | Core 1.0.15: body/camera integrations, standalone evidence and the Labyrinth limit. |

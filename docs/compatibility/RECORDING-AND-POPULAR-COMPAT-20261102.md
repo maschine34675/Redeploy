@@ -1,7 +1,7 @@
 # Recording and popular-mod body compatibility — 2026-11-02
 
-Development work for **Redeploy.Core 1.0.20**, not a published release.
-Client/Server remain 1.1.1; the public Core API remains version 1.
+Work for **Redeploy.Core 1.0.20**, which shipped in Redeploy 1.1.2 on 2026-11-07.
+At the time of writing Client/Server were 1.1.1; the public Core API remains version 1.
 The changes belong to shared Core, so they apply to its standalone Redeploy and
 ArenaMode drivers. They do not add or whitelist these mods in Arena's isolated
 session policy.

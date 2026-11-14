@@ -4,8 +4,8 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-**Redeploy 1.1.2** for SPT 4.1.x bundles **Core 1.0.20**. See the
-[release notes](docs/releases/RELEASE-1.1.2.md) and [changelog](docs/CHANGELOG.md).
+**Redeploy 1.1.3** for SPT 4.1.x bundles **Core 1.0.24**. See the
+[release notes](docs/releases/RELEASE-1.1.3.md) and [changelog](docs/CHANGELOG.md).
 
 ## Features
 
@@ -31,9 +31,9 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; Redeploy.Core is included.
-- **Version lines:** Redeploy 1.1.2 contains Client/Server `1.1.2` and Core `1.0.20`.
+- **Version lines:** Redeploy 1.1.3 contains Client/Server `1.1.3` and Core `1.0.24`.
   Core has its own version and is a library, not a separate BepInEx plugin.
-  The client requires Core `1.0.20` or newer with a compatible API.
+  The client requires Core `1.0.24` or newer with a compatible API.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
@@ -59,6 +59,16 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
   - **Raid Review 1.10.0+** (Core 1.0.20) — records each physical life separately, PMC respawns and the own-Scav continuation included, while the recording owner, session and profile identities stay the real ones; earlier deaths and old-body combat events keep their original lives. Validated offline against the published build, not in the game.
   - **HollywoodFX 3.0.0+** (Core 1.0.20) — refreshes its impact and optic player cache after a confirmed replacement without reinitializing the world or changing its settings. Validated offline, not in the game.
   - **Hands Are Not Busy 1.7.1+** (Core 1.0.20) — its hands reset is fenced off Core's prepared, uncommitted and retired bodies; the replacement body keeps its normal component. Validated offline, not in the game.
+  - **P.L.A.T.E. 1.6.0+** (Core 1.0.21) — starts a new blood record for a replacement life. Validated offline, not in the game.
+  - **Loot In Vicinity 3.0.6+** (Core 1.0.21) — its panel follows the new inventory controller instead of attaching to a retired inventory. A staged real item or an unfinished take refuses the replacement; complete or cancel the transfer first. Validated offline, not in the game.
+  - **Skills Extended 3.1.4+** (Core 1.0.21) — keeps weapon and medical XP on the current body and releases a hacking or lockpicking attempt on the outgoing body. Validated offline, not in the game.
+  - **Climbable Ladders 1.0.4+** (Core 1.0.21) — finishes the old climb before the replacement takes control. Validated offline, not in the game.
+  - **Amand's Sense Updated 3.1.0+** (Core 1.0.22) — keeps its active markers and the raid's corpse history across a respawn, with the new inventory bound to the current player. Run in the game in an Arena Deathmatch only.
+  - **Dynamic External Resolution Patch (DERP) 1.1.2+** (Core 1.0.23) — follows the replacement player's optics and retires the old body's optic callbacks. Scoped native checks passed.
+  - **Player Encumbrance Bar 1.3.0+** (Core 1.0.23) — follows the current health, inventory and skill event sources, including after a PMC-to-own-Scav continuation. Scoped native checks passed.
+  - **ORBIT 3.1.1+** (Core 1.0.24) — keeps the replacement in its shared human-player list. Scoped standalone PMC and own-Scav tests passed.
+  - **Questing Bots 1.2.0+** (Core 1.0.24) — retires the outgoing body's Lightkeeper island membership and temporary relationships. Scoped standalone PMC and own-Scav tests passed.
+  - **ISB SOF Notifier 2.0.4+** (Core 1.0.24) — can resume announcements after respawn without resetting raid history. Scoped standalone PMC and own-Scav tests passed.
 - **Fika is deliberately unsupported.** Redeploy disables respawning when `com.fika.core` is loaded and warns at raid start. Its replacement-character flow has no co-op synchronisation.
 
 These body-replacement integrations live in shared Core and do not require
@@ -108,33 +118,26 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
-**In development for Core 1.0.24.** ORBIT 3.1.1 keeps the replacement in its shared
-human-player list. Questing Bots 1.2.0 retires the outgoing body's Lightkeeper
-island membership and temporary relationships. ISB SOF Notifier 2.0.4 can resume
-announcements after respawn without resetting raid history. Scoped standalone
-PMC and own-Scav tests passed for these fixes; Aishi's separate anomaly-reveal
-feature still rejects the Scav profile. These optional fixes do not change
-ArenaMode's exclusions and are not yet released. See the
+**New in Core 1.0.24 (Redeploy 1.1.3):** ORBIT, Questing Bots and ISB SOF Notifier.
+Scoped standalone PMC and own-Scav tests passed for these fixes; Aishi's separate
+anomaly-reveal feature still rejects the Scav profile. These optional fixes do not
+change ArenaMode's exclusions. See the
 [implementation and test scope](docs/compatibility/AI-BODY-REPLACEMENT-20261113.md).
 
-**In development for Core 1.0.23.** DERP 1.1.2 follows the replacement player's
-optics, and Player Encumbrance Bar 1.3.0 follows the current health, inventory and
-skill event sources. Scoped native checks passed in Arena and in standalone
-Redeploy, including a PMC-to-own-Scav continuation. These changes are not yet
-part of a published release.
-See the [DERP](docs/compatibility/DERP-20261113.md) and
+**New in Core 1.0.23 (Redeploy 1.1.3):** DERP and Player Encumbrance Bar. Scoped
+native checks passed in Arena and in standalone Redeploy, including a PMC-to-own-Scav
+continuation. See the [DERP](docs/compatibility/DERP-20261113.md) and
 [encumbrance bar](docs/compatibility/PLAYER-ENCUMBRANCE-BAR-20261113.md) records.
 
-**Also in development, Core 1.0.22.** Amand's Sense Updated 3.1.0 keeps its
-active markers and the raid's corpse history across a respawn, with the new
-inventory bound to the current player. [Sense compatibility](docs/compatibility/AMANDS-SENSE-20261108.md)
+**New in Core 1.0.22 (Redeploy 1.1.3):** Amand's Sense Updated. See
+[Sense compatibility](docs/compatibility/AMANDS-SENSE-20261108.md).
 
-**Also in development, Core 1.0.21 (unreleased):** four other integrations.
-P.L.A.T.E. starts a new blood record for a replacement life. Loot In Vicinity follows the new inventory controller. Skills
-Extended keeps weapon and medical XP on the current body, and releases a hacking
-or lockpicking attempt on the outgoing body. Climbable Ladders finishes the old
-climb before the replacement takes control. See the [versions, loot limitations
+**New in Core 1.0.21 (Redeploy 1.1.3):** P.L.A.T.E., Loot In Vicinity, Skills
+Extended and Climbable Ladders. See the [versions, loot limitations
 and validation record](docs/compatibility/BODY-HANDOFF-20261108.md).
+
+Core 1.0.21 to 1.0.23 were never released on their own; Redeploy 1.1.3 is the first
+release that carries them.
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
@@ -154,7 +157,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.2 requires Core **1.0.20 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.3 requires Core **1.0.24 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 
