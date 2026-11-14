@@ -57,8 +57,13 @@ dotnet run --project tools/RespawnInteropChecks -c Release      # success token 
 
 - Every project with a `ProjectReference` on Core deploys Core when built without
   `-p:SPTModType=Library` (Core pins `SPTModType=Client`). That includes ArenaMode's client:
-  every ArenaMode build ships the current Core source state. A tool that must never redeploy
-  Core puts `AdditionalProperties="SPTModType=Library"` on its Core reference, as
+  every NORMAL ArenaMode build ships the current Core source state. An ArenaMode build with
+  `ArenaMode/tools/AirPitChecks/NoDeploy.targets` (global property
+  `CustomAfterMicrosoftCommonTargets`, absolute path) does not: its empty `SPTClientDeploy`
+  replaces the one in this repository's `Shared.props` in the referenced Core project too
+  (MSBuild's override lines checked 2026-11-14; ArenaMode `docs/TRAPS.md`). A hash comparison
+  after such a build proves nothing while `Redeploy.Core/bin` already holds the installed
+  bytes; compare the file time. A tool that must never redeploy Core puts `AdditionalProperties="SPTModType=Library"` on its Core reference, as
   `tools/RespawnApiProbe` does. To deploy only Redeploy.Client, build it with the switch and
   copy the DLL by hand; otherwise Core is redeployed with a new `ProductVersion`/hash, and
   the GPU tests are bound to installed hashes.
