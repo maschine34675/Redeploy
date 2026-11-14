@@ -1,5 +1,42 @@
 # Redeploy repository status
 
+## Redeploy 1.1.3 published — 2026-11-14
+
+- Tag `v1.1.3` = `67f8303`; [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.3)
+  with `Redeploy-1.1.3.zip` and its checksum, latest, not a prerelease (published 11:47 UTC, the
+  asset's digest equals the local SHA-256); `main` pushed with the record commit `3e1d472` and
+  this note. At the user's request ("raise the versions of ArenaMode and Redeploy, complete the
+  documents, publish the release on GitHub"); this repository had nothing to merge or delete,
+  `main` is its only branch.
+- Client/Server bumped to **1.1.3** in `Shared.props`, `Redeploy.Server.csproj`,
+  `ModMetadata.cs` and `Plugin.cs`; Core stays **1.0.24** (`CoreVersion.props`, the version
+  that was run in the game on 2026-11-13). No Client or Server code change since 1.1.1. A patch
+  number by the precedent of 1.1.2: what the release carries is the Core. Core 1.0.21 to
+  1.0.23 were never released on their own.
+- Documentation: `docs/releases/RELEASE-1.1.3.md` (new), changelog section `[1.1.3]` with one
+  group per Core version and an evidence line each, README version lines and the ten
+  integrations of Core 1.0.21 to 1.0.24 in the optional list, `docs/API.md` version table,
+  `docs/README.md` rows, the header lines of four compatibility records. Eight writers and
+  eight reviewers worked on the documents of this repository and ArenaMode; a second review
+  compared the filled release notes with the logs and manifests.
+- Offline checks on `67f8303` (no deploy, `-p:SPTModType=Library` and a `SPTUserMods` path
+  that does not exist): Core, Client and Server build; `Redeploy.Tests` 636 passed,
+  `Redeploy.Server.Tests` 162 passed, none skipped; `RESPAWN_INTEROP_CHECKS_PASSED` (47);
+  `CORE_BINARY_GUARD_OK Redeploy.Plugin minimum=1.0.24`; the installed files were
+  byte-identical before and after.
+- Packaged from `67f8303`: `artifacts/publish-113/package-20261114-110557/Redeploy-1.1.3.zip`
+  (SHA-256 `090b13a4…ae5447c`, 261,032 bytes; Core `1.0.24+67f8303`, SHA-256 `aa46ec84…`), the
+  three DLLs without a label on VirusTotal; ArenaMode 0.6.0 was packaged with this Core file as
+  verified input and bundles the byte-identical Core. The record of the native GPU cycle is in
+  the release notes and in ArenaMode's `docs/reports/2026-11/GPU-RELEASE-060-20261114.md`.
+- Installed since 12:16 of that day in `D:\SPT41` and on both GPU hosts: exactly the package's
+  three DLLs (Client `11f815e7…`, Core `aa46ec84…`, Server `a7c23eaa…`), replacing Core
+  `1.0.24+0a4f242` and Client/Server `1.1.2+f092f98`; the previous files are in
+  `D:\SPT41-Backups\release-060\20261114-121645`.
+- Not run natively with these binaries: Continue as Scav, transit arrivals, and every mod of
+  the Core 1.0.21 to 1.0.24 integrations (none was installed on the host for the release
+  check; their own records are linked from the release notes).
+
 ## Core 1.0.24 deployed to the development installation — 2026-11-13
 
 At the user's request, the exact native-tested Core `1.0.24+0a4f242` DLL and its
