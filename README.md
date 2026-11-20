@@ -7,6 +7,10 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 **Redeploy 1.1.3** for SPT 4.1.x bundles **Core 1.0.24**. See the
 [release notes](docs/releases/RELEASE-1.1.3.md) and [changelog](docs/CHANGELOG.md).
 
+Development builds after that release use **Core 1.0.25** and add
+[VisualAssist 1.2.0 grenade-preview recovery](docs/compatibility/VISUALASSIST-20261120.md)
+after body replacement. The published 1.1.3 package is unchanged.
+
 ## Features
 
 - **Choose what happens when you die.** Respawn without gear near your corpse or at a regular player spawn, continue as your own Scav when available, or end the raid as usual.

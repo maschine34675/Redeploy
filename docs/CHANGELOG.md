@@ -12,6 +12,11 @@ and 1.0.0 bundled Core 1.0.8.
   Core disposes the retired preview's own line, sphere and materials and prevents
   late old-body callbacks from clearing the successor. No grenade-physics change;
   ordinary unadopted bodies retain upstream behavior. [Contract](compatibility/VISUALASSIST-20261120.md).
+- Evidence: scoped GPU-2 tests on 20 November 2026 passed two standalone PMC
+  replacements and an Arena replacement, visible previews, OFF/ON, normal throws
+  and resource cleanup. Own-Scav and forced creation failures were not exercised
+  natively. The tested Core/Client from `430657c` are deployed to the development
+  installation and both GPU hosts; the published 1.1.3 package is unchanged.
 
 ## [1.1.3] - 2026-11-14
 

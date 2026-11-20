@@ -425,6 +425,9 @@ Core versions only change the fix level; `ApiVersion` stays `1`. How Core reache
 
 Core 1.0.21 to 1.0.23 were never released on their own; Redeploy 1.1.3 is the first release that carries them. Core 1.0.21 to 1.0.24 add compatibility adapters for other mods; the API surface is unchanged. See [CHANGELOG.md](CHANGELOG.md).
 
+Development Core 1.0.25 adds VisualAssist body/preview ownership. API v1 and the
+interop revision remain unchanged; this does not alter the release table above.
+
 **`RedeployCore.Version`** (a public static `System.Version` on `Redeploy.Core.RedeployCore`) reports Core's fix level. It is not part of the frozen surface. Do not gate your code on it: gate on `ApiVersion` and on member existence. Only the drivers check Core's version; you do not need to, and you must not ship Core or depend on it (see [SOFT-DEPENDENCY.md](SOFT-DEPENDENCY.md#how-players-get-update-and-remove-core)).
 
 ### The interop file

@@ -1,6 +1,6 @@
 # Redeploy repository status
 
-## VisualAssist development — 2026-11-20
+## Core 1.0.25 verified and deployed — 2026-11-20
 
 Core 1.0.25 adds physical-body and preview-resource ownership for VisualAssist
 1.2.0; see [the contract](compatibility/VISUALASSIST-20261120.md). Public API v1
@@ -8,7 +8,37 @@ and engine order are unchanged. Offline: 637 unit tests, 61 release/lifecycle
 checks, three creation-failure cases (16 assertions each), 996 coordinator
 assertions and three targeted fault checks passed without deployment. Independent
 review resolved the partial-Awake cleanup and shared-material ownership findings.
-Native acceptance and regular deployment are pending; this is not a new release.
+
+Scoped GPU-2 native checks passed with the exact `430657c` binaries: two standalone
+PMC deaths and replacements without Arena Client/Gate/BigBrain loaded, visible
+high/low previews, OFF/ON, fresh grenade use, exact new-body ownership and old
+resource cleanup. Arena checks also passed a death/replacement, normal throws,
+native Fast Grenade Throw before any preview and after a stale preview, and a
+Molotov throw/ignition. The quick-throw guard belongs to Arena, not Core. The
+[compatibility record](compatibility/VISUALASSIST-20261120.md) states the native
+limits; own-Scav and forced Unity failures were not exercised in the game.
+
+Regularly installed in `D:\SPT41` and both GPU hosts, with matching DLL/PDB pairs:
+
+- Core `1.0.25+430657c`, DLL SHA256
+  `F90C3EBBBBC94FC4341F39F6C0B8B7527F669A57F1977F15B341DEE300516609`.
+- Client `1.1.3+430657c`, DLL SHA256
+  `D5F9BB7DE8904919D4800A82BB83109B2E102093DCCD4C5C65DBAE0E510B1A76`.
+
+All 231 files in the combined Arena/optional-mod delivery manifest matched on
+the VM, GPU-1 and GPU-2. A fresh GPU-2 MainMenu process (`17607ed7`) confirmed
+loaded/disk identity for Core, Client, Arena and the three official optional
+mods (PFT 1.1.2, Tarkova Cola 3.0.1, VisualAssist 1.2.0), with no plugin load or
+dependency errors. This final startup is load evidence, not another raid test.
+Manifests and native evidence are under ArenaMode's ignored
+`artifacts/mod-refresh-20261120/native/` directory.
+
+Before the regular restart, the disposable standalone profile and its
+attributable data were removed, and the captured original PFT/Cola files were
+byte-identical. This is the test-cleanup audit, not a post-startup profile audit.
+Temporary FGT and test settings were removed/restored after Arena verification.
+No new release or push: published
+Redeploy **1.1.3 still bundles Core 1.0.24**.
 
 ## Redeploy 1.1.3 published — 2026-11-14
 
