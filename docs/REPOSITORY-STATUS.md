@@ -1,5 +1,16 @@
 # Redeploy repository status
 
+## Additional compatibility review — 2026-11-20
+
+The [seven-mod source/release audit](compatibility/RESPAWN-CANDIDATES-20261120.md)
+identifies a DynamicMaps 1.3.0 quest/inventory subscription gap, an Advanced
+Movement live-body-swap ownership risk, and Satellite/GamePanelHUD profile-bound
+display state that needs refreshing for own-Scav continuation. Kmy already
+rebinds the current player; its separate raid-owner hook warrants validation for
+other consumers. ORBIT 3.2.1 still matches Core's existing adapter, and no new
+Gravity 1.1.0 body fix was identified. These are recommendations, with no new
+implementation, native test, deployment, version bump or Arena whitelist change.
+
 ## Branch collection and push — 2026-11-20
 
 At the user's request ("clean up Redeploy and UiBridge the same way and push",
