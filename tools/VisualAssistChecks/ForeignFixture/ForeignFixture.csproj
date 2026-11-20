@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>disable</Nullable><AssemblyName>VisualAssist</AssemblyName><Version>1.2.0</Version><AssemblyVersion>1.2.0.23951</AssemblyVersion></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Boundaries/Boundaries.csproj" /></ItemGroup>
+</Project>

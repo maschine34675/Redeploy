@@ -18,6 +18,31 @@ public class SourceGuardTests
     private static readonly string EnginePath = Path.Combine(RepoRoot, "Redeploy.Core", "Engine", "RespawnEngine.cs");
     private static readonly string GoldenPath = Path.Combine(RepoRoot, "Redeploy.Tests", "Golden", "RunRespawn.order.txt");
 
+    [Fact]
+    public void VisualAssistSteadyFramesAvoidReflectionAllocationAndGlobalScans()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot, "Redeploy.Core", "Compat", "VisualAssist", "VisualAssistCompat.cs"));
+        static string[] FrameWork(string input)
+        {
+            var method = CSharpSyntaxTree.ParseText(input).GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Single(m => m.Identifier.ValueText == "BeforeUpdate");
+            return method.DescendantNodes().Where(n => n is ObjectCreationExpressionSyntax
+                || n is InvocationExpressionSyntax call && new[] { "GetValue", "SetValue", "GetPatchInfo", "GetComponents", "FindObjectsOfType", "FindObjectOfType" }
+                    .Contains(call.Expression.ToString().Split('.').Last())).Select(n => n.ToString()).ToArray();
+        }
+        Assert.Empty(FrameWork(source));
+        Assert.NotEmpty(FrameWork(Replace(source, "// A frame update", "_contract.Player.GetValue(__instance); // A frame update")));
+        Assert.NotEmpty(FrameWork(Replace(source, "// A frame update", "var scratch = new object(); // A frame update")));
+        var methods = CSharpSyntaxTree.ParseText(source).GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().ToArray();
+        var tick = methods.Single(m => m.Identifier.ValueText == "Tick").ToString();
+        Assert.True(tick.IndexOf("if (!Scope.Frozen", StringComparison.Ordinal) < tick.IndexOf("Synchronize(", StringComparison.Ordinal));
+        var hide = methods.Single(m => m.Identifier.ValueText == "Hide").ToString();
+        Assert.True(hide.IndexOf("if (state.Hidden) return", StringComparison.Ordinal) < hide.IndexOf("SetValue(", StringComparison.Ordinal));
+        Assert.DoesNotContain("UnpatchSelf", source);
+        Assert.DoesNotContain("GetAllPatchedMethods", source);
+        Assert.DoesNotContain("FindObjectsOfType", source);
+    }
+
     // ---------------------------------------------------------------- golden order
 
     [Fact]

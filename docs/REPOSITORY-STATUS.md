@@ -1,5 +1,15 @@
 # Redeploy repository status
 
+## VisualAssist development — 2026-11-20
+
+Core 1.0.25 adds physical-body and preview-resource ownership for VisualAssist
+1.2.0; see [the contract](compatibility/VISUALASSIST-20261120.md). Public API v1
+and engine order are unchanged. Offline: 637 unit tests, 61 release/lifecycle
+checks, three creation-failure cases (16 assertions each), 996 coordinator
+assertions and three targeted fault checks passed without deployment. Independent
+review resolved the partial-Awake cleanup and shared-material ownership findings.
+Native acceptance and regular deployment are pending; this is not a new release.
+
 ## Redeploy 1.1.3 published — 2026-11-14
 
 - Tag `v1.1.3` = `67f8303`; [GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.3)

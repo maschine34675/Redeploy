@@ -75,6 +75,7 @@ public static class BodyReplacementCompatibility
         var radar = RadarCompat.GetRejectionReason();
         var impactCue = ImpactCueCompat.GetRejectionReason();
         var enemyMarkers = EnemyMarkersCompat.GetRejectionReason();
+        var visualAssist = VisualAssistCompat.GetRejectionReason();
         var quickCancel = QuickCancelCompat.GetRejectionReason();
         var pipDisabler = PipDisablerCompat.GetRejectionReason();
         var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
@@ -98,7 +99,7 @@ public static class BodyReplacementCompatibility
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
         return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
-            ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? derp ?? encumbrance
+            ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? visualAssist ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? derp ?? encumbrance
             ?? amandsSense ?? aiLimit ?? orbit ?? questingBots ?? isbNotifier ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
             ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
     }
@@ -146,6 +147,7 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(RadarContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ImpactCueContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(EnemyMarkersContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(VisualAssistContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(QuickCancelCompat.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(PipDisablerContract.Guid)
            || Chainloader.PluginInfos.ContainsKey(AmandsGraphicsCompat.PluginGuid)
@@ -184,6 +186,7 @@ public static class BodyReplacementCompatibility
         RadarCompat.Prepare(game, oldBody);
         ImpactCueCompat.Prepare(game, oldBody);
         EnemyMarkersCompat.Prepare(game, oldBody);
+        VisualAssistCompat.Prepare(game, oldBody);
         QuickCancelCompat.Prepare(game, oldBody);
         PipDisablerCompat.Prepare(game, oldBody);
         AmandsGraphicsCompat.Prepare(game, oldBody);
@@ -252,6 +255,7 @@ public static class BodyReplacementCompatibility
         RadarCompat.AbortPreparation();
         ImpactCueCompat.AbortPreparation();
         EnemyMarkersCompat.AbortPreparation();
+        VisualAssistCompat.AbortPreparation();
         PipDisablerCompat.AbortPreparation();
         AmandsGraphicsCompat.AbortPreparation();
         DynamicExternalResolutionCompat.AbortPreparation();
@@ -288,6 +292,7 @@ public static class BodyReplacementCompatibility
             RadarCompat.Tick();
             ImpactCueCompat.Tick();
             EnemyMarkersCompat.Tick();
+            VisualAssistCompat.Tick();
             PipDisablerCompat.Tick();
             AmandsGraphicsCompat.Tick();
             AiLimitCompat.Tick();
@@ -335,6 +340,7 @@ public static class BodyReplacementCompatibility
         RadarCompat.RetireWorld(world);
         ImpactCueCompat.RetireWorld(world);
         EnemyMarkersCompat.RetireWorld(world);
+        VisualAssistCompat.RetireWorld(world);
         QuickCancelCompat.RetireWorld(world);
         PipDisablerCompat.RetireWorld(world);
         AmandsGraphicsCompat.RetireWorld(world);

@@ -6,6 +6,13 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
 and 1.0.0 bundled Core 1.0.8.
 
+## Unreleased — Core 1.0.25
+
+- VisualAssist 1.2.0 keeps its grenade preview after confirmed body replacement.
+  Core disposes the retired preview's own line, sphere and materials and prevents
+  late old-body callbacks from clearing the successor. No grenade-physics change;
+  ordinary unadopted bodies retain upstream behavior. [Contract](compatibility/VISUALASSIST-20261120.md).
+
 ## [1.1.3] - 2026-11-14
 
 Client/Server **1.1.3**, bundled and minimum Core **1.0.24**. The Client and

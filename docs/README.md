@@ -48,6 +48,8 @@ How another mod follows the local player through a respawn. English; everything 
 
 How Core carries other mods' per-body state across a replacement, one dated record per Core version. Mod authors do not need these to integrate; they document Core's own adapters.
 
+Development: [VisualAssist 1.2.0 body lifecycle, Core 1.0.25](compatibility/VISUALASSIST-20261120.md).
+
 | Document | Scope |
 | --- | --- |
 | [AI-mod body replacements](compatibility/AI-BODY-REPLACEMENT-20261113.md) | Core 1.0.24 (released with Redeploy 1.1.3): ORBIT, Questing Bots island state and ISB notifier; source, offline and native evidence boundaries. |
