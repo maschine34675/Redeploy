@@ -324,11 +324,11 @@ internal static class Program
     {
         // Independent expectation of coordinator order. This does not read the
         // production source or derive expected callbacks from the observed trace.
-        string[] families = ["recoil", "ammo", "healing", "fov", "manimal", "magazineCheck", "crosshair", "radar", "impactCue", "enemyMarkers", "visualAssist", "quickCancel", "pip", "amands", "derp", "encumbrance", "aiLimit", "orbit", "questingBots", "isbNotifier", "healingAutoCancel", "questTracker", "audioIndicators", "hollywoodFx", "handsAreNotBusy", "raidReview", "plate", "vicinity", "skills", "ladders"];
+        string[] families = ["recoil", "ammo", "healing", "fov", "manimal", "magazineCheck", "crosshair", "radar", "impactCue", "enemyMarkers", "visualAssist", "advancedMovement", "quickCancel", "pip", "amands", "derp", "encumbrance", "aiLimit", "orbit", "questingBots", "isbNotifier", "healingAutoCancel", "questTracker", "audioIndicators", "hollywoodFx", "handsAreNotBusy", "raidReview", "plate", "vicinity", "skills", "ladders"];
         string[] complete = ["recoil", "fov", "magazineCheck", "crosshair", "skills", "vicinity", "encumbrance", "ladders"];
         var expected = families.Select(name => name + ".check").Concat(families.Select(name => name + ".prepare"))
             .Concat(complete.Select(name => name + ".complete")).ToArray();
-        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid, MagazineCheckContract.PluginGuid, SimpleCrosshairContract.PluginGuid, RadarContract.PluginGuid, ImpactCueContract.PluginGuid, EnemyMarkersContract.PluginGuid, VisualAssistContract.PluginGuid, QuickCancelCompat.PluginGuid, PipDisablerContract.Guid, AmandsGraphicsCompat.PluginGuid, DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid, AiLimitContract.PluginGuid, OrbitCompat.PluginGuid, QuestingBotsCompat.PluginGuid, IsbNotifierCompat.PluginGuid, HealingAutoCancelCompat.PluginGuid, QuestTrackerContract.PluginGuid, AudioIndicatorsContract.PluginGuid, HollywoodFxContract.PluginGuid, HandsAreNotBusyContract.PluginGuid, RaidReviewContract.PluginGuid, PlateCompat.PluginGuid, LootInVicinityCompat.PluginGuid, SkillsExtendedCompat.PluginGuid, ClimbableLaddersCompat.PluginGuid })
+        foreach (var guid in new[] { RecoilLegacyContract.PluginGuid, ContinuousLoadAmmoContract.PluginGuid, ContinuousHealingContract.PluginGuid, FovFixContract.PluginGuid, ManimalAmmoContract.PluginGuid, MagazineCheckContract.PluginGuid, SimpleCrosshairContract.PluginGuid, RadarContract.PluginGuid, ImpactCueContract.PluginGuid, EnemyMarkersContract.PluginGuid, VisualAssistContract.PluginGuid, AdvancedMovementBodyCompatibility.PluginGuid, QuickCancelCompat.PluginGuid, PipDisablerContract.Guid, AmandsGraphicsCompat.PluginGuid, DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid, AiLimitContract.PluginGuid, OrbitCompat.PluginGuid, QuestingBotsCompat.PluginGuid, IsbNotifierCompat.PluginGuid, HealingAutoCancelCompat.PluginGuid, QuestTrackerContract.PluginGuid, AudioIndicatorsContract.PluginGuid, HollywoodFxContract.PluginGuid, HandsAreNotBusyContract.PluginGuid, RaidReviewContract.PluginGuid, PlateCompat.PluginGuid, LootInVicinityCompat.PluginGuid, SkillsExtendedCompat.PluginGuid, ClimbableLaddersCompat.PluginGuid })
         {
             ResetFixture();
             Install(guid);
@@ -485,7 +485,7 @@ internal static class Program
 
     private static void EndAttempt()
     {
-        foreach (var guid in new[] { DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid })
+        foreach (var guid in new[] { DynamicExternalResolutionContract.Guid, PlayerEncumbranceBarCompat.PluginGuid, AdvancedMovementBodyCompatibility.PluginGuid })
         {
             ResetFixture();
             Install(guid);
@@ -493,7 +493,7 @@ internal static class Program
             BodyReplacementCompatibility.Prepare(raid.Game, raid.Body);
             Probes.Derp.ThrowEnd = true;
             BodyReplacementCompatibility.EndAttempt();
-            Check(Probes.Encumbrance.Ends == 1 && Probes.Derp.Ends == 1, "Attempt completion skipped an adapter cleanup boundary");
+            Check(Probes.Encumbrance.Ends == 1 && Probes.Derp.Ends == 1 && Probes.AdvancedMovement.Ends == 1, "Attempt completion skipped an adapter cleanup boundary");
             Check(!BodyReplacementContext.IsCreating && BodyReplacementContext.PreviousBody == null,
                 "DERP recovery failure retained the shared preparation context");
             Check(CoreLog.Warnings.Count(w => w.Contains("derp end fault")) == 1, "DERP recovery failure was not diagnosed once");

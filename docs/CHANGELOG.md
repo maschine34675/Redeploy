@@ -6,7 +6,10 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
 and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased — Core 1.0.25
+## Unreleased - Core 1.0.26
+
+- DynamicMaps 1.3.0 refreshes its active quest and key subscriptions after a body replacement, including a continuously visible minimap. Hidden providers and legacy arrow behavior are preserved.
+- Advanced Movement 1.0.1 retires an outgoing body's Slide/Dive, gesture and audio state without clearing the successor's state. No frame polling or scene search was added. [Contract](compatibility/MAP-MOVEMENT-BODY-20261120.md).
 
 - VisualAssist 1.2.0 keeps its grenade preview after confirmed body replacement.
   Core disposes the retired preview's own line, sphere and materials and prevents

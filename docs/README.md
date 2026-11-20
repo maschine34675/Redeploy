@@ -50,6 +50,7 @@ How Core carries other mods' per-body state across a replacement, one dated reco
 
 | Document | Scope |
 | --- | --- |
+| [DynamicMaps and Advanced Movement body replacement](compatibility/MAP-MOVEMENT-BODY-20261120.md) | Core 1.0.26: active map subscriptions and exact outgoing movement-state retirement. |
 | [Seven-mod respawn audit](compatibility/RESPAWN-CANDIDATES-20261120.md) | Source/release review of Satellite, Gravity, GamePanelHUD, KmyTarkovApi, Advanced Movement, ORBIT 3.2.1 and DynamicMaps 1.3.0; recommendations and native-test limits, not newly implemented fixes. |
 | [VisualAssist 1.2.0 body lifecycle](compatibility/VISUALASSIST-20261120.md) | Core 1.0.25 (development after Redeploy 1.1.3, on `main`, not in a release). Ownership of the grenade preview and its rendering resources across body replacements; offline checks and scoped native checks. |
 | [AI-mod body replacements](compatibility/AI-BODY-REPLACEMENT-20261113.md) | Core 1.0.24 (released with Redeploy 1.1.3): ORBIT, Questing Bots island state and ISB notifier; source, offline and native evidence boundaries. |

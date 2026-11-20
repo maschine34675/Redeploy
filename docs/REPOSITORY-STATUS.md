@@ -1,5 +1,34 @@
 # Redeploy repository status
 
+## DynamicMaps and Advanced Movement body fixes — 2026-11-20
+
+The DynamicMaps and Advanced Movement recommendations from the audit below are
+implemented in **Core 1.0.26**; public API v1 and the frozen engine statement order
+are unchanged. The active DynamicMaps 1.3.0 providers now replace their old quest
+and inventory subscriptions. Advanced Movement 1.0.1 state is retired at the exact
+outgoing-body boundary, including living Slide/Dive owners. No per-frame lookup or
+scene scan was added. Other recommendations from the seven-mod audit remain open.
+
+Independent reviews and the Core unit/API suite (637 passed), adapter contract and
+mutation checks, and shared coordinator checks passed. Native tests on SPT-GPU-2
+passed with standalone Redeploy and Arena: retained living old bodies during Slide
+and Dive, normal death-to-PMC/own-Scav, active and hidden minimaps, actual inventory
+events, walking and shooting. Actual quest completion and rendered door colours
+were not directly exercised. See the [contract, evidence and accepted build
+identities](compatibility/MAP-MOVEMENT-BODY-20261120.md).
+
+This is an unreleased development update; Redeploy's published driver version
+remains 1.1.3. DynamicMaps 1.3.0 is reviewed in Arena's default client/server
+whitelist. Advanced Movement was allowed only by the isolated native test policy;
+it is not added to that whitelist here.
+
+The exact accepted development bundle was deployed to the VM and both GPU hosts;
+Core is `1.0.26+5283c7c`, the rebuilt Redeploy.Client is `1.1.3+5283c7c`, and Arena
+is `0.6.0+026d4c44`. All ten file hashes match across the three roots. Both GPU
+games/servers are stopped, synchronization is restored, temporary runtime mods
+and the clone are removed, and the final audit preserves 309 original
+profile/PFT/settings files per root. No push or release was performed.
+
 ## Additional compatibility review — 2026-11-20
 
 The [seven-mod source/release audit](compatibility/RESPAWN-CANDIDATES-20261120.md)
