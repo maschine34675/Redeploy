@@ -13,7 +13,11 @@ try {
     }
     dotnet run --project tools/BodyReplacementChecks -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Body replacement coordinator checks failed' }
-    dotnet test Redeploy.Tests/Redeploy.Tests.csproj -c Release -p:SPTModType=Library '-p:SPTUserMods=D:\SPT41\Development\Redeploy-visualassist\artifacts\never-deploy-visualassist' --filter FullyQualifiedName~SourceGuardTests
+    # A path that must not exist disables the server's deploy target (AGENTS.md); it used to name the worktree
+    # this harness was written in, which is gone.
+    $neverDeploy = Join-Path $repo 'artifacts\never-deploy-visualassist'
+    if (Test-Path -LiteralPath $neverDeploy) { throw ('No-deploy sentinel exists: ' + $neverDeploy) }
+    dotnet test Redeploy.Tests/Redeploy.Tests.csproj -c Release -p:SPTModType=Library "-p:SPTUserMods=$neverDeploy" --filter FullyQualifiedName~SourceGuardTests
     if ($LASTEXITCODE -ne 0) { throw 'Core source guards failed' }
     Write-Output 'VISUAL_ASSIST_OFFLINE_VERIFIED'
 }

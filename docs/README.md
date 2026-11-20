@@ -48,10 +48,9 @@ How another mod follows the local player through a respawn. English; everything 
 
 How Core carries other mods' per-body state across a replacement, one dated record per Core version. Mod authors do not need these to integrate; they document Core's own adapters.
 
-Development: [VisualAssist 1.2.0 body lifecycle, Core 1.0.25](compatibility/VISUALASSIST-20261120.md).
-
 | Document | Scope |
 | --- | --- |
+| [VisualAssist 1.2.0 body lifecycle](compatibility/VISUALASSIST-20261120.md) | Core 1.0.25 (development after Redeploy 1.1.3, on `main`, not in a release). Ownership of the grenade preview and its rendering resources across body replacements; offline checks and scoped native checks. |
 | [AI-mod body replacements](compatibility/AI-BODY-REPLACEMENT-20261113.md) | Core 1.0.24 (released with Redeploy 1.1.3): ORBIT, Questing Bots island state and ISB notifier; source, offline and native evidence boundaries. |
 | [Arena-denied mods in standalone Redeploy](compatibility/ARENA-DENIED-MODS-20261113.md) | Source/release audit: ORBIT human list, Questing Lightkeeper state, ISB notifier, Aishi timing candidate and Adaptive culling. Recommendations, not implemented adapters or native acceptance. |
 | [DERP](compatibility/DERP-20261113.md) | Core 1.0.23 (released with Redeploy 1.1.3). Private player-cache handoff and retired optic callbacks; scoped native checks passed. |

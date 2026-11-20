@@ -1,5 +1,46 @@
 # Redeploy repository status
 
+## Branch collection and push — 2026-11-20
+
+At the user's request ("clean up Redeploy and UiBridge the same way and push",
+after the ArenaMode collection of the same day). `main` was pushed to `origin`
+with the commit of this note; `origin/main` stood at `ad61f31` before, three
+commits behind (`51c983a`, `430657c` with Core 1.0.25, `ecf5659`). The published
+sources now build the Core that the published ArenaMode `master` names for
+VisualAssist. No release, no version bump, nothing deployed: published Redeploy
+**1.1.3 still bundles Core 1.0.24**, and the installed files are those of the
+section below.
+
+- Branch state: `main` only. `codex/visualassist-20261120` (`430657c`, contained
+  in `main`) was deleted with `git branch -d`, and its worktree
+  `D:\SPT41\Development\Redeploy-visualassist` was removed. The worktree was
+  clean; its ignored files are archived under the ignored
+  `artifacts/archived-worktrees/visualassist-20261120/` (276 files, 82,397,134
+  bytes, each copy compared with its source by SHA-256, with an
+  `archive-manifest.json`; 185 build-cache files left out). No stash.
+- `tools/VisualAssistChecks/Verify.ps1` named its no-deploy sentinel inside that
+  worktree. It now uses `artifacts/never-deploy-visualassist` of the checkout it
+  runs in and stops if that path exists.
+- Offline checks on `main` with that change, without deployment
+  (`-p:SPTModType=Library` and a `SPTUserMods` path that does not exist):
+  `Redeploy.Tests` 637 passed, `Redeploy.Server.Tests` 162 passed, none skipped;
+  `RESPAWN_INTEROP_CHECKS_PASSED`; `tools/VisualAssistChecks/Verify.ps1` against
+  the installed VisualAssist 1.2.0 (`VISUAL_ASSIST_OFFLINE_VERIFIED`: 61 checks,
+  the three creation-failure cases with 16 checks each, 996 coordinator
+  assertions in 23 cases, the 32 source-guard tests); `VerifyMutations.ps1`
+  (three mutants rejected); `tools/BodyReplacementChecks/Run-Checks.ps1
+  -Mutations` (17 mutants killed). The installed Core, Client and Server files
+  and ArenaMode's installed client and server were byte-identical before and
+  after every step.
+- A read-only review of what the push publishes (three commits, 26 files, 1,229
+  insertions, and the script change) found no credential, no personal data and
+  no file that should not be tracked.
+- `docs/README.md`: the VisualAssist record has its row in the compatibility
+  table (it was a line above the table).
+
+The run logs and the list of branch tips are under the ignored
+`artifacts/collect-20261120/`.
+
 ## Core 1.0.25 verified and deployed — 2026-11-20
 
 Core 1.0.25 adds physical-body and preview-resource ownership for VisualAssist
@@ -37,8 +78,8 @@ Before the regular restart, the disposable standalone profile and its
 attributable data were removed, and the captured original PFT/Cola files were
 byte-identical. This is the test-cleanup audit, not a post-startup profile audit.
 Temporary FGT and test settings were removed/restored after Arena verification.
-No new release or push: published
-Redeploy **1.1.3 still bundles Core 1.0.24**.
+No new release: published Redeploy **1.1.3 still bundles Core 1.0.24**. `main`
+was pushed later that day (section above).
 
 ## Redeploy 1.1.3 published — 2026-11-14
 
