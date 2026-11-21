@@ -7,9 +7,11 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 **Redeploy 1.1.3** for SPT 4.1.x bundles **Core 1.0.24**. See the
 [release notes](docs/releases/RELEASE-1.1.3.md) and [changelog](docs/CHANGELOG.md).
 
-Development builds after that release use **Core 1.0.25** and add
-[VisualAssist 1.2.0 grenade-preview recovery](docs/compatibility/VISUALASSIST-20261120.md)
-after body replacement. The published 1.1.3 package is unchanged.
+Development builds after that release use **Core 1.0.27** and add body-replacement
+repairs for [VisualAssist 1.2.0](docs/compatibility/VISUALASSIST-20261120.md),
+[DynamicMaps 1.3.0 and Advanced Movement 1.0.1](docs/compatibility/MAP-MOVEMENT-BODY-20261120.md),
+and [WTT Armory 2.0.5](docs/compatibility/WTT-ARMORY-20261121.md).
+The published 1.1.3 package is unchanged.
 
 ## Features
 

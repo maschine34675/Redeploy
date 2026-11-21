@@ -1,5 +1,27 @@
 # Redeploy repository status
 
+## WTT Armory body fix — 2026-11-21
+
+Core **1.0.27** follows the exact replacement player for WTT Armory's AN-94
+Hyperburst state and fences retired-body callbacks. No engine-order or API-v1
+change, per-frame reflection or scene lookup. The installed client/server metadata
+is 2.0.5 despite the upstream package's 3.0.0 label.
+
+Independent review, 81 adapter assertions/eight rejected mutants, 23 coordinator
+scenarios/19 rejected mutants and 637 Core tests passed. GPU2 reproduced the old
+retained-body firing error, then passed standalone and Arena death/respawn and live
+swaps with the candidate. The full Arena profile was restored except for its
+Hideout bookkeeping timestamp. [Contract, exact identities, limits and cleanup](compatibility/WTT-ARMORY-20261121.md).
+
+The exact accepted Core `1.0.27+42839bd`, rebuilt Redeploy.Client
+`1.1.3+42839bd` and Arena client/companion `0.6.0+552abd3a` are deployed to the
+VM and both GPU hosts. All ten candidate files match on all three roots; the
+server is unchanged. Tests and temporary profile/probe are cleaned up, original
+profiles/PFT/settings are preserved, both GPU games/servers are stopped and
+synchronization is active again. Arena now reviews Armory in its default whitelist.
+This is a development update, with no push or release; published Redeploy remains
+1.1.3 with Core 1.0.24.
+
 ## DynamicMaps and Advanced Movement body fixes — 2026-11-20
 
 The DynamicMaps and Advanced Movement recommendations from the audit below are

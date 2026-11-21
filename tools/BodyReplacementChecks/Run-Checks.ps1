@@ -130,6 +130,18 @@ if ($Mutations) {
             Before = 'Chainloader.PluginInfos.ContainsKey(IsbNotifierCompat.PluginGuid)'
             After = 'Chainloader.PluginInfos.ContainsKey("com.samc137.isbspecialforces")'
             Expected = 'Main ISB package alone adopted a notifier replacement scope'
+        },
+        @{
+            Name = 'armory-presence-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'prepare-order'
+            Before = '|| Chainloader.PluginInfos.ContainsKey(WttArmoryBodyCompatibility.PluginGuid)'
+            After = '// MUTANT: omit Armory-only replacement adoption.'
+            Expected = 'Admission/adoption/complete order changed for fixture.Armory'
+        },
+        @{
+            Name = 'armory-end-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'end-attempt'
+            Before = 'WttArmoryBodyCompatibility.EndAttempt();'
+            After = '// MUTANT: omit Armory failed-rewire recovery and attempt cleanup.'
+            Expected = 'Attempt completion skipped an adapter cleanup boundary'
         }
     )
     $index = 0

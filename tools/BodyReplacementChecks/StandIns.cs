@@ -156,15 +156,15 @@ namespace Redeploy.Core.Compat
     internal static class Probes
     {
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers"), VisualAssist = new("visualAssist");
-        internal static readonly AdapterProbe AdvancedMovement = new("advancedMovement");
+        internal static readonly AdapterProbe AdvancedMovement = new("advancedMovement"), Armory = new("armory");
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
         internal static readonly AdapterProbe Derp = new("derp"), Encumbrance = new("encumbrance");
         internal static readonly AdapterProbe Orbit = new("orbit"), QuestingBots = new("questingBots"), IsbNotifier = new("isbNotifier");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
         internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
         internal static readonly AdapterProbe Plate = new("plate"), Vicinity = new("vicinity"), Skills = new("skills"), Ladders = new("ladders");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, VisualAssist, AdvancedMovement, QuickCancel, Pip, Amands, Derp, Encumbrance, AiLimit, Orbit, QuestingBots, IsbNotifier, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
-        internal static readonly AdapterProbe[] Ticking = All.Where(p => !new[] { QuickCancel, Ladders, Derp, Encumbrance, AdvancedMovement }.Contains(p)).ToArray();
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, VisualAssist, AdvancedMovement, Armory, QuickCancel, Pip, Amands, Derp, Encumbrance, AiLimit, Orbit, QuestingBots, IsbNotifier, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
+        internal static readonly AdapterProbe[] Ticking = All.Where(p => !new[] { QuickCancel, Ladders, Derp, Encumbrance, AdvancedMovement, Armory }.Contains(p)).ToArray();
         internal static readonly AdapterProbe[] Aborting = All.Where(p => !new[] { Healing, QuickCancel, Ladders }.Contains(p)).ToArray();
         internal static readonly AdapterProbe[] Retiring = All.Where(p => !new[] { Ammo, Healing, Ladders }.Contains(p)).ToArray();
         internal static readonly List<string> Trace = new();
@@ -195,6 +195,15 @@ namespace Redeploy.Core.Compat
         internal static void AbortPreparation() => Probes.AdvancedMovement.Abort();
         internal static void EndAttempt() => Probes.AdvancedMovement.End();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.AdvancedMovement.Retired.Add(world);
+    }
+    internal static class WttArmoryBodyCompatibility
+    {
+        internal const string PluginGuid = "fixture.Armory";
+        internal static string GetRejectionReason() => Probes.Armory.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Armory.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Armory.Abort();
+        internal static void EndAttempt() => Probes.Armory.End();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Armory.Retired.Add(world);
     }
     internal static class VisualAssistCompat
     {

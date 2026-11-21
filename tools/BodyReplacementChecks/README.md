@@ -7,7 +7,7 @@ reimplement their ownership or lifecycle logic. Lightweight game, Unity,
 Chainloader, public lifecycle-event, and adapter stand-ins expose the external
 boundaries. Adapter-specific tests and native checks establish their individual
 behavior; this harness checks the coordinator, including ORBIT, Questing Bots,
-ISB SOF Notifier, DERP and Player Encumbrance Bar admission, cancellation and
+ISB SOF Notifier, DERP, Player Encumbrance Bar and WTT Armory admission, cancellation and
 exact-world retirement. It does not imitate their private-state repair logic.
 
 Run from the repository root with PowerShell 7 and .NET 10:
@@ -39,7 +39,7 @@ instance becomes available. The fixture does not bypass the real assembly check.
 The Unity stand-in models destroyed-object equality so managed tombstones and
 world disposal are checked even when Unity would compare the object to null.
 
-`-Mutations` additionally compiles seventeen deliberately damaged copies into unique
+`-Mutations` additionally compiles nineteen deliberately damaged copies into unique
 configurations. Each must build successfully and then fail the targeted behavior
 assertion: profile-object identity, the expected replacement profile, provisional lease removal, committed lease
 preservation, no-mod inactivity, legacy Arena double hooks, ordinary-bot exclusion, null-scope quarantine,
@@ -47,11 +47,12 @@ late-world disposal, current-world cleanup, and omitted admission/presence/
 preparation/cancellation/tick/retirement hooks across the three new adapters.
 An incorrect ISB main-package identity is a separate negative control. The seven
 new controls must fail their specifically named assertion. A compile error or missing success token never counts as
-a killed mutant. The script hashes all three production sources before and after
+a killed mutant. Two further controls remove Armory-only presence and attempt-end
+recovery. The script hashes all three production sources before and after
 the run and retains bounded test/build logs plus hashes in `artifacts/<run-id>`.
 
 Success tokens are `BODY_REPLACEMENT_CHECKS_PASSED`,
-`BODY_REPLACEMENT_MUTATIONS_PASSED killed=17`, and the final
+`BODY_REPLACEMENT_MUTATIONS_PASSED killed=19`, and the final
 `BODY_REPLACEMENT_COMPOSITION_VERIFIED`. Individual cases can be selected on the
 built executable with `--case <name>`; unknown names fail rather than skip checks.
 
