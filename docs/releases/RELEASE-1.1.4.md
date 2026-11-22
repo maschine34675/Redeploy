@@ -96,8 +96,36 @@ records the complete changes.
 
 ## Native release check
 
-Pending: filled in after packaging and the native run.
+On the GPU test host SPT-GPU-2 (SPT 4.1.6) with these exact binaries loaded (Client 1.1.4,
+Core 1.0.28, Server 1.1.4, built from `50c3df0`), a Factory PMC raid with few bots: a death
+followed by "PMC near corpse" produced the respawn 5.1 s after the death ("Respawn complete."),
+a new body on the 20 m ring around the corpse, the Killcam recorder re-initialised, and no
+warning or error from any mod; the raid was left through the result screens. The same Core
+carried ArenaMode 0.7.0's own respawn in the same run: a Team Deathmatch death on Block that
+respawned the player into the team's pocket. Continue as Scav and transit arrivals were not run.
+VisualAssist, DynamicMaps and WTT Armory were installed on the host, but none of the Core 1.0.25
+to 1.0.28 integrations was exercised as such in this run (Tarkova Cola 4.0.0, FOV Fix 5.0.1 and
+Advanced Movement were not installed); what was run with them is stated under "Limits and
+validation". Record: ArenaMode's `docs/reports/2026-11/GPU-RELEASE-070-20261122.md`.
 
 ## Package checks
 
-Pending: filled in after packaging and the native run.
+Built from `50c3df040915d31d51f21e7cae3c1529cb33d1fe`. ZIP SHA-256:
+`ceab7d39446b2ecde74c05b67fc7545e30ae18bc0d96e8f49e04a4859ec52542` (281,015 bytes). The ZIP
+holds exactly Client/Server 1.1.4 and Core 1.0.28 (`1.0.28+50c3df0`); its Core is
+byte-identical to the Core in ArenaMode 0.7.0.
+
+Fresh checks on the release commit without deploying: 637 client/Core and 162 server tests
+passed with none skipped, plus the 47 respawn interoperability checks and the Core startup
+guard; the installed files were unchanged by the build. The package holds only the three
+compiled DLLs. No credential scan tool was run; the commits published with this release were
+searched for keys, tokens, private addresses and binaries, and none was found.
+
+VirusTotal results below apply to these exact binaries (22 November 2026). None of the three
+DLLs had a malicious or suspicious label (71 engines without detection each).
+
+| File | SHA-256 / scan |
+|---|---|
+| `maschine-Redeploy.Client.dll` | [a0ef0b00ec0e…](https://www.virustotal.com/gui/file/a0ef0b00ec0e09fef4836ec5170b1b4e1bd6037e3486f5a4a68b0eb40d79eeac) |
+| `maschine-Redeploy.Core.dll` | [238d202642b9…](https://www.virustotal.com/gui/file/238d202642b9c3ec1a9895a022b3f8f0e1c4123ccb9863f86cc74f3d1f7802e5) |
+| `maschine-Redeploy.Server.dll` | [c5725e8feb73…](https://www.virustotal.com/gui/file/c5725e8feb73c87daf8cbf7a6d6d1728c5484c88b859b9fe06c06c4c9b95e1e2) |
