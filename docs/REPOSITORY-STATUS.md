@@ -1,20 +1,29 @@
 # Redeploy repository status
 
-## Redeploy 1.1.4 prepared — 2026-11-22
+## Redeploy 1.1.4 published — 2026-11-22
 
 Redeploy **1.1.4** (Client/Server 1.1.4, bundled and minimum Core **1.0.28**) is
-prepared on `main` together with ArenaMode 0.7.0, which ships the byte-identical
-Core. The Client and Server code is unchanged since 1.1.1; the release carries
-Core 1.0.25 to 1.0.28 (VisualAssist, DynamicMaps and Advanced Movement, WTT
-Armory, FOV Fix / Realism CommonLib, Tarkova-Cola 4) and the drivers' Core 1.0.28
-stamp. Release notes: [RELEASE-1.1.4](releases/RELEASE-1.1.4.md); its native release
-check and package checks are filled in after packaging and the native run.
-`RespawnApi` (version 1) and the interop file (revision 1) are unchanged.
+published together with ArenaMode 0.7.0, which ships the byte-identical Core:
+tag `v1.1.4` on the build commit `50c3df0`,
+[GitHub release](https://github.com/maschine34675/Redeploy/releases/tag/v1.1.4)
+(14:18 UTC, latest, `Redeploy-1.1.4.zip` with its checksum; the downloaded asset's
+SHA-256 equals the local `ceab7d39…ec52542`). The Client and Server code is unchanged
+since 1.1.1; the release carries Core 1.0.25 to 1.0.28 (VisualAssist, DynamicMaps and
+Advanced Movement, WTT Armory, FOV Fix / Realism CommonLib, Tarkova-Cola 4) and the
+drivers' Core 1.0.28 stamp. Release notes with the package and native checks:
+[RELEASE-1.1.4](releases/RELEASE-1.1.4.md). `RespawnApi` (version 1) and the interop
+file (revision 1) are unchanged. The Forge upload is the user's.
 
-- Branch state: `main` only. The worktree under
-  `D:\ArenaMapPort\work\dynamicmaps130-impl\Redeploy` was removed on this day.
-- `main` is ahead of `origin/main` (`32336f4`) by `5283c7c`, `42839bd`, `abd2537`
-  and `ecf464d` plus the release commit; nothing is pushed or tagged by this entry.
+- Branch state: `main` only, no stash. The worktree under
+  `D:\ArenaMapPort\work\dynamicmaps130-impl\Redeploy` (detached at `32336f4`, clean;
+  its one ignored file archived under `artifacts/archived-worktrees/dynamicmaps130-20261122/`)
+  was removed on this day, at the user's request to collect and push ArenaMode and Redeploy.
+- `main` was pushed to `origin/main` with the record commit `8f54f3c` (from `32336f4`:
+  `5283c7c`, `42839bd`, `abd2537`, `ecf464d`, the release commit `50c3df0` and the
+  record); this note follows in its own commit.
+- Installed: Client/Server `1.1.4+50c3df0` and Core `1.0.28+50c3df0` on the development
+  installation and both GPU hosts; the state before is in
+  `D:\SPT41-Backups\release-070\20261122-150251\`.
 - The living documents (README, changelog, `docs/README.md`, `docs/API.md`) now name
   1.1.4 with Core 1.0.28. The dated sections below keep what they said at the time:
   where they call Core 1.0.25 to 1.0.28 unreleased or the published release 1.1.3
