@@ -6,7 +6,28 @@ release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
 and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased - Core 1.0.27
+## Unreleased - Core 1.0.28
+
+- **Fontaine FOV Fix 5.0.1 / Realism CommonLib 0.1.0:** keep the fresh body's nine
+  native-created CommonLib controllers, disable and detach the outgoing body's
+  controllers, and fence late reload, firing and gear callbacks. Failed creation
+  restores the outgoing globals and their current enabled state; partial foreign
+  initialization is cleaned up. FOV's minimum stays 4.1.0 while its reviewed
+  baseline rises to 5.0.1. [Contract](compatibility/FOV-COMMONLIB-20261122.md).
+- **Tarkova-Cola 4.0.0:** retire the outgoing body's downed, hands, reload and
+  transient perk state at a confirmed physical replacement. Keep active perks,
+  raid progress, once-per-raid allowances and physical inventory. Late retired-body
+  callbacks cannot drive the successor. [Contract](compatibility/TARKOVA-COLA-BODY-20261122.md).
+- These shared Core repairs apply to standalone Redeploy and ArenaMode. No API-v1
+  or engine-order change, new frame polling, scene scan or absent-plugin Harmony
+  sweep. Offline lifecycle, published-DLL metadata and mutation checks passed.
+- Scoped GPU-2 tests passed standalone death/PMC respawn, an actual QuickRevive
+  downed-body replacement, Arena auto-respawn and retained living-body replacement,
+  including current-controller ownership, old-listener cleanup, ADS, shots and
+  movement. QuickRevive's spent allowance stayed spent and its old deadline did
+  not kill the successor. Other perk combinations and forced creation failures
+  remain outside native coverage. The accepted candidate is archived, not a
+  regular deployment or release; published Redeploy 1.1.3 still bundles Core 1.0.24.
 
 - WTT Armory 2.0.5 follows the replacement player and resets outgoing AN-94 Hyperburst state. Retained old-body callbacks cannot overwrite the current player's burst state. The shared repair applies to standalone Redeploy and ArenaMode. [Contract](compatibility/WTT-ARMORY-20261121.md).
 

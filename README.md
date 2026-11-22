@@ -7,10 +7,14 @@ Dying no longer ends your raid: respawn without gear, fight your way back to you
 **Redeploy 1.1.3** for SPT 4.1.x bundles **Core 1.0.24**. See the
 [release notes](docs/releases/RELEASE-1.1.3.md) and [changelog](docs/CHANGELOG.md).
 
-Development builds after that release use **Core 1.0.27** and add body-replacement
+Development builds after that release use **Core 1.0.28** and add body-replacement
 repairs for [VisualAssist 1.2.0](docs/compatibility/VISUALASSIST-20261120.md),
 [DynamicMaps 1.3.0 and Advanced Movement 1.0.1](docs/compatibility/MAP-MOVEMENT-BODY-20261120.md),
-and [WTT Armory 2.0.5](docs/compatibility/WTT-ARMORY-20261121.md).
+[WTT Armory 2.0.5](docs/compatibility/WTT-ARMORY-20261121.md),
+[Fontaine FOV Fix 5.0.1 / Realism CommonLib 0.1.0](docs/compatibility/FOV-COMMONLIB-20261122.md)
+and [Tarkova-Cola 4.0.0](docs/compatibility/TARKOVA-COLA-BODY-20261122.md).
+The Core 1.0.28 additions passed offline checks and scoped standalone/Arena tests
+on SPT-GPU-2. The tested candidate has not been deployed as a regular update.
 The published 1.1.3 package is unchanged.
 
 ## Features
@@ -45,6 +49,8 @@ The published 1.1.3 package is unchanged.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
   - **Continuous Healing 1.6.3+** — old player callbacks cannot continue or cancel the replacement body's healing; current local healing keeps the mod's behavior.
   - **Fontaine FOV Fix 4.1.0+** — refreshes camera and weapon ownership after respawn and fences callbacks from the retired body.
+  - **Realism CommonLib 0.1.0+** (unreleased Core 1.0.28, required by FOV Fix 5.0.1) — retires the outgoing body's state controllers and subscriptions so stale reload, firing and gear callbacks cannot change the replacement body. Scoped standalone and Arena death/respawn and retained-body tests passed.
+  - **Tarkova-Cola 4.0.0+** (unreleased Core 1.0.28) — clears the outgoing body's downed, hands, reload and transient perk state while retaining raid progress, perks, once-per-raid allowances and physical inventory. Scoped standalone and Arena body-replacement tests passed, including an active QuickRevive downed state in standalone; not every perk was exercised natively.
   - **Manimal Ammo Loading Animations 2.0.0+** — retires old loading sessions so their delayed animations cannot continue on a retired character.
   - **Magazine Check Interrupt 1.1.1+** — retires the old body's floating magazine panel; delayed hide callbacks cannot hide its successor's display.
   - **Accurate Circular Radar 1.3.4+** — preserves the radar through camera replacement and rebinds it to the current player. Radar colors retain the mod's faction/role meaning, not team hostility.
@@ -123,6 +129,18 @@ each life; HollywoodFX 3.0.0 follows the replacement player; Hands Are Not Busy
 offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
+
+**New in Core 1.0.28 (unreleased):** Fontaine FOV Fix's reviewed baseline is
+5.0.1; the minimum remains 4.1.0. Its new Realism CommonLib dependency receives
+physical controller and event cleanup. Tarkova-Cola 4.0.0 receives a separate
+shared repair for body-bound transient state, without resetting raid progress.
+Both repairs apply to standalone Redeploy and Arena's shared Core path, with no
+new frame polling or scene scans. Offline checks and scoped standalone/Arena
+native checks passed, including a retained living body and QuickRevive's active
+downed state. Forced creation failures and complete perk coverage remain outside
+the native test scope. See the
+[FOV/CommonLib](docs/compatibility/FOV-COMMONLIB-20261122.md) and
+[Tarkova-Cola](docs/compatibility/TARKOVA-COLA-BODY-20261122.md) records.
 
 **New in Core 1.0.24 (Redeploy 1.1.3):** ORBIT, Questing Bots and ISB SOF Notifier.
 Scoped standalone PMC and own-Scav tests passed for these fixes; Aishi's separate

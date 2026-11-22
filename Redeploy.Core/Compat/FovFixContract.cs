@@ -13,7 +13,8 @@ namespace Redeploy.Core.Compat;
 internal sealed class FovFixContract
 {
     internal const string PluginGuid = "com.fontaine.fovfix";
-    internal static readonly Version ReviewedVersion = new(4, 1, 0, 0);
+    internal static readonly Version MinimumVersion = new(4, 1, 0, 0);
+    internal static readonly Version ReviewedVersion = new(5, 0, 1, 0);
     internal PropertyInfo Controller, Weapon, WeaponId, Pistol, ToggleZoom, ScopeFov;
     internal FieldInfo PlayerField, WasAiming, PwaHands;
     internal FieldInfo[] Watchers, Values;
@@ -22,7 +23,7 @@ internal sealed class FovFixContract
     internal static FovFixContract Resolve(Type plugin, string guid, Version reported, out Version version)
     {
         version = Normalize(reported);
-        if (guid != PluginGuid || version == null || version < ReviewedVersion)
+        if (guid != PluginGuid || version == null || version < MinimumVersion)
             throw new NotSupportedException("Fontaine FOV Fix 4.1.0 or newer is required");
         if (plugin == null || plugin.FullName != "FOVFix.Plugin" || plugin.IsAbstract
             || !typeof(BaseUnityPlugin).IsAssignableFrom(plugin))

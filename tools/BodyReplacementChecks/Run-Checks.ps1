@@ -142,6 +142,30 @@ if ($Mutations) {
             Before = 'WttArmoryBodyCompatibility.EndAttempt();'
             After = '// MUTANT: omit Armory failed-rewire recovery and attempt cleanup.'
             Expected = 'Attempt completion skipped an adapter cleanup boundary'
+        },
+        @{
+            Name = 'commonlib-presence-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'prepare-order'
+            Before = '|| Chainloader.PluginInfos.ContainsKey(RealismCommonLibContract.PluginGuid)'
+            After = '// MUTANT: omit CommonLib-only replacement adoption.'
+            Expected = 'Admission/adoption/complete order changed for fixture.CommonLib'
+        },
+        @{
+            Name = 'cola-presence-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'prepare-order'
+            Before = '|| Chainloader.PluginInfos.ContainsKey(TarkovaColaBodyCompatibility.PluginGuid)'
+            After = '// MUTANT: omit Cola-only replacement adoption.'
+            Expected = 'Admission/adoption/complete order changed for fixture.Cola'
+        },
+        @{
+            Name = 'commonlib-end-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'end-attempt'
+            Before = 'RealismCommonLibBodyCompatibility.EndAttempt();'
+            After = '// MUTANT: omit CommonLib failed-create restoration.'
+            Expected = 'Attempt completion skipped an adapter cleanup boundary'
+        },
+        @{
+            Name = 'cola-end-omitted'; File = 'BodyReplacementCompatibility.cs'; Case = 'end-attempt'
+            Before = 'TarkovaColaBodyCompatibility.EndAttempt();'
+            After = '// MUTANT: omit Cola failed-rewire cleanup.'
+            Expected = 'Attempt completion skipped an adapter cleanup boundary'
         }
     )
     $index = 0

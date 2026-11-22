@@ -50,6 +50,8 @@ How Core carries other mods' per-body state across a replacement, one dated reco
 
 | Document | Scope |
 | --- | --- |
+| [FOV Fix 5 and Realism CommonLib body replacement](compatibility/FOV-COMMONLIB-20261122.md) | Unreleased Core 1.0.28: FOV 5.0.1 review, CommonLib 0.1.0 controller/event retirement and failed-creation restoration. Offline and scoped standalone/Arena tests passed; no regular deployment. |
+| [Tarkova-Cola 4 body replacement](compatibility/TARKOVA-COLA-BODY-20261122.md) | Unreleased Core 1.0.28: downed, hands and transient perk cleanup while preserving raid progress and physical inventory. Offline and scoped native tests, including standalone QuickRevive downed replacement; no regular deployment. |
 | [DynamicMaps and Advanced Movement body replacement](compatibility/MAP-MOVEMENT-BODY-20261120.md) | Core 1.0.26: active map subscriptions and exact outgoing movement-state retirement. |
 | [WTT Armory body replacement](compatibility/WTT-ARMORY-20261121.md) | Core 1.0.27: physical-player rebinding and AN-94 Hyperburst ownership. |
 | [Seven-mod respawn audit](compatibility/RESPAWN-CANDIDATES-20261120.md) | Source/release review of Satellite, Gravity, GamePanelHUD, KmyTarkovApi, Advanced Movement, ORBIT 3.2.1 and DynamicMaps 1.3.0; recommendations and native-test limits, not newly implemented fixes. |

@@ -78,6 +78,8 @@ public static class BodyReplacementCompatibility
         var visualAssist = VisualAssistCompat.GetRejectionReason();
         var advancedMovement = AdvancedMovementBodyCompatibility.GetRejectionReason();
         var armory = WttArmoryBodyCompatibility.GetRejectionReason();
+        var commonLib = RealismCommonLibBodyCompatibility.GetRejectionReason();
+        var cola = TarkovaColaBodyCompatibility.GetRejectionReason();
         var quickCancel = QuickCancelCompat.GetRejectionReason();
         var pipDisabler = PipDisablerCompat.GetRejectionReason();
         var amandsGraphics = AmandsGraphicsCompat.GetRejectionReason();
@@ -100,7 +102,7 @@ public static class BodyReplacementCompatibility
         var ladders = ClimbableLaddersCompat.GetRejectionReason();
         foreach (var scope in MedicalScopes)
             if (scope.Failure != null) return CachedRejectionReason = scope.Failure;
-        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? manimal ?? magazineCheck
+        return CachedRejectionReason = recoil ?? ammo ?? healing ?? fov ?? commonLib ?? cola ?? manimal ?? magazineCheck
             ?? crosshair ?? radar ?? impactCue ?? enemyMarkers ?? visualAssist ?? advancedMovement ?? armory ?? quickCancel ?? pipDisabler ?? amandsGraphics ?? derp ?? encumbrance
             ?? amandsSense ?? aiLimit ?? orbit ?? questingBots ?? isbNotifier ?? healingAutoCancel ?? questTracker ?? audioIndicators ?? hollywoodFx ?? handsAreNotBusy
             ?? raidReview ?? plate ?? vicinity ?? skills ?? ladders ?? _tickFailure;
@@ -143,6 +145,8 @@ public static class BodyReplacementCompatibility
            || Chainloader.PluginInfos.ContainsKey(ContinuousLoadAmmoContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ContinuousHealingContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(FovFixContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(RealismCommonLibContract.PluginGuid)
+           || Chainloader.PluginInfos.ContainsKey(TarkovaColaBodyCompatibility.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(ManimalAmmoContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(MagazineCheckContract.PluginGuid)
            || Chainloader.PluginInfos.ContainsKey(SimpleCrosshairContract.PluginGuid)
@@ -193,6 +197,8 @@ public static class BodyReplacementCompatibility
         VisualAssistCompat.Prepare(game, oldBody);
         AdvancedMovementBodyCompatibility.Prepare(game, oldBody);
         WttArmoryBodyCompatibility.Prepare(game, oldBody);
+        RealismCommonLibBodyCompatibility.Prepare(game, oldBody);
+        TarkovaColaBodyCompatibility.Prepare(game, oldBody);
         QuickCancelCompat.Prepare(game, oldBody);
         PipDisablerCompat.Prepare(game, oldBody);
         AmandsGraphicsCompat.Prepare(game, oldBody);
@@ -238,6 +244,8 @@ public static class BodyReplacementCompatibility
     {
         AdvancedMovementBodyCompatibility.EndAttempt();
         WttArmoryBodyCompatibility.EndAttempt();
+        RealismCommonLibBodyCompatibility.EndAttempt();
+        TarkovaColaBodyCompatibility.EndAttempt();
         PlayerEncumbranceBarCompat.EndAttempt();
         try { DynamicExternalResolutionCompat.EndAttempt(); }
         catch (Exception ex) { CoreLog.LogWarning("DERP could not finish the body switch: " + ex.GetBaseException().Message); }
@@ -266,6 +274,8 @@ public static class BodyReplacementCompatibility
         VisualAssistCompat.AbortPreparation();
         AdvancedMovementBodyCompatibility.AbortPreparation();
         WttArmoryBodyCompatibility.AbortPreparation();
+        RealismCommonLibBodyCompatibility.AbortPreparation();
+        TarkovaColaBodyCompatibility.AbortPreparation();
         PipDisablerCompat.AbortPreparation();
         AmandsGraphicsCompat.AbortPreparation();
         DynamicExternalResolutionCompat.AbortPreparation();
@@ -353,6 +363,8 @@ public static class BodyReplacementCompatibility
         VisualAssistCompat.RetireWorld(world);
         AdvancedMovementBodyCompatibility.RetireWorld(world);
         WttArmoryBodyCompatibility.RetireWorld(world);
+        RealismCommonLibBodyCompatibility.RetireWorld(world);
+        TarkovaColaBodyCompatibility.RetireWorld(world);
         QuickCancelCompat.RetireWorld(world);
         PipDisablerCompat.RetireWorld(world);
         AmandsGraphicsCompat.RetireWorld(world);

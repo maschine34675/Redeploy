@@ -156,15 +156,15 @@ namespace Redeploy.Core.Compat
     internal static class Probes
     {
         internal static readonly AdapterProbe Recoil = new("recoil"), Ammo = new("ammo"), Healing = new("healing"), Fov = new("fov"), Manimal = new("manimal"), MagazineCheck = new("magazineCheck"), Crosshair = new("crosshair"), Radar = new("radar"), ImpactCue = new("impactCue"), EnemyMarkers = new("enemyMarkers"), VisualAssist = new("visualAssist");
-        internal static readonly AdapterProbe AdvancedMovement = new("advancedMovement"), Armory = new("armory");
+        internal static readonly AdapterProbe AdvancedMovement = new("advancedMovement"), Armory = new("armory"), CommonLib = new("commonLib"), Cola = new("cola");
         internal static readonly AdapterProbe QuickCancel = new("quickCancel"), Pip = new("pip"), Amands = new("amands");
         internal static readonly AdapterProbe Derp = new("derp"), Encumbrance = new("encumbrance");
         internal static readonly AdapterProbe Orbit = new("orbit"), QuestingBots = new("questingBots"), IsbNotifier = new("isbNotifier");
         internal static readonly AdapterProbe AiLimit = new("aiLimit"), HealingAutoCancel = new("healingAutoCancel"), QuestTracker = new("questTracker"), AudioIndicators = new("audioIndicators");
         internal static readonly AdapterProbe HollywoodFx = new("hollywoodFx"), HandsAreNotBusy = new("handsAreNotBusy"), RaidReview = new("raidReview");
         internal static readonly AdapterProbe Plate = new("plate"), Vicinity = new("vicinity"), Skills = new("skills"), Ladders = new("ladders");
-        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, VisualAssist, AdvancedMovement, Armory, QuickCancel, Pip, Amands, Derp, Encumbrance, AiLimit, Orbit, QuestingBots, IsbNotifier, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
-        internal static readonly AdapterProbe[] Ticking = All.Where(p => !new[] { QuickCancel, Ladders, Derp, Encumbrance, AdvancedMovement, Armory }.Contains(p)).ToArray();
+        internal static readonly AdapterProbe[] All = [Recoil, Ammo, Healing, Fov, Manimal, MagazineCheck, Crosshair, Radar, ImpactCue, EnemyMarkers, VisualAssist, AdvancedMovement, Armory, CommonLib, Cola, QuickCancel, Pip, Amands, Derp, Encumbrance, AiLimit, Orbit, QuestingBots, IsbNotifier, HealingAutoCancel, QuestTracker, AudioIndicators, HollywoodFx, HandsAreNotBusy, RaidReview, Plate, Vicinity, Skills, Ladders];
+        internal static readonly AdapterProbe[] Ticking = All.Where(p => !new[] { QuickCancel, Ladders, Derp, Encumbrance, AdvancedMovement, Armory, CommonLib, Cola }.Contains(p)).ToArray();
         internal static readonly AdapterProbe[] Aborting = All.Where(p => !new[] { Healing, QuickCancel, Ladders }.Contains(p)).ToArray();
         internal static readonly AdapterProbe[] Retiring = All.Where(p => !new[] { Ammo, Healing, Ladders }.Contains(p)).ToArray();
         internal static readonly List<string> Trace = new();
@@ -204,6 +204,25 @@ namespace Redeploy.Core.Compat
         internal static void AbortPreparation() => Probes.Armory.Abort();
         internal static void EndAttempt() => Probes.Armory.End();
         internal static void RetireWorld(EFT.GameWorld world) => Probes.Armory.Retired.Add(world);
+    }
+    internal static class TarkovaColaBodyCompatibility
+    {
+        internal const string PluginGuid = "fixture.Cola";
+        internal static string GetRejectionReason() => Probes.Cola.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.Cola.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.Cola.Abort();
+        internal static void EndAttempt() => Probes.Cola.End();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.Cola.Retired.Add(world);
+    }
+    internal static class RealismCommonLibContract { internal const string PluginGuid = "fixture.CommonLib"; }
+    internal static class RealismCommonLibBodyCompatibility
+    {
+
+        internal static string GetRejectionReason() => Probes.CommonLib.GetRejectionReason();
+        internal static void Prepare(EFT.LocalGame game, EFT.LocalPlayer body) => Probes.CommonLib.Prepare(game, body);
+        internal static void AbortPreparation() => Probes.CommonLib.Abort();
+        internal static void EndAttempt() => Probes.CommonLib.End();
+        internal static void RetireWorld(EFT.GameWorld world) => Probes.CommonLib.Retired.Add(world);
     }
     internal static class VisualAssistCompat
     {

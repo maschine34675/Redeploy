@@ -1,5 +1,52 @@
 # Redeploy repository status
 
+## FOV/CommonLib and Tarkova-Cola body fixes — 2026-11-22
+
+The current development source uses **Core 1.0.28**. Fontaine FOV Fix's reviewed
+baseline is 5.0.1 while its minimum remains 4.1.0. The new optional CommonLib
+0.1.0 adapter retires outgoing per-body controllers and exact event targets,
+restores globals and enabled flags on failed creation, and handles partial native
+initialization. The optional Tarkova-Cola 4.0.0 adapter retires only body-bound
+downed, hands, reload and transient perk state; it preserves active perks, raid
+progress, once-per-raid allowances and physical inventory. Both live in shared
+Core and serve standalone Redeploy as well as ArenaMode. No API-v1 or frozen
+engine-order changes, new Update/Tick pump, scene lookup or absent-plugin
+process-wide Harmony scan were introduced.
+
+Offline validation passed: CommonLib 36 normal and eight partial-initialization
+assertions, official binary metadata/cleanup checks and nine rejected mutants;
+Cola 68 lifecycle and 88 official binary checks with eight rejected mutants.
+The shared coordinator passed 23 cases / 1,100 assertions and rejected 23 mutants.
+Independent review corrected restoration of a controller's most recent enabled
+state and retained surviving guards after an owned-raid hook loss.
+
+Scoped native validation passed on SPT-GPU-2 with the official FOV 5.0.1,
+CommonLib 0.1.0 and Tarkova-Cola 4.0.0 packages. Standalone Factory, with Arena's
+client absent, covered native death and PMC-near-corpse release, G28 ADS/shooting
+and walking, then an actual QuickRevive downed state followed by a Core live-body
+replacement. All nine old CommonLib controllers were disabled, their recorded
+static listener targets removed and all nine successor controllers enabled.
+FOV followed the successor. QuickRevive's spent revive remained spent; the new
+body was alive 35 seconds after replacement, beyond the old ten-second downed
+deadline, and fired three M4 rounds. Arena Deathmatch passed normal auto-respawn
+and a retained-living-body replacement, including the same controller checks,
+ADS, shooting and walking. Other perk combinations and forced creation failures
+have offline coverage only.
+
+The exact accepted candidate is retained in ArenaMode's ignored
+`artifacts/cola-fov-20261122/candidate-a/`; the native records are in its sibling
+`native/` directory. It is **not regularly deployed**: the host's prior binaries
+were restored because the installed Arena feature-branch build differs
+from the candidate built from main. The full Arena exit profile matches its actual
+arm checkpoint exactly. Original profiles/PFT data and settings passed the final
+hash comparison; temporary mods, probe and clone sidecars were removed, and host
+synchronization resumed. Only three diagnostic APBS logs and additional native
+profile backups are retained as normal test output. No new
+release. Published Redeploy remains **1.1.3 with Core 1.0.24**. See the dated
+[FOV/CommonLib](compatibility/FOV-COMMONLIB-20261122.md) and
+[Tarkova-Cola](compatibility/TARKOVA-COLA-BODY-20261122.md) records for the exact
+contracts and offline verification commands.
+
 ## WTT Armory body fix — 2026-11-21
 
 Core **1.0.27** follows the exact replacement player for WTT Armory's AN-94

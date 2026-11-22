@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net472</TargetFramework><LangVersion>latest</LangVersion><ImplicitUsings>enable</ImplicitUsings><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems><AssemblyName>TarkovaCola.Client</AssemblyName><NoWarn>$(NoWarn);CS0649</NoWarn><CompatSource Condition="'$(CompatSource)' == ''">../../Redeploy.Core/Compat/TarkovaColaBodyCompatibility.cs</CompatSource><ContractSource Condition="'$(ContractSource)' == ''">../../Redeploy.Core/Compat/TarkovaColaBodyContract.cs</ContractSource></PropertyGroup>
+  <ItemGroup><Compile Include="Program.cs;RuntimeDoubles.cs;ForeignFixture.cs"/><Compile Include="$(CompatSource)" Link="Production/Compat.cs"/><Compile Include="$(ContractSource)" Link="Production/Contract.cs"/><Compile Include="../../Redeploy.Core/Compat/BodyReplacementContext.cs" Link="Production/Context.cs"/>
+    <Reference Include="0Harmony"><HintPath>../../../../BepInEx/core/0Harmony.dll</HintPath></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>../../../../BepInEx/core/Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>../../../../BepInEx/core/MonoMod.RuntimeDetour.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>../../../../BepInEx/core/MonoMod.Utils.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

@@ -64,7 +64,7 @@ internal static class FovFixCompat
             {
                 _newerWarned = true;
                 CoreLog.LogWarning("Fontaine FOV Fix " + _version
-                    + " is newer than reviewed 4.1.0; APIs match, native compatibility is unverified.");
+                    + " is newer than reviewed 5.0.1; APIs match, native compatibility is unverified.");
             }
         }
         catch (Exception ex) { ClearBinding(); Reject(ex); }
