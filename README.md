@@ -4,18 +4,17 @@
 
 Dying no longer ends your raid: respawn without gear, fight your way back to your own corpse, and take your equipment back.
 
-**Redeploy 1.1.3** for SPT 4.1.x bundles **Core 1.0.24**. See the
-[release notes](docs/releases/RELEASE-1.1.3.md) and [changelog](docs/CHANGELOG.md).
+**Redeploy 1.1.4** for SPT 4.1.x bundles **Core 1.0.28**. See the
+[release notes](docs/releases/RELEASE-1.1.4.md) and [changelog](docs/CHANGELOG.md).
 
-Development builds after that release use **Core 1.0.28** and add body-replacement
-repairs for [VisualAssist 1.2.0](docs/compatibility/VISUALASSIST-20261120.md),
+Since 1.1.3 the Core adds body-replacement repairs for
+[VisualAssist 1.2.0](docs/compatibility/VISUALASSIST-20261120.md),
 [DynamicMaps 1.3.0 and Advanced Movement 1.0.1](docs/compatibility/MAP-MOVEMENT-BODY-20261120.md),
 [WTT Armory 2.0.5](docs/compatibility/WTT-ARMORY-20261121.md),
 [Fontaine FOV Fix 5.0.1 / Realism CommonLib 0.1.0](docs/compatibility/FOV-COMMONLIB-20261122.md)
 and [Tarkova-Cola 4.0.0](docs/compatibility/TARKOVA-COLA-BODY-20261122.md).
-The Core 1.0.28 additions passed offline checks and scoped standalone/Arena tests
-on SPT-GPU-2. The tested candidate has not been deployed as a regular update.
-The published 1.1.3 package is unchanged.
+The additions passed offline checks and scoped standalone/Arena tests on
+SPT-GPU-2; the compatibility records state what each test covered.
 
 ## Features
 
@@ -41,16 +40,16 @@ The published 1.1.3 package is unchanged.
 - **SPT:** 4.1.x. The server component declares `~4.1.0`; the client is built against game build `0.16.9.40743`.
 - **Components:** Client, shared Core library, and server. All three are required.
 - **Dependencies:** No separately installed mods; Redeploy.Core is included.
-- **Version lines:** Redeploy 1.1.3 contains Client/Server `1.1.3` and Core `1.0.24`.
+- **Version lines:** Redeploy 1.1.4 contains Client/Server `1.1.4` and Core `1.0.28`.
   Core has its own version and is a library, not a separate BepInEx plugin.
-  The client requires Core `1.0.24` or newer with a compatible API.
+  The client requires Core `1.0.28` or newer with a compatible API.
 - **Optional integrations**, each installed separately and none of them required:
   - **Recoil Rework Legacy 2.0.0+** — Core transfers recoil/camera ownership and firearm state to the replacement body.
   - **Continuous Load Ammo 1.2.0+** — Core rebinds continuous loading and fences late disposal/completion from retired bodies.
   - **Continuous Healing 1.6.3+** — old player callbacks cannot continue or cancel the replacement body's healing; current local healing keeps the mod's behavior.
   - **Fontaine FOV Fix 4.1.0+** — refreshes camera and weapon ownership after respawn and fences callbacks from the retired body.
-  - **Realism CommonLib 0.1.0+** (unreleased Core 1.0.28, required by FOV Fix 5.0.1) — retires the outgoing body's state controllers and subscriptions so stale reload, firing and gear callbacks cannot change the replacement body. Scoped standalone and Arena death/respawn and retained-body tests passed.
-  - **Tarkova-Cola 4.0.0+** (unreleased Core 1.0.28) — clears the outgoing body's downed, hands, reload and transient perk state while retaining raid progress, perks, once-per-raid allowances and physical inventory. Scoped standalone and Arena body-replacement tests passed, including an active QuickRevive downed state in standalone; not every perk was exercised natively.
+  - **Realism CommonLib 0.1.0+** (Core 1.0.28, required by FOV Fix 5.0.1) — retires the outgoing body's state controllers and subscriptions so stale reload, firing and gear callbacks cannot change the replacement body. Scoped standalone and Arena death/respawn and retained-body tests passed.
+  - **Tarkova-Cola 4.0.0+** (Core 1.0.28) — clears the outgoing body's downed, hands, reload and transient perk state while retaining raid progress, perks, once-per-raid allowances and physical inventory. Scoped standalone and Arena body-replacement tests passed, including an active QuickRevive downed state in standalone; not every perk was exercised natively.
   - **Manimal Ammo Loading Animations 2.0.0+** — retires old loading sessions so their delayed animations cannot continue on a retired character.
   - **Magazine Check Interrupt 1.1.1+** — retires the old body's floating magazine panel; delayed hide callbacks cannot hide its successor's display.
   - **Accurate Circular Radar 1.3.4+** — preserves the radar through camera replacement and rebinds it to the current player. Radar colors retain the mod's faction/role meaning, not team hostility.
@@ -130,7 +129,7 @@ offline against the mods' published builds and real Harmony targets, not in the
 game. See the [implementation and validation scope](docs/compatibility/RECORDING-AND-POPULAR-COMPAT-20261102.md)
 before treating these as tested gameplay combinations.
 
-**New in Core 1.0.28 (unreleased):** Fontaine FOV Fix's reviewed baseline is
+**New in Core 1.0.28 (Redeploy 1.1.4):** Fontaine FOV Fix's reviewed baseline is
 5.0.1; the minimum remains 4.1.0. Its new Realism CommonLib dependency receives
 physical controller and event cleanup. Tarkova-Cola 4.0.0 receives a separate
 shared repair for body-bound transient state, without resetting raid progress.
@@ -161,7 +160,8 @@ Extended and Climbable Ladders. See the [versions, loot limitations
 and validation record](docs/compatibility/BODY-HANDOFF-20261108.md).
 
 Core 1.0.21 to 1.0.23 were never released on their own; Redeploy 1.1.3 is the first
-release that carries them.
+release that carries them. Likewise Core 1.0.25 to 1.0.27 (VisualAssist,
+DynamicMaps and Advanced Movement, WTT Armory) first ship with Redeploy 1.1.4.
 
 **With ArenaMode:** Arena uses the same Core but supplies its own respawn rules and server-side handling. Arena alone does not need Redeploy.Client or Redeploy.Server. Install those two components only if you also want Redeploy's death prompt in ordinary raids. The options below configure Redeploy, not Arena's respawns.
 
@@ -181,7 +181,7 @@ The client, Core library and server belong to the same installation. The client 
 
 ## Updating
 
-Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.3 requires Core **1.0.24 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
+Finish any raid and pending Scav recovery or loot transfer before updating. Close the game and server before replacing files, then restart both. Update all three files from the release together; keep exactly one copy of `maschine-Redeploy.Core.dll` across `BepInEx/plugins` and its subfolders. If ArenaMode also supplies Core, keep the newer compatible Core rather than overwriting it with an older one. Redeploy 1.1.4 requires Core **1.0.28 or newer**. A missing, unreadable or older Core disables the client before settings, hooks or components are initialized, with an error in the client log and SPT dependency list. Install the supplied Core, keep only one copy, and restart the game. Newer Core versions are allowed; this is a minimum-version guard, not certification of future API changes.
 
 Your `BepInEx/config/com.maschine.Redeploy.cfg` is kept. Older CorpseRun settings are not imported automatically; transfer any values you want to keep manually.
 

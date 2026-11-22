@@ -1,5 +1,25 @@
 # Redeploy repository status
 
+## Redeploy 1.1.4 prepared — 2026-11-22
+
+Redeploy **1.1.4** (Client/Server 1.1.4, bundled and minimum Core **1.0.28**) is
+prepared on `main` together with ArenaMode 0.7.0, which ships the byte-identical
+Core. The Client and Server code is unchanged since 1.1.1; the release carries
+Core 1.0.25 to 1.0.28 (VisualAssist, DynamicMaps and Advanced Movement, WTT
+Armory, FOV Fix / Realism CommonLib, Tarkova-Cola 4) and the drivers' Core 1.0.28
+stamp. Release notes: [RELEASE-1.1.4](releases/RELEASE-1.1.4.md); its native release
+check and package checks are filled in after packaging and the native run.
+`RespawnApi` (version 1) and the interop file (revision 1) are unchanged.
+
+- Branch state: `main` only. The worktree under
+  `D:\ArenaMapPort\work\dynamicmaps130-impl\Redeploy` was removed on this day.
+- `main` is ahead of `origin/main` (`32336f4`) by `5283c7c`, `42839bd`, `abd2537`
+  and `ecf464d` plus the release commit; nothing is pushed or tagged by this entry.
+- The living documents (README, changelog, `docs/README.md`, `docs/API.md`) now name
+  1.1.4 with Core 1.0.28. The dated sections below keep what they said at the time:
+  where they call Core 1.0.25 to 1.0.28 unreleased or the published release 1.1.3
+  with Core 1.0.24, this entry supersedes them.
+
 ## FOV/CommonLib and Tarkova-Cola body fixes — 2026-11-22
 
 The current development source uses **Core 1.0.28**. Fontaine FOV Fix's reviewed

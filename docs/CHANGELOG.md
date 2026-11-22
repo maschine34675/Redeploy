@@ -2,11 +2,18 @@
 
 Notable changes since **v1.0.0**, reconstructed from Git history and published
 release notes. Redeploy Client/Server and Redeploy.Core have separate versions:
-1.1.3 bundles Core 1.0.24; 1.1.2 bundled Core 1.0.20, 1.1.1 bundled Core 1.0.18,
-1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13, 1.0.1 bundled Core 1.0.10,
-and 1.0.0 bundled Core 1.0.8.
+1.1.4 bundles Core 1.0.28; 1.1.3 bundled Core 1.0.24, 1.1.2 bundled Core 1.0.20,
+1.1.1 bundled Core 1.0.18, 1.1.0 bundled Core 1.0.17, 1.0.2 bundled Core 1.0.13,
+1.0.1 bundled Core 1.0.10, and 1.0.0 bundled Core 1.0.8.
 
-## Unreleased - Core 1.0.28
+## [1.1.4] - 2026-11-22
+
+Client/Server **1.1.4**, bundled and minimum Core **1.0.28**. The Client and
+Server code is unchanged since 1.1.1; this release carries the new Core and the
+drivers' Core 1.0.28 stamp. Core 1.0.25, 1.0.26 and 1.0.27 were never released on
+their own; this is the first release that carries their changes.
+
+### Optional integrations — Core 1.0.28
 
 - **Fontaine FOV Fix 5.0.1 / Realism CommonLib 0.1.0:** keep the fresh body's nine
   native-created CommonLib controllers, disable and detach the outgoing body's
@@ -26,13 +33,20 @@ and 1.0.0 bundled Core 1.0.8.
   including current-controller ownership, old-listener cleanup, ADS, shots and
   movement. QuickRevive's spent allowance stayed spent and its old deadline did
   not kill the successor. Other perk combinations and forced creation failures
-  remain outside native coverage. The accepted candidate is archived, not a
-  regular deployment or release; published Redeploy 1.1.3 still bundles Core 1.0.24.
+  remain outside native coverage.
+
+### Optional integrations — Core 1.0.27
 
 - WTT Armory 2.0.5 follows the replacement player and resets outgoing AN-94 Hyperburst state. Retained old-body callbacks cannot overwrite the current player's burst state. The shared repair applies to standalone Redeploy and ArenaMode. [Contract](compatibility/WTT-ARMORY-20261121.md).
+- Core 1.0.27 was never released on its own.
+
+### Optional integrations — Core 1.0.26
 
 - DynamicMaps 1.3.0 refreshes its active quest and key subscriptions after a body replacement, including a continuously visible minimap. Hidden providers and legacy arrow behavior are preserved.
 - Advanced Movement 1.0.1 retires an outgoing body's Slide/Dive, gesture and audio state without clearing the successor's state. No frame polling or scene search was added. [Contract](compatibility/MAP-MOVEMENT-BODY-20261120.md).
+- Core 1.0.26 was never released on its own.
+
+### Optional integrations — Core 1.0.25
 
 - VisualAssist 1.2.0 keeps its grenade preview after confirmed body replacement.
   Core disposes the retired preview's own line, sphere and materials and prevents
@@ -41,8 +55,9 @@ and 1.0.0 bundled Core 1.0.8.
 - Evidence: scoped GPU-2 tests on 20 November 2026 passed two standalone PMC
   replacements and an Arena replacement, visible previews, OFF/ON, normal throws
   and resource cleanup. Own-Scav and forced creation failures were not exercised
-  natively. The tested Core/Client from `430657c` are deployed to the development
-  installation and both GPU hosts; the published 1.1.3 package is unchanged.
+  natively. The tested Core/Client from `430657c` were deployed to the development
+  installation and both GPU hosts.
+- Core 1.0.25 was never released on its own.
 
 ## [1.1.3] - 2026-11-14
 
